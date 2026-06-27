@@ -1,4 +1,4 @@
-/* HermesWork v3.1 — complete interactive dashboard */
+/* HermesWork v3.2 — all bugs fixed, no mock mode */
 
 const API_BASE = (() => {
   const saved = localStorage.getItem('HERMESWORK_BACKEND_URL');
@@ -47,9 +47,9 @@ function setStatus(online, label) {
   document.querySelectorAll('.status-dot').forEach(el => el.style.background = online ? '#16A34A' : '#DC2626');
   document.querySelectorAll('.status-label').forEach(el => el.textContent = label || (online ? 'Backend online' : 'Backend offline'));
   const sub = document.querySelector('.status-sub');
-  if (sub) sub.textContent = online ? `${API_BASE.replace('https://','')} · ${state.health.stripe || 'stripe'} mode` : 'Check backend URL';
-  setText('realtime-state', online ? 'Live sync on' : 'Offline');
-  setText('stripe-state', state.health.stripe === 'connected' ? 'Stripe test connected' : 'Stripe mock/test');
+  if (sub) sub.textContent = online ? `${API_BASE.replace('https://','')} · ${state.health.stripe || 'stripe'} mode` : 'Check backend URL in Settings';
+  setText('realtime-state', online ? 'Live sync on' : 'Offline — check Settings');
+  setText('stripe-state', state.health.stripe === 'connected' ? 'Stripe live connected' : 'Stripe test mode');
   setText('storage-state', 'Render filesystem');
 }
 
@@ -161,7 +161,7 @@ function renderInvoices() {
   if (state.invoiceSearch) { const q = state.invoiceSearch.toLowerCase(); rows = rows.filter(i => `${i.id} ${i.client} ${i.description}`.toLowerCase().includes(q)); }
   const tbody = $('invoices-tbody'); if (!tbody) return;
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7">${realEmpty('No real invoices yet', 'Create your first Stripe test invoice.', '<button class="btn btn-primary" onclick="openInvoiceModal()">Create invoice</button>')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7">${realEmpty('No invoices yet', 'Create your first real invoice.', '<button class="btn btn-primary" onclick="openInvoiceModal()">Create invoice</button>')}</td></tr>`;
   } else {
     tbody.innerHTML = rows.map(i => `<tr class="clickable-row" onclick="openDrawerById('${esc(i.id)}')">
       <td class="mono">${esc(i.id)}</td>
@@ -171,10 +171,10 @@ function renderInvoices() {
       <td>${dateFmt(i.dueDate)}</td>
       <td>${esc(i.paymentMethod||'stripe')}</td>
       <td class="table-actions" onclick="event.stopPropagation()">
-        <button class="btn btn-ghost btn-xs" onclick="copyPayLink('${esc(i.id)}')">Copy</button>
-        ${i.stripeUrl?`<button class="btn btn-ghost btn-xs" onclick="openStripeInvoice('${esc(i.stripeUrl)}')" title="Open in Stripe">Stripe</button>`:''}
-        ${i.status!=='paid'?`<button class="btn btn-ghost btn-xs" onclick="markPaid('${esc(i.id)}')">Confirm</button>`:''}
-        <button class="btn btn-ghost btn-xs" style="color:#e11d48" onclick="deleteInvoice('${esc(i.id)}')">Del</button>
+        <button class="btn btn-ghost btn-xs" onclick="copyPayLink('${esc(i.id)}')">Copy link</button>
+        ${i.stripeUrl?`<button class="btn btn-ghost btn-xs" onclick="openStripeInvoice('${esc(i.stripeUrl)}')" title="Open in Stripe">Stripe ↗</button>`:''}
+        ${i.status!=='paid'?`<button class="btn btn-ghost btn-xs" onclick="markPaid('${esc(i.id)}')">Mark paid</button>`:''}
+        <button class="btn btn-ghost btn-xs" style="color:#e11d48" onclick="deleteInvoice('${esc(i.id)}')">Delete</button>
       </td>
     </tr>`).join('');
   }
@@ -229,7 +229,7 @@ function renderReputation() {
         <div style="display:flex;justify-content:space-between;margin-bottom:14px"><strong>${esc(r.jobType)}</strong>${badge(r.clientVerified?'paid':'draft')}</div>
         <div style="font-size:26px;font-weight:800;color:var(--gold)">${money(r.amount)}</div>
         <div style="font-size:12px;color:var(--muted);margin:8px 0">${esc(r.client)} · ${dateFmt(r.date)} · ${esc(r.paymentRail||'stripe')}</div>
-        <div class="mono" style="cursor:pointer" onclick="copyText('${esc(r.txHash)}')" title="Click to copy">${esc(hashStr(r.txHash))}</div>
+        <div class="mono" style="cursor:pointer" onclick="copyText('${esc(r.txHash||'')}')" title="Click to copy">${r.txHash ? esc(hashStr(r.txHash)) : 'No on-chain record'}</div>
       </div>`).join('')
     : `<div class="card" style="grid-column:1/-1">${realEmpty('No payment-backed records yet','Records are created after real payment confirmation.')}</div>`;
 }
@@ -251,8 +251,14 @@ function renderAnalytics() {
   stats.innerHTML = `<div class="stat-box"><div class="stat-box-value">${money(state.kpis.totalRevenue)}</div><div class="stat-box-label">Total revenue</div></div><div class="stat-box"><div class="stat-box-value">${state.kpis.mrrGrowth||0}%</div><div class="stat-box-label">Growth</div></div><div class="stat-box"><div class="stat-box-value">${state.reputation.length}</div><div class="stat-box-label">Records</div></div><div class="stat-box"><div class="stat-box-value">${state.clients.length}</div><div class="stat-box-label">Clients</div></div>`;
   const tbody = $('hypothesis-tbody');
   if (tbody) tbody.innerHTML = (state.analytics.hypotheses||[]).map(h =>
-    `<tr><td>${esc(h.metric)}</td><td>${esc(String(h.baseline||''))}</td><td>${esc(String(h.target||''))}</td><td>${esc(String(h.current||''))}</td><td>${badge(h.status||'pending')}</td></tr>`
-  ).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">No hypothesis data — analytics populate from real records.</td></tr>`;
+    `<tr>
+      <td>${esc(h.metric)}</td>
+      <td>${h.prefix||''}${esc(String(h.baseline||''))}${h.unit||''}</td>
+      <td>${h.prefix||''}${esc(String(h.target||''))}${h.unit||''}</td>
+      <td><strong>${h.prefix||''}${esc(String(h.current||'0'))}${h.unit||''}</strong></td>
+      <td>${badge(h.hit ? 'paid' : 'pending')}</td>
+    </tr>`
+  ).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">No hypothesis data — add real invoices and proposals to populate analytics.</td></tr>`;
 }
 
 function renderSettings() {
@@ -264,12 +270,23 @@ function renderSettings() {
   if (cron) cron.innerHTML = state.scheduledTasks.length
     ? state.scheduledTasks.map(t => `<div class="cron-item"><div class="cron-status"></div><div><div class="cron-name">${esc(t.name)}</div><div class="cron-schedule">${esc(t.schedule)}</div></div><div class="cron-last-run">${esc(t.lastRun||'pending')}</div></div>`).join('')
     : `<div style="padding:16px;color:var(--text-muted);font-size:13px">No scheduled tasks returned yet.</div>`;
+  // show backend health
+  const healthEl = $('backend-health');
+  if (healthEl && state.health.version) {
+    healthEl.innerHTML = `
+      <div class="health-row"><span>Version</span><strong>${esc(state.health.version||'—')}</strong></div>
+      <div class="health-row"><span>Stripe</span><strong>${esc(state.health.stripe||'—')}</strong></div>
+      <div class="health-row"><span>ERC-8004</span><strong>${esc(state.health.erc8004||'—')}</strong></div>
+      <div class="health-row"><span>API key</span><strong>${esc(state.health.apiKey||'—')}</strong></div>
+      <div class="health-row"><span>Invoices</span><strong>${state.health.data?.invoices ?? '—'}</strong></div>
+      <div class="health-row"><span>Uptime</span><strong>${state.health.uptime||'—'}s</strong></div>
+    `;
+  }
 }
 
 function drawCharts() {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const revenueData = state.kpis.monthlyRevenue || Array(6).fill(0);
-  const labels = months.slice(0, revenueData.length);
+  const labels = state.kpis.monthLabels || state.analytics.monthLabels || ['Jan','Feb','Mar','Apr','May','Jun'];
   const defaults = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' } } } };
   function mkChart(id, type, data, opts = {}) {
     const canvas = $(id); if (!canvas) return;
@@ -278,7 +295,7 @@ function drawCharts() {
   }
   mkChart('chart-revenue', 'bar', {
     labels,
-    datasets: [{ data: revenueData, backgroundColor: '#6C5CE7', borderRadius: 6, borderSkipped: false }]
+    datasets: [{ data: revenueData, backgroundColor: '#5046e4', borderRadius: 6, borderSkipped: false }]
   });
   const won = state.proposals.filter(p=>p.status==='won').length;
   const lost = state.proposals.filter(p=>p.status==='lost').length;
@@ -287,41 +304,60 @@ function drawCharts() {
     labels: ['Won','Lost','Pending'],
     datasets: [{ data: [won||0, lost||0, pending||0], backgroundColor: ['#16A34A','#e11d48','#f59e0b'], borderWidth: 0 }]
   }, { plugins: { legend: { display: true, position: 'bottom' } }, scales: {} });
-  const daysData = (state.kpis.monthlyDays || Array(6).fill(0));
+  // FIX: use analytics data, not kpis
+  const daysData = state.analytics.daysToPayment || Array(6).fill(0);
   mkChart('chart-days', 'line', {
-    labels: months.slice(0, daysData.length),
-    datasets: [{ data: daysData, borderColor: '#6C5CE7', backgroundColor: 'rgba(108,92,231,0.08)', fill: true, tension: 0.4, pointRadius: 4 }]
+    labels: labels.slice(0, daysData.length),
+    datasets: [{ data: daysData, borderColor: '#5046e4', backgroundColor: 'rgba(80,70,228,0.08)', fill: true, tension: 0.4, pointRadius: 4 }]
   });
-  const repData = (state.kpis.monthlyRecords || Array(6).fill(0));
+  const repData = state.analytics.credentialsPerMonth || Array(6).fill(0);
   mkChart('chart-credentials', 'bar', {
-    labels: months.slice(0, repData.length),
+    labels: labels.slice(0, repData.length),
     datasets: [{ data: repData, backgroundColor: '#16A34A', borderRadius: 6 }]
   });
 }
 
 /* ─── Invoice actions ─── */
-function openInvoiceModal() { const m = $('invoice-modal'); if (m) { m.classList.add('active'); $('inv-client')?.focus(); } }
-function closeInvoiceModal() { const m = $('invoice-modal'); if (m) m.classList.remove('active'); }
+function openInvoiceModal() {
+  // FIX: was adding 'active', CSS requires 'open'
+  const m = $('invoice-modal');
+  if (m) { m.classList.add('open'); $('inv-client')?.focus(); }
+}
+function closeInvoiceModal() {
+  $('invoice-modal')?.classList.remove('open');
+}
 async function submitInvoice(e) {
   e.preventDefault();
   const btn = e.target.querySelector('[type=submit]');
   btn.disabled = true; btn.textContent = 'Creating...';
   try {
-    const body = { client: $('inv-client').value, amount: Number($('inv-amount').value), dueDate: $('inv-due').value, description: $('inv-desc').value, paymentMethod: $('inv-rail').value };
-    await apiFetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const body = {
+      client: $('inv-client').value,
+      amount: Number($('inv-amount').value),
+      dueDate: $('inv-due').value,
+      description: $('inv-desc').value,
+      paymentMethod: $('inv-rail').value
+    };
+    // FIX: was '/api/invoices' — correct route is '/invoice/create'
+    await apiFetch('/invoice/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     toast('Invoice created!'); closeInvoiceModal(); $('invoice-form').reset();
     await loadAllData(true);
-  } catch(err) { toast('Error: ' + err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Create real record'; }
+  } catch(err) { toast('Error: ' + err.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Create invoice'; }
 }
 async function markPaid(id) {
   if (!confirm(`Mark invoice ${id} as paid?`)) return;
-  try { await apiFetch(`/api/invoices/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'paid' }) }); toast('Marked paid!'); await loadAllData(true); }
-  catch(e) { toast(e.message, 'error'); }
+  try {
+    await apiFetch(`/api/invoices/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'paid' }) });
+    toast('Marked paid!'); await loadAllData(true);
+  } catch(e) { toast(e.message, 'error'); }
 }
 async function deleteInvoice(id) {
   if (!confirm(`Delete invoice ${id}? This cannot be undone.`)) return;
-  try { await apiFetch(`/api/invoices/${id}`, { method: 'DELETE' }); toast('Invoice deleted.'); closeDrawer(); await loadAllData(true); }
-  catch(e) { toast(e.message, 'error'); }
+  try {
+    await apiFetch(`/api/invoices/${id}`, { method: 'DELETE' });
+    toast('Invoice deleted.'); closeDrawer(); await loadAllData(true);
+  } catch(e) { toast(e.message, 'error'); }
 }
 function copyPayLink(id) { const url = `${API_BASE}/pay/${id}`; navigator.clipboard?.writeText(url).then(() => toast('Payment link copied!')).catch(() => toast('Could not copy', 'error')); }
 function exportCSV() {
@@ -348,7 +384,9 @@ function openDrawerById(id) {
     <div class="drawer-field"><span class="drawer-label">Due</span><span class="drawer-value">${dateFmt(inv.dueDate)}</span></div>
     <div class="drawer-field"><span class="drawer-label">Description</span><span class="drawer-value">${esc(inv.description||'—')}</span></div>
     <div class="drawer-field"><span class="drawer-label">Rail</span><span class="drawer-value">${esc(inv.paymentMethod||'stripe')}</span></div>
-    ${inv.stripeUrl?`<div class="drawer-field"><span class="drawer-label">Stripe</span><a href="${esc(inv.stripeUrl)}" target="_blank" rel="noopener" class="drawer-link">Open in Stripe ↗</a></div>`:''}
+    ${inv.stripeUrl?`<div class="drawer-field"><span class="drawer-label">Stripe invoice</span><a href="${esc(inv.stripeUrl)}" target="_blank" rel="noopener" class="drawer-link">Open in Stripe ↗</a></div>`:''}
+    ${inv.x402Url?`<div class="drawer-field"><span class="drawer-label">x402 URL</span><span class="drawer-value mono" style="font-size:11px">${esc(inv.x402Url)}</span></div>`:''}
+    ${inv.txHash?`<div class="drawer-field"><span class="drawer-label">Tx hash</span><span class="drawer-value mono" style="cursor:pointer" onclick="copyText('${esc(inv.txHash)}')" title="Click to copy">${esc(hashStr(inv.txHash))}</span></div>`:''}
     <div class="drawer-actions">
       <button class="btn btn-primary" onclick="copyPayLink('${esc(inv.id)}')">Copy payment link</button>
       ${inv.status!=='paid'?`<button class="btn btn-secondary" onclick="markPaid('${esc(inv.id)}')">Mark paid</button>`:''}
@@ -363,9 +401,11 @@ function closeDrawer() {
 
 /* ─── Proposal actions ─── */
 function openProposalModal(clientName = '') {
-  const m = $('proposal-modal'); if (m) { m.classList.add('active'); if (clientName) { const c = $('prop-client'); if (c) c.value = clientName; } $('prop-title')?.focus(); }
+  // FIX: was adding 'active'
+  const m = $('proposal-modal');
+  if (m) { m.classList.add('open'); if (clientName) { const c = $('prop-client'); if (c) c.value = clientName; } $('prop-title')?.focus(); }
 }
-function closeProposalModal() { $('proposal-modal')?.classList.remove('active'); }
+function closeProposalModal() { $('proposal-modal')?.classList.remove('open'); }
 async function submitProposal(e) {
   e.preventDefault();
   const btn = e.target.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Saving...';
@@ -373,7 +413,8 @@ async function submitProposal(e) {
     const body = { title: $('prop-title').value, client: $('prop-client').value, platform: $('prop-platform').value, amount: Number($('prop-amount').value), status: $('prop-status').value, sentDate: new Date().toISOString() };
     await apiFetch('/api/proposals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     toast('Proposal added!'); closeProposalModal(); $('proposal-form').reset(); await loadAllData(true);
-  } catch(err) { toast('Error: ' + err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Add proposal'; }
+  } catch(err) { toast('Error: ' + err.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Add proposal'; }
 }
 async function updateProposal(id, status) {
   try { await apiFetch(`/api/proposals/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }); toast(`Proposal marked ${status}!`); await loadAllData(true); }
@@ -381,8 +422,11 @@ async function updateProposal(id, status) {
 }
 
 /* ─── Client actions ─── */
-function openClientModal() { $('client-modal')?.classList.add('active'); $('cli-name')?.focus(); }
-function closeClientModal() { $('client-modal')?.classList.remove('active'); }
+function openClientModal() {
+  // FIX: was adding 'active'
+  $('client-modal')?.classList.add('open'); $('cli-name')?.focus();
+}
+function closeClientModal() { $('client-modal')?.classList.remove('open'); }
 async function submitClient(e) {
   e.preventDefault();
   const btn = e.target.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Saving...';
@@ -390,20 +434,21 @@ async function submitClient(e) {
     const body = { name: $('cli-name').value, company: $('cli-company').value, industry: $('cli-industry').value, email: $('cli-email').value };
     await apiFetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     toast('Client added!'); closeClientModal(); $('client-form').reset(); await loadAllData(true);
-  } catch(err) { toast('Error: ' + err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Add client'; }
+  } catch(err) { toast('Error: ' + err.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Add client'; }
 }
 function createInvoiceForClient(clientId) { openInvoiceModal(); setTimeout(() => { const c = $('inv-client'); if (c) c.value = clientId; }, 50); }
 function createProposalForClient(clientId) { openProposalModal(clientId); }
 
 /* ─── Settings actions ─── */
-function saveApiKeyFromField() { const k = $('hermes-api-key')?.value?.trim(); if (k) { localStorage.setItem('HERMESWORK_API_KEY', k); toast('API key saved.'); } else { toast('Enter a key first', 'error'); } }
+function saveApiKeyFromField() { const k = $('hermes-api-key')?.value?.trim(); if (k) { localStorage.setItem('HERMESWORK_API_KEY', k); toast('API key saved. Syncing…'); loadAllData(false); } else { toast('Enter a key first', 'error'); } }
 function testBackend() {
   const url = $('backend-url')?.value?.trim();
   if (url) { localStorage.setItem('HERMESWORK_BACKEND_URL', url); }
   loadAllData(false);
 }
 function refreshData() { loadAllData(false); }
-function copyText(text) { navigator.clipboard?.writeText(text).then(() => toast('Copied!')).catch(() => toast('Could not copy', 'error')); }
+function copyText(text) { if (!text) { toast('Nothing to copy', 'error'); return; } navigator.clipboard?.writeText(text).then(() => toast('Copied!')).catch(() => toast('Could not copy', 'error')); }
 
 /* ─── Command palette ─── */
 function buildCmdItems() {

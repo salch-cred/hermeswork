@@ -32,7 +32,7 @@
     .drawer-field{margin-bottom:16px}
     .drawer-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:4px}
     .drawer-value{font-size:15px;color:#0a0a0a}
-    .drawer-link{color:#6C5CE7;text-decoration:none;font-size:14px}
+    .drawer-link{color:#5046e4;text-decoration:none;font-size:14px}
     .drawer-link:hover{text-decoration:underline}
     .drawer-actions{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px}
     /* ── Shortcuts overlay ── */
@@ -43,7 +43,7 @@
     .shortcut-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
     .shortcut-row:last-child{border-bottom:none}
     .key{background:#f1f5f9;border-radius:5px;padding:2px 8px;font-family:monospace;font-size:12px;font-weight:600;color:#475569}
-    /* ── Dark mode base ── */
+    /* ── Dark mode ── */
     body.dark{--bg:#0f1117;--surface:#1a1d27;--border:#2d3142;--text:#e2e8f0;--text-muted:#94a3b8;--accent:#7c6bf5}
     body.dark .cmd-box,body.dark .shortcuts-box,body.dark #invoice-drawer{background:#1a1d27;color:#e2e8f0}
     body.dark #cmd-input{color:#e2e8f0}
@@ -63,6 +63,10 @@
     .topbar-btn:hover{background:#f1f5f9}
     body.dark .topbar-btn{border-color:#2d3142;color:#a5b4fc}
     body.dark .topbar-btn:hover{background:#2d3142}
+    /* ── Health rows ── */
+    .health-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+    .health-row:last-child{border-bottom:0}
+    .health-row span{color:var(--muted)}
   </style>
 </head>
 <body>
@@ -81,9 +85,10 @@
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
 </svg>
 
-<!-- ── Command palette ── -->
+<!-- Command palette -->
 <div id="cmd-palette" role="dialog" aria-label="Command palette">
   <div class="cmd-box">
     <div class="cmd-search">
@@ -94,7 +99,7 @@
   </div>
 </div>
 
-<!-- ── Invoice drawer ── -->
+<!-- Invoice drawer -->
 <div id="drawer-backdrop"></div>
 <div id="invoice-drawer">
   <div class="drawer-header">
@@ -104,7 +109,7 @@
   <div id="drawer-body"></div>
 </div>
 
-<!-- ── Shortcuts overlay ── -->
+<!-- Shortcuts overlay -->
 <div id="shortcuts-overlay" onclick="closeShortcuts()">
   <div class="shortcuts-box" onclick="event.stopPropagation()">
     <div class="shortcuts-title">Keyboard shortcuts</div>
@@ -113,13 +118,13 @@
     <div class="shortcut-row"><span>New proposal</span><span class="key">p</span></div>
     <div class="shortcut-row"><span>Sync data</span><span class="key">r</span></div>
     <div class="shortcut-row"><span>Toggle dark mode</span><span class="key">d</span></div>
-    <div class="shortcut-row"><span>Navigate (then key)</span><span class="key">g</span> + <span class="key">d/i/c/p/r/a/s/x</span></div>
+    <div class="shortcut-row"><span>Navigate</span><span class="key">g</span> + <span class="key">d/i/c/p/r/a/s/x</span></div>
     <div class="shortcut-row"><span>Close / dismiss</span><span class="key">Esc</span></div>
     <div class="shortcut-row"><span>This overlay</span><span class="key">?</span></div>
   </div>
 </div>
 
-<!-- ── Proposal modal ── -->
+<!-- Proposal modal -->
 <div class="modal-overlay" id="proposal-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Proposal</div><button class="modal-close" type="button" onclick="closeProposalModal()">×</button></div>
@@ -136,7 +141,7 @@
   </div>
 </div>
 
-<!-- ── Client modal ── -->
+<!-- Client modal -->
 <div class="modal-overlay" id="client-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Client</div><button class="modal-close" type="button" onclick="closeClientModal()">×</button></div>
@@ -178,7 +183,7 @@
     <div class="sidebar-footer">
       <div class="agent-status">
         <div class="status-dot"></div>
-        <div class="status-info"><div class="status-label">Checking backend</div><div class="status-sub">Render connection</div></div>
+        <div class="status-info"><div class="status-label">Checking backend…</div><div class="status-sub">Render connection</div></div>
       </div>
     </div>
   </aside>
@@ -202,15 +207,15 @@
         <div>
           <p class="overline">Real-time mode</p>
           <h1>Real invoices, live backend, Stripe test payments only.</h1>
-          <p>No demo dataset is used. The dashboard stays empty until you create real records or Stripe test webhooks confirm payment events.</p>
+          <p>No demo dataset. The dashboard fills from real records — invoices, webhook events, and confirmed payments.</p>
           <div class="live-pills">
-            <span id="realtime-state">Live sync starting</span>
-            <span id="stripe-state">Stripe checking</span>
-            <span id="storage-state">Storage checking</span>
+            <span id="realtime-state">Connecting…</span>
+            <span id="stripe-state">Checking Stripe…</span>
+            <span id="storage-state">Checking storage…</span>
             <span id="last-sync">Waiting for first sync</span>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create real invoice</button>
+        <button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create invoice</button>
       </section>
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-head"><span>Monthly Revenue</span><svg><use href="#i-chart"/></svg></div><div class="kpi-value" id="kpi-mrr">$0</div><div class="kpi-trend up">live backend</div><div class="mini-chart" id="sparkline-mrr"></div></div>
@@ -221,8 +226,8 @@
         <div class="kpi-card"><div class="kpi-head"><span>Active Projects</span><svg><use href="#i-bolt"/></svg></div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">open work</div></div>
       </div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> Live workflows</div><div class="card-subtitle">Backend tasks and real payment processing</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-refresh"/></svg> Real activity</div><div class="card-subtitle">Created invoices, Stripe webhook events, confirmations</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> Live workflows</div><div class="card-subtitle">Backend tasks and payment processing</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-activity"/></svg> Real activity</div><div class="card-subtitle">Invoice creation, Stripe webhooks, confirmations</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
       </div>
     </main>
 
@@ -283,10 +288,10 @@
 
     <!-- Reputation -->
     <main class="page-content fade-in" id="page-reputation">
-      <div class="section-header"><div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed work records, not seeded samples</div></div></div>
+      <div class="section-header"><div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed work records — no seeded data</div></div></div>
       <div class="stats-row">
         <div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Records</div></div>
-        <div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Verified</div></div>
+        <div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Client verified</div></div>
         <div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">Confirmed value</div></div>
       </div>
       <div class="grid-auto" id="reputation-grid"></div>
@@ -311,13 +316,13 @@
 
     <!-- Analytics -->
     <main class="page-content fade-in" id="page-analytics">
-      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Analytics generated only from real records</div></div></div>
+      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Generated from real records only</div></div></div>
       <div class="stats-row" id="analytics-stats"></div>
       <div class="two-col">
         <div class="card"><div class="card-title">Revenue</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div>
         <div class="card"><div class="card-title">Win rate</div><div class="chart-container"><canvas id="chart-winrate"></canvas></div></div>
         <div class="card"><div class="card-title">Days to payment</div><div class="chart-container"><canvas id="chart-days"></canvas></div></div>
-        <div class="card"><div class="card-title">Records</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
+        <div class="card"><div class="card-title">ERC-8004 records</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
       </div>
       <div class="card table-card" style="margin-top:20px">
         <div class="table-wrap">
@@ -331,19 +336,22 @@
 
     <!-- Settings -->
     <main class="page-content fade-in" id="page-settings">
-      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div><div class="section-subtitle">Live backend and browser-only API key</div></div></div>
+      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div><div class="section-subtitle">Live backend config and browser-only API key</div></div></div>
       <div class="two-col">
         <div class="card">
           <div class="card-header"><div class="card-title"><svg><use href="#i-key"/></svg> Access</div></div>
-          <div class="form-group"><label class="form-label">HermesWork API Key</label><div class="input-row"><input type="password" class="form-input" id="hermes-api-key" placeholder="Paste HERMESWORK_API_KEY"><button class="btn btn-primary" onclick="saveApiKeyFromField()">Save</button></div><div class="help-text">Stored only in this browser. Required for real write actions.</div></div>
+          <div class="form-group"><label class="form-label">HermesWork API Key</label><div class="input-row"><input type="password" class="form-input" id="hermes-api-key" placeholder="Paste HERMESWORK_API_KEY"><button class="btn btn-primary" onclick="saveApiKeyFromField()">Save</button></div><div class="help-text">Stored only in this browser. Required for all write actions (create invoice, add client, etc).</div></div>
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title"><svg><use href="#i-link"/></svg> Backend</div></div>
-          <div class="form-group"><label class="form-label">Backend URL</label><div class="input-row"><input type="text" class="form-input" id="backend-url" value="https://hermeswork.onrender.com"><button class="btn btn-primary" onclick="testBackend()">Test</button></div></div>
-          <button class="btn btn-secondary" onclick="refreshData()">Sync Live Data</button>
-          <div class="help-text">Demo seed has been removed from the UI. Use real invoice creation and Stripe test webhooks.</div>
+          <div class="form-group"><label class="form-label">Backend URL</label><div class="input-row"><input type="text" class="form-input" id="backend-url" value="https://hermeswork.onrender.com"><button class="btn btn-primary" onclick="testBackend()">Test & Save</button></div></div>
+          <button class="btn btn-secondary" style="margin-top:8px" onclick="refreshData()">Sync Live Data</button>
         </div>
-        <div class="card" style="grid-column:1/-1">
+        <div class="card">
+          <div class="card-header"><div class="card-title"><svg><use href="#i-activity"/></svg> Backend Health</div></div>
+          <div id="backend-health"><div style="color:var(--muted);font-size:13px;padding:8px 0">Syncing…</div></div>
+        </div>
+        <div class="card">
           <div class="card-header"><div class="card-title"><svg><use href="#i-bolt"/></svg> Scheduled tasks</div><span class="badge badge-paid">Active</span></div>
           <div id="cron-list"></div>
         </div>
@@ -360,19 +368,19 @@
   <button class="mobile-nav-item" id="mob-nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button>
 </nav>
 
-<!-- ── Invoice create modal ── -->
+<!-- Invoice create modal -->
 <div class="modal-overlay" id="invoice-modal">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Create Real Invoice</div><button class="modal-close" type="button" onclick="closeInvoiceModal()">×</button></div>
+    <div class="modal-header"><div class="modal-title">Create Invoice</div><button class="modal-close" type="button" onclick="closeInvoiceModal()">×</button></div>
     <form id="invoice-form" onsubmit="submitInvoice(event)">
       <div class="form-group"><label class="form-label">Client</label><input class="form-input" id="inv-client" required placeholder="Client or company name"></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Amount</label><input type="number" class="form-input" id="inv-amount" required min="1"></div>
+        <div class="form-group"><label class="form-label">Amount (USD)</label><input type="number" class="form-input" id="inv-amount" required min="1" placeholder="e.g. 2500"></div>
         <div class="form-group"><label class="form-label">Due date</label><input type="date" class="form-input" id="inv-due" required></div>
       </div>
       <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="inv-desc" placeholder="Work delivered"></div>
       <div class="form-group"><label class="form-label">Payment rail</label><select class="form-select" id="inv-rail"><option value="stripe">Stripe test mode</option><option value="x402">x402 proof route</option><option value="both">Both</option></select></div>
-      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create real record</button></div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create invoice</button></div>
     </form>
   </div>
 </div>

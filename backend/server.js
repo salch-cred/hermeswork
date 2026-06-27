@@ -12,13 +12,16 @@ try { rateLimit = require('express-rate-limit'); } catch(e) {}
 try { xss = require('xss'); } catch(e) { xss = { filterXSS: (s) => s }; }
 try { morgan = require('morgan'); } catch(e) {}
 
+// ── Stripe — real test mode only, no mock fallback ──
 let stripe = null;
-try {
-  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('your_key') && process.env.STRIPE_SECRET_KEY !== 'sk_test_mock') {
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  }
-} catch(e) {}
+if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_test_mock') || process.env.STRIPE_SECRET_KEY.includes('your_key')) {
+  console.warn('[Stripe] No real key configured — Stripe invoice creation disabled.');
+} else {
+  try { stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); console.log('[Stripe] Connected:', process.env.STRIPE_SECRET_KEY.slice(0,10) + '…'); }
+  catch(e) { console.error('[Stripe] Init failed:', e.message); }
+}
 
+// ── Ethers — real only ──
 let ethers = null;
 try { ethers = require('ethers'); } catch(e) {}
 
@@ -42,22 +45,21 @@ function broadcastSSE(event, data) {
 }
 
 function saveData() {
-  try { const tmp = DATA_FILE + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(db, null, 2), 'utf8'); fs.renameSync(tmp, DATA_FILE); } catch(e) {}
+  try { const tmp = DATA_FILE + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(db, null, 2), 'utf8'); fs.renameSync(tmp, DATA_FILE); } catch(e) { console.error('[saveData]', e.message); }
 }
 
 function safeString(value, max = 500) { return xss.filterXSS(String(value ?? '').trim()).slice(0, max); }
 function isValidDateString(value) { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return false; return !Number.isNaN(new Date(value + 'T00:00:00Z').getTime()); }
 function today() { return new Date().toISOString().split('T')[0]; }
 function makeInvoiceId() { const maxNum = db.invoices.reduce((max, inv) => { const m = String(inv.id || '').match(/^INV-(\d+)$/); return m ? Math.max(max, Number(m[1])) : max; }, 0); return 'INV-' + String(maxNum + 1).padStart(3, '0'); }
-function timingSafeEqualString(a, b) { if (!a || !b) return false; const ab = Buffer.from(String(a)); const bb = Buffer.from(String(b)); if (ab.length !== bb.length) return false; return crypto.timingSafeEqual(ab, bb); }
+function timingSafeEqualString(a, b) { if (!a || !b) return false; try { const ab = Buffer.from(String(a)); const bb = Buffer.from(String(b)); if (ab.length !== bb.length) return false; return crypto.timingSafeEqual(ab, bb); } catch { return false; } }
 
 function requireApiKey(req, res, next) {
-  if (!API_KEY) { if (NODE_ENV === 'production') return res.status(503).json({ error: 'Server API key not configured.' }); return next(); }
+  if (!API_KEY) { if (NODE_ENV === 'production') return res.status(503).json({ error: 'Server API key not configured. Set HERMESWORK_API_KEY env var on Render.' }); return next(); }
   const token = req.headers['x-api-key'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!timingSafeEqualString(token, API_KEY)) return res.status(401).json({ error: 'Unauthorized: missing or invalid API key' });
   next();
 }
-function requireDemoEnabled(req, res, next) { if (process.env.ENABLE_DEMO_SEED === 'true' || NODE_ENV !== 'production') return next(); return res.status(403).json({ error: 'Demo seed disabled.' }); }
 
 function logActivity(action, type = 'invoice') {
   const entry = { id: uuidv4(), action: safeString(action, 200), type: safeString(type, 40), time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), timestamp: new Date().toISOString() };
@@ -86,23 +88,36 @@ function validate(schema) {
 
 function asyncWrap(fn) { return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next); }
 
+// ── ERC-8004 — real only, no fake txHash ──
 async function mintERC8004(jobData) {
-  if (!ethers || !process.env.PRIVATE_KEY || process.env.PRIVATE_KEY.startsWith('0x_') || process.env.PRIVATE_KEY === '0x_mock') {
-    return { txHash: '0x' + crypto.randomBytes(20).toString('hex'), mock: true };
+  if (!ethers) return { skipped: true, reason: 'ethers not installed' };
+  const pk = process.env.PRIVATE_KEY;
+  if (!pk || pk.startsWith('0x_') || pk === '0x_mock' || pk.length < 64) {
+    return { skipped: true, reason: 'PRIVATE_KEY not configured' };
+  }
+  const registry = process.env.ERC8004_REGISTRY;
+  if (!registry || registry.startsWith('0x_') || !ethers.isAddress(registry)) {
+    return { skipped: true, reason: 'ERC8004_REGISTRY not configured or invalid' };
   }
   try {
     const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
-    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+    const wallet = new ethers.Wallet(pk, provider);
     const balance = await provider.getBalance(wallet.address);
-    if (balance === 0n) return { txHash: '0x' + crypto.randomBytes(20).toString('hex'), mock: true };
-    const registry = process.env.ERC8004_REGISTRY;
-    if (!registry || registry.startsWith('0x_') || !ethers.isAddress(registry)) return { txHash: '0x' + crypto.randomBytes(20).toString('hex'), mock: true };
+    if (balance === 0n) return { skipped: true, reason: 'Wallet has zero balance on Base Sepolia' };
     const abi = ['function mintCredential(string jobCategory,uint256 valueUSD,string paymentProof) external returns (uint256)'];
     const contract = new ethers.Contract(registry, abi, wallet);
-    const tx = await contract.mintCredential(safeString(jobData.type || 'Freelance', 80), Math.round(Number(jobData.amount || 0)), safeString(jobData.paymentId || 'payment', 120));
+    const tx = await contract.mintCredential(
+      safeString(jobData.type || 'Freelance', 80),
+      Math.round(Number(jobData.amount || 0)),
+      safeString(jobData.paymentId || 'payment', 120)
+    );
     const receipt = await tx.wait();
-    return { txHash: receipt.hash, mock: false };
-  } catch(e) { return { txHash: '0x' + crypto.randomBytes(20).toString('hex'), mock: true }; }
+    console.log('[ERC-8004] Minted:', receipt.hash);
+    return { txHash: receipt.hash, skipped: false };
+  } catch(e) {
+    console.error('[ERC-8004] Mint failed:', e.message);
+    return { skipped: true, reason: e.message };
+  }
 }
 
 const app = express();
@@ -125,7 +140,7 @@ app.use(cors({
 
 if (rateLimit) {
   app.use(rateLimit({ windowMs: 15*60*1000, max: 500, standardHeaders: true, legacyHeaders: false }));
-  app.use(['/invoice/create','/demo/seed','/pay/:id/confirm'], rateLimit({ windowMs: 60*1000, max: 10 }));
+  app.use(['/invoice/create','/pay/:id/confirm'], rateLimit({ windowMs: 60*1000, max: 10 }));
 }
 
 app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
@@ -133,10 +148,20 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use((req, _res, next) => { if (req.path === '/webhooks/stripe') return next(); if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) { for (const key of Object.keys(req.body)) if (typeof req.body[key] === 'string') req.body[key] = safeString(req.body[key], 1000); } next(); });
 
-// ---- ROUTES ----
-app.get('/', (req, res) => res.json({ name:'HermesWork API', status:'ok', version:'2.2.0', routes:{ health:'/health', kpis:'/api/kpis', invoices:'/api/invoices', stream:'/api/stream (SSE)', export:'/api/export/invoices.csv' }, timestamp: new Date().toISOString() }));
+// ── ROUTES ──
+app.get('/', (req, res) => res.json({ name:'HermesWork API', status:'ok', version:'2.3.0', routes:{ health:'/health', kpis:'/api/kpis', invoices:'/api/invoices', stream:'/api/stream', export:'/api/export/invoices.csv' }, timestamp: new Date().toISOString() }));
 
-app.get('/health', (req, res) => res.json({ status:'ok', version:'2.2.0', env:NODE_ENV, uptime:Math.round(process.uptime()), memory:Math.round(process.memoryUsage().heapUsed/1024/1024)+'MB', data:{ invoices:db.invoices.length, clients:db.clients.length, proposals:db.proposals.length, credentials:db.reputation.length }, stripe:stripe?'connected':'mock', erc8004:process.env.PRIVATE_KEY&&!process.env.PRIVATE_KEY.startsWith('0x_')?'configured':'mock', apiKey:API_KEY?'configured':'not_configured', sseClients:sseClients.size, timestamp:new Date().toISOString() }));
+app.get('/health', (req, res) => res.json({
+  status:'ok', version:'2.3.0', env:NODE_ENV,
+  uptime:Math.round(process.uptime()),
+  memory:Math.round(process.memoryUsage().heapUsed/1024/1024)+'MB',
+  data:{ invoices:db.invoices.length, clients:db.clients.length, proposals:db.proposals.length, credentials:db.reputation.length },
+  stripe: stripe ? 'connected' : 'not_configured',
+  erc8004: (process.env.PRIVATE_KEY && !process.env.PRIVATE_KEY.startsWith('0x_') && process.env.ERC8004_REGISTRY && !process.env.ERC8004_REGISTRY.startsWith('0x_')) ? 'configured' : 'not_configured',
+  apiKey: API_KEY ? 'configured' : 'not_configured',
+  sseClients: sseClients.size,
+  timestamp: new Date().toISOString()
+}));
 
 // SSE real-time stream
 app.get('/api/stream', (req, res) => {
@@ -221,7 +246,12 @@ app.delete('/api/invoices/:id', requireApiKey, (req, res) => {
   res.json({ success: true, deleted: removed.id });
 });
 
-app.post('/invoice/create', requireApiKey, validate({ client:{ required:true, maxLen:100 }, amount:{ required:true, type:'number', min:0.01, max:1000000 }, dueDate:{ required:true, date:true }, paymentMethod:{ enum:['stripe','x402','both'] } }), asyncWrap(async (req, res) => {
+app.post('/invoice/create', requireApiKey, validate({
+  client:{ required:true, maxLen:100 },
+  amount:{ required:true, type:'number', min:0.01, max:1000000 },
+  dueDate:{ required:true, date:true },
+  paymentMethod:{ enum:['stripe','x402','both'] }
+}), asyncWrap(async (req, res) => {
   const client = safeString(req.body.client, 100);
   const amount = Math.round(Number(req.body.amount) * 100) / 100;
   const description = safeString(req.body.description || '', 300);
@@ -229,6 +259,7 @@ app.post('/invoice/create', requireApiKey, validate({ client:{ required:true, ma
   const paymentMethod = req.body.paymentMethod || 'stripe';
   const invId = makeInvoiceId();
   const invoice = { id: invId, client, amount, status: 'pending', dueDate, paymentMethod, description, createdAt: today(), stripeUrl: null, stripeId: null, x402Url: PUBLIC_BASE_URL + '/pay/' + invId };
+
   if (stripe && (paymentMethod === 'stripe' || paymentMethod === 'both')) {
     try {
       const safeEmail = client.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '').slice(0, 50) + '@hermeswork.client';
@@ -242,8 +273,16 @@ app.post('/invoice/create', requireApiKey, validate({ client:{ required:true, ma
       await stripe.invoices.sendInvoice(stripeInv.id);
       invoice.stripeUrl = finalized.hosted_invoice_url || null;
       invoice.stripeId = finalized.id;
-    } catch(e) { invoice.stripeError = e.message; }
+      console.log('[Stripe] Invoice created:', finalized.id);
+    } catch(e) {
+      console.error('[Stripe] Invoice creation failed:', e.message);
+      invoice.stripeError = e.message;
+    }
+  } else if (paymentMethod === 'stripe' && !stripe) {
+    invoice.stripeError = 'Stripe not configured on server. Set STRIPE_SECRET_KEY env var.';
+    console.warn('[Stripe] Skipped — not configured');
   }
+
   db.invoices.unshift(invoice);
   logActivity('Invoice ' + invId + ' created for ' + client + ' — $' + amount, 'invoice');
   saveData();
@@ -254,7 +293,7 @@ app.post('/invoice/create', requireApiKey, validate({ client:{ required:true, ma
 app.post('/invoice/send/:id', requireApiKey, asyncWrap(async (req, res) => {
   const invoice = db.invoices.find(i => i.id === req.params.id);
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
-  if (stripe && invoice.stripeId) { try { await stripe.invoices.sendInvoice(invoice.stripeId); } catch(e) {} }
+  if (stripe && invoice.stripeId) { try { await stripe.invoices.sendInvoice(invoice.stripeId); } catch(e) { console.warn('[Stripe] Re-send failed:', e.message); } }
   logActivity('Reminder sent for ' + invoice.id + ' to ' + invoice.client, 'invoice');
   res.json({ success: true, message: 'Reminder sent', invoiceId: invoice.id });
 }));
@@ -263,7 +302,8 @@ app.get('/pay/:invoiceId', (req, res) => {
   const invoice = db.invoices.find(i => i.id === req.params.invoiceId);
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
   if (invoice.status === 'paid') return res.json({ paid: true, invoice: { id: invoice.id, amount: invoice.amount, client: invoice.client, paidAt: invoice.paidAt } });
-  const walletAddress = process.env.PAYMENT_ADDRESS || process.env.X402_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+  const walletAddress = process.env.PAYMENT_ADDRESS || process.env.X402_WALLET_ADDRESS || null;
+  if (!walletAddress) return res.status(503).json({ error: 'x402 wallet address not configured. Set PAYMENT_ADDRESS env var.' });
   res.status(402).json({ x402Version: '1', error: 'Payment required', accepts: [{ scheme: 'exact', network: 'base-sepolia', maxAmountRequired: String(Math.round(invoice.amount * 1e6)), resource: PUBLIC_BASE_URL + '/pay/' + invoice.id, description: 'Payment for ' + invoice.id + ' — ' + invoice.client + ' — $' + invoice.amount, mimeType: 'application/json', payTo: walletAddress, maxTimeoutSeconds: 300, asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', extra: { name: 'USD Coin', version: '2', decimals: 6 } }], invoice: { id: invoice.id, amount: invoice.amount, client: invoice.client, due: invoice.dueDate } });
 });
 
@@ -274,20 +314,27 @@ app.post('/pay/:invoiceId/confirm', asyncWrap(async (req, res) => {
   const paymentHeader = req.headers['x-payment'];
   const txHash = safeString(req.body.txHash || req.body.transactionHash || '', 120);
   const manualToken = req.headers['x-api-key'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!paymentHeader && !txHash && !timingSafeEqualString(manualToken, API_KEY)) return res.status(402).json({ error: 'Payment proof required. Send x402 payment header, txHash, or valid API key.' });
+  if (!paymentHeader && !txHash && !timingSafeEqualString(manualToken, API_KEY)) return res.status(402).json({ error: 'Payment proof required.' });
   if (txHash && !/^0x[a-fA-F0-9]{64}$/.test(txHash) && !timingSafeEqualString(manualToken, API_KEY)) return res.status(422).json({ error: 'Invalid txHash format' });
   invoice.status = 'paid';
   invoice.paidAt = new Date().toISOString();
   invoice.paymentMethod = 'x402';
-  invoice.txHash = txHash || safeString(paymentHeader || 'x402-payment-proof', 120);
-  const { txHash: mintedHash, mock } = await mintERC8004({ type: invoice.description || 'Freelance Work', amount: invoice.amount, paymentId: invoice.txHash });
-  const cred = { id: uuidv4(), jobType: invoice.description || 'Freelance Work', amount: invoice.amount, client: invoice.client, date: today(), clientVerified: false, txHash: mintedHash, mock, invoiceId: invoice.id, paymentRail: 'x402' };
+  invoice.txHash = txHash || safeString(paymentHeader || '', 120) || null;
+  const mintResult = await mintERC8004({ type: invoice.description || 'Freelance Work', amount: invoice.amount, paymentId: invoice.txHash || invoice.id });
+  const cred = {
+    id: uuidv4(), jobType: invoice.description || 'Freelance Work', amount: invoice.amount,
+    client: invoice.client, date: today(), clientVerified: false,
+    txHash: mintResult.txHash || null,
+    minted: !mintResult.skipped,
+    mintNote: mintResult.skipped ? mintResult.reason : null,
+    invoiceId: invoice.id, paymentRail: 'x402'
+  };
   db.reputation.unshift(cred);
   logActivity('x402 payment confirmed — ' + invoice.id + ' — $' + invoice.amount, 'blockchain');
-  logActivity('ERC-8004 minted: ' + mintedHash.slice(0, 12) + '...', 'blockchain');
+  if (!mintResult.skipped) logActivity('ERC-8004 minted: ' + mintResult.txHash.slice(0,12) + '...', 'blockchain');
   saveData();
   broadcastSSE('invoice:paid', { id: invoice.id, amount: invoice.amount, client: invoice.client });
-  res.json({ success: true, invoice, credential: cred });
+  res.json({ success: true, invoice, credential: cred, erc8004: mintResult });
 }));
 
 app.get('/api/clients', (req, res) => res.json(db.clients));
@@ -330,7 +377,7 @@ app.get('/api/reputation', (req, res) => {
 
 app.get('/api/payments', (req, res) => {
   const paid = db.invoices.filter(i => i.status === 'paid');
-  const all = paid.map(i => ({ id: i.id, client: i.client, amount: i.amount, date: i.paidAt || i.createdAt, rail: i.paymentMethod || 'stripe', txHash: i.txHash || i.stripeId || 'N/A', description: i.description })).sort((a,b) => new Date(b.date) - new Date(a.date));
+  const all = paid.map(i => ({ id: i.id, client: i.client, amount: i.amount, date: i.paidAt || i.createdAt, rail: i.paymentMethod || 'stripe', txHash: i.txHash || i.stripeId || null, description: i.description })).sort((a,b) => new Date(b.date) - new Date(a.date));
   const stripeP = all.filter(p => p.rail !== 'x402');
   const x402P = all.filter(p => p.rail === 'x402');
   res.json({ stripe: { total: stripeP.reduce((s,p)=>s+p.amount,0), count: stripeP.length, payments: stripeP }, x402: { total: x402P.reduce((s,p)=>s+p.amount,0), count: x402P.length, payments: x402P }, all, payments: all, totalVolume: all.reduce((s,p)=>s+p.amount,0) });
@@ -345,43 +392,44 @@ app.get('/api/analytics', (req, res) => {
   const paidWithDates = paid.filter(i => i.paidAt && i.createdAt);
   const avgDays = paidWithDates.length ? Math.round(paidWithDates.reduce((s,i)=>s+Math.max(0,(new Date(i.paidAt)-new Date(i.createdAt))/86400000),0)/paidWithDates.length) : 0;
   const active = db.invoices.filter(i => i.status !== 'paid').length;
-  res.json({ revenueOverTime: months, winRateTrend: [0,0,0,0,0,winRate], daysToPayment: [22,18,15,12,9,avgDays||7], credentialsPerMonth: creds, monthLabels, months: monthLabels, totalRevenue: months.reduce((s,v)=>s+v,0), winRate, hypotheses: [ { metric:'Proposal Win Rate', baseline:15, target:25, current:winRate, unit:'%', hit:winRate>=25 }, { metric:'Days to First Payment', baseline:14, target:10, current:avgDays||0, unit:' days', hit:avgDays>0&&avgDays<=10 }, { metric:'Active Contracts', baseline:1, target:3, current:active, unit:' projects', hit:active>=3 }, { metric:'Monthly Revenue', baseline:3000, target:5000, current:months[5], unit:'', prefix:'$', hit:months[5]>=5000 }, { metric:'ERC-8004 Credentials', baseline:0, target:5, current:db.reputation.length, unit:' creds', hit:db.reputation.length>=5 } ] });
+  // daysToPayment as 6-month array for chart
+  const daysToPayment = Array(5).fill(0).concat([avgDays || 0]);
+  res.json({
+    revenueOverTime: months, winRateTrend: [0,0,0,0,0,winRate],
+    daysToPayment, credentialsPerMonth: creds, monthLabels, months: monthLabels,
+    totalRevenue: months.reduce((s,v)=>s+v,0), winRate,
+    hypotheses: [
+      { metric:'Proposal Win Rate', baseline:15, target:25, current:winRate, unit:'%', hit:winRate>=25 },
+      { metric:'Days to First Payment', baseline:14, target:10, current:avgDays||0, unit:' days', hit:avgDays>0&&avgDays<=10 },
+      { metric:'Active Contracts', baseline:1, target:3, current:active, unit:' projects', hit:active>=3 },
+      { metric:'Monthly Revenue', baseline:3000, target:5000, current:months[5], unit:'', prefix:'$', hit:months[5]>=5000 },
+      { metric:'ERC-8004 Credentials', baseline:0, target:5, current:db.reputation.filter(r=>r.minted).length, unit:' creds', hit:db.reputation.filter(r=>r.minted).length>=5 }
+    ]
+  });
 });
 
 app.get('/api/activity', (req, res) => res.json({ activities: db.activities.slice(0, 30), scheduledTasks: [ { name:'Daily Follow-up Check', schedule:'0 9 * * *', lastRun:'Today 09:00', action:'Sends reminders for overdue invoices', status:'active' }, { name:'Weekly KPI Report', schedule:'0 8 * * 1', lastRun:'Mon 08:00', action:'Generates weekly summary', status:'active' }, { name:'Job Board Scanner', schedule:'*/30 * * * *', lastRun:'30 min ago', action:'Scans matching jobs', status:'active' }, { name:'ERC-8004 Sync', schedule:'0 0 * * *', lastRun:'Today 00:00', action:'Syncs credentials', status:'active' } ], systemStatus:'active', uptime: Math.round(process.uptime()/3600) + 'h ' + Math.round((process.uptime()%3600)/60) + 'm' }));
 
-app.post('/demo/seed', requireDemoEnabled, requireApiKey, asyncWrap(async (req, res) => {
-  const now = new Date();
-  const dateStr = (offset) => { const d = new Date(now); d.setDate(d.getDate() + offset); return d.toISOString().split('T')[0]; };
-  db.invoices = [ { id:'INV-001', client:'TechCorp Inc.', amount:4800, status:'paid', dueDate:dateStr(-30), paymentMethod:'stripe', description:'AI Dashboard Build', createdAt:dateStr(-45), paidAt:dateStr(-31), stripeUrl:null, x402Url:PUBLIC_BASE_URL+'/pay/INV-001', stripeId:'in_test_001' }, { id:'INV-002', client:'StartupXYZ', amount:2200, status:'pending', dueDate:dateStr(3), paymentMethod:'x402', description:'Smart Contract Audit', createdAt:dateStr(-11), x402Url:PUBLIC_BASE_URL+'/pay/INV-002' }, { id:'INV-003', client:'Web3Labs', amount:3600, status:'overdue', dueDate:dateStr(-7), paymentMethod:'x402', description:'Frontend Sprint 3', createdAt:dateStr(-22), x402Url:PUBLIC_BASE_URL+'/pay/INV-003' }, { id:'INV-004', client:'DesignCo', amount:1500, status:'paid', dueDate:dateStr(-17), paymentMethod:'stripe', description:'Brand Identity', createdAt:dateStr(-29), paidAt:dateStr(-18), x402Url:PUBLIC_BASE_URL+'/pay/INV-004', stripeId:'in_test_004' } ];
-  db.clients = [ { id:uuidv4(), name:'Sarah Chen', company:'TechCorp Inc.', industry:'Technology', email:'sarah@techcorp.com', totalBilled:12400, totalPaid:12400, paymentSpeed:'Fast', health:'green', invoiceCount:3, createdAt:dateStr(-180), nextCheckin:dateStr(15) }, { id:uuidv4(), name:'Priya Patel', company:'Web3Labs', industry:'Blockchain', email:'priya@web3labs.io', totalBilled:9200, totalPaid:5600, paymentSpeed:'Slow', health:'red', invoiceCount:3, createdAt:dateStr(-90), nextCheckin:dateStr(1) } ];
-  db.proposals = [ { id:uuidv4(), title:'AI Dashboard Build', client:'NovaTech', platform:'Upwork', amount:5500, status:'won', sentDate:dateStr(-50), score:9 }, { id:uuidv4(), title:'DeFi Protocol UI', client:'Web3Labs', platform:'Direct', amount:7200, status:'pending', sentDate:dateStr(-5), score:8 }, { id:uuidv4(), title:'SaaS Backend', client:'CloudCo', platform:'LinkedIn', amount:4000, status:'lost', sentDate:dateStr(-35), score:6 } ];
-  db.reputation = [ { id:uuidv4(), jobType:'AI Dashboard Development', amount:4800, client:'TechCorp Inc.', date:dateStr(-31), clientVerified:true, txHash:'0xabc123def456abc123def456abc123def456ab01000000000000000000000000', mock:false, paymentRail:'stripe', invoiceId:'INV-001' }, { id:uuidv4(), jobType:'Brand Identity Design', amount:1500, client:'DesignCo', date:dateStr(-18), clientVerified:true, txHash:'0x111aaa222bbb333ccc444ddd555eee666fff0004000000000000000000000000', mock:false, paymentRail:'stripe', invoiceId:'INV-004' } ];
-  db.activities = [ { id:uuidv4(), action:'Invoice INV-001 paid — $4,800 — TechCorp Inc.', type:'invoice', time:'09:14', timestamp:new Date(now-2*3600000).toISOString() }, { id:uuidv4(), action:'ERC-8004 credential minted — 0xabc123...ab01', type:'blockchain', time:'09:14', timestamp:new Date(now-2*3600000).toISOString() } ];
-  saveData();
-  broadcastSSE('update', { type:'seed', message:'Demo data seeded' });
-  res.json({ success:true, message:'Demo data seeded', summary:{ invoices:db.invoices.length, clients:db.clients.length, proposals:db.proposals.length, credentials:db.reputation.length } });
-}));
-
+// Stripe webhook — real only
 app.post('/webhooks/stripe', asyncWrap(async (req, res) => {
   let event;
   const sig = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (stripe && secret && !secret.includes('your_secret') && secret !== 'whsec_mock') {
-    try { event = stripe.webhooks.constructEvent(req.body, sig, secret); } catch(err) { return res.status(400).json({ error: 'Webhook signature invalid' }); }
-  } else {
-    if (NODE_ENV === 'production') return res.status(503).json({ error: 'Stripe webhook secret not configured' });
-    try { event = JSON.parse(req.body.toString()); } catch(e) { return res.status(400).json({ error: 'Invalid webhook body' }); }
+  if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+  if (!secret || secret === 'whsec_mock' || secret.includes('your_secret')) {
+    return res.status(503).json({ error: 'STRIPE_WEBHOOK_SECRET not configured. Set it on Render.' });
   }
-  if (event.type === 'payment_intent.succeeded' || event.type === 'invoice.paid') {
+  try { event = stripe.webhooks.constructEvent(req.body, sig, secret); }
+  catch(err) { return res.status(400).json({ error: 'Webhook signature invalid: ' + err.message }); }
+  if (event.type === 'invoice.paid' || event.type === 'payment_intent.succeeded') {
     const obj = event.data.object;
     const paymentId = obj.id || 'stripe_webhook';
     const invId = obj.metadata && obj.metadata.invoiceId;
     const invoice = invId ? db.invoices.find(i => i.id === invId) : null;
     if (invoice && invoice.status !== 'paid') {
       invoice.status = 'paid'; invoice.paidAt = new Date().toISOString(); invoice.stripePaymentId = paymentId;
-      const { txHash, mock } = await mintERC8004({ type: invoice.description || 'Freelance Work', amount: invoice.amount, paymentId });
-      db.reputation.unshift({ id:uuidv4(), jobType:invoice.description||'Freelance Work', amount:invoice.amount, client:invoice.client, date:today(), clientVerified:true, txHash, mock, invoiceId:invoice.id, paymentRail:'stripe' });
+      const mintResult = await mintERC8004({ type: invoice.description || 'Freelance Work', amount: invoice.amount, paymentId });
+      db.reputation.unshift({ id:uuidv4(), jobType:invoice.description||'Freelance Work', amount:invoice.amount, client:invoice.client, date:today(), clientVerified:true, txHash:mintResult.txHash||null, minted:!mintResult.skipped, mintNote:mintResult.skipped?mintResult.reason:null, invoiceId:invoice.id, paymentRail:'stripe' });
       logActivity('Stripe payment confirmed — ' + invoice.id + ' — $' + invoice.amount, 'invoice');
       saveData();
       broadcastSSE('invoice:paid', { id: invoice.id, amount: invoice.amount, client: invoice.client });
@@ -396,12 +444,12 @@ app.use((req, res) => res.status(404).json({ error: 'Route not found: ' + req.me
 function startServer() {
   app.listen(PORT, () => {
     console.log('\n==========================================');
-    console.log('  HermesWork Backend v2.2.0');
+    console.log('  HermesWork Backend v2.3.0');
     console.log('  Port:     ' + PORT);
     console.log('  Env:      ' + NODE_ENV);
-    console.log('  Stripe:   ' + (stripe ? 'REAL' : 'MOCK'));
-    console.log('  SSE:      /api/stream');
-    console.log('  Export:   /api/export/invoices.csv');
+    console.log('  Stripe:   ' + (stripe ? 'REAL TEST MODE' : 'NOT CONFIGURED'));
+    console.log('  ERC-8004: ' + (process.env.PRIVATE_KEY && !process.env.PRIVATE_KEY.startsWith('0x_') ? 'CONFIGURED' : 'NOT CONFIGURED'));
+    console.log('  API Key:  ' + (API_KEY ? 'SET' : 'NOT SET — writes unprotected'));
     console.log('==========================================\n');
   });
 }

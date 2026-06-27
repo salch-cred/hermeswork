@@ -1,6 +1,6 @@
 {
   "name": "hermeswork-backend",
-  "version": "2.1.0",
+  "version": "2.3.0",
   "description": "HermesWork — Autonomous Freelance Operations Agent Backend",
   "main": "server.js",
   "scripts": {
