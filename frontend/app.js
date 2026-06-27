@@ -1,4 +1,4 @@
-/* HermesWork v3.0 — command palette, drawer, SSE, dark mode, keyboard shortcuts */
+/* HermesWork v3.1 — complete interactive dashboard */
 
 const API_BASE = (() => {
   const saved = localStorage.getItem('HERMESWORK_BACKEND_URL');
@@ -15,6 +15,7 @@ let state = {
   invoiceFilter: 'all', invoiceSearch: '', realtimeTimer: null, sse: null, _gPressed: false
 };
 let cmdItems = [], cmdSelected = 0;
+let charts = {};
 
 const $ = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -123,12 +124,12 @@ function render() {
   setText('rep-earnings', money(state.reputation.reduce((s, r) => s + Number(r.amount || 0), 0)));
   setText('invoice-count', state.invoices.length);
   setText('last-sync', state.lastSync ? `Last sync ${timeFmt(state.lastSync)}` : 'Waiting for first sync');
-  // nav badges
   const overdue = state.invoices.filter(i => i.status === 'overdue').length;
   const bo = $('badge-overdue'); if (bo) { bo.textContent = overdue || ''; bo.style.display = overdue ? '' : 'none'; }
   const br = $('badge-rep'); if (br) br.textContent = state.reputation.length || '';
   renderSparkline(); renderActivity(); renderInvoices(); renderClients();
   renderProposals(); renderReputation(); renderPayments(); renderAnalytics(); renderSettings();
+  buildCmdItems();
 }
 
 function renderSparkline() {
@@ -198,6 +199,10 @@ function renderClients() {
           <div class="stat-box"><div class="stat-box-value">${money(c.totalBilled)}</div><div class="stat-box-label">Billed</div></div>
           <div class="stat-box"><div class="stat-box-value">${esc(c.paymentSpeed||'N/A')}</div><div class="stat-box-label">Speed</div></div>
         </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-xs" onclick="createInvoiceForClient('${esc(c.id||c.name)}')">Invoice</button>
+          <button class="btn btn-ghost btn-xs" onclick="createProposalForClient('${esc(c.id||c.name)}')">Proposal</button>
+        </div>
       </div>`).join('')
     : `<div class="card" style="grid-column:1/-1">${realEmpty('No clients yet', 'Clients appear from real invoices or the Add Client button.','<button class="btn btn-primary" onclick="openClientModal()">Add client</button>')}</div>`;
 }
@@ -245,4 +250,280 @@ function renderAnalytics() {
   const stats = $('analytics-stats'); if (!stats) return;
   stats.innerHTML = `<div class="stat-box"><div class="stat-box-value">${money(state.kpis.totalRevenue)}</div><div class="stat-box-label">Total revenue</div></div><div class="stat-box"><div class="stat-box-value">${state.kpis.mrrGrowth||0}%</div><div class="stat-box-label">Growth</div></div><div class="stat-box"><div class="stat-box-value">${state.reputation.length}</div><div class="stat-box-label">Records</div></div><div class="stat-box"><div class="stat-box-value">${state.clients.length}</div><div class="stat-box-label">Clients</div></div>`;
   const tbody = $('hypothesis-tbody');
-  if (tbody) tbody.innerHTML = (state.analytics.hypotheses||[]).map(h => `<tr><td>${esc(h.metric)}</td><td>${esc((
+  if (tbody) tbody.innerHTML = (state.analytics.hypotheses||[]).map(h =>
+    `<tr><td>${esc(h.metric)}</td><td>${esc(String(h.baseline||''))}</td><td>${esc(String(h.target||''))}</td><td>${esc(String(h.current||''))}</td><td>${badge(h.status||'pending')}</td></tr>`
+  ).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">No hypothesis data — analytics populate from real records.</td></tr>`;
+}
+
+function renderSettings() {
+  const key = $('hermes-api-key');
+  if (key && !key.value) key.value = getApiKey();
+  const url = $('backend-url');
+  if (url) url.value = API_BASE;
+  const cron = $('cron-list');
+  if (cron) cron.innerHTML = state.scheduledTasks.length
+    ? state.scheduledTasks.map(t => `<div class="cron-item"><div class="cron-status"></div><div><div class="cron-name">${esc(t.name)}</div><div class="cron-schedule">${esc(t.schedule)}</div></div><div class="cron-last-run">${esc(t.lastRun||'pending')}</div></div>`).join('')
+    : `<div style="padding:16px;color:var(--text-muted);font-size:13px">No scheduled tasks returned yet.</div>`;
+}
+
+function drawCharts() {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const revenueData = state.kpis.monthlyRevenue || Array(6).fill(0);
+  const labels = months.slice(0, revenueData.length);
+  const defaults = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' } } } };
+  function mkChart(id, type, data, opts = {}) {
+    const canvas = $(id); if (!canvas) return;
+    if (charts[id]) { charts[id].destroy(); }
+    charts[id] = new Chart(canvas, { type, data, options: { ...defaults, ...opts } });
+  }
+  mkChart('chart-revenue', 'bar', {
+    labels,
+    datasets: [{ data: revenueData, backgroundColor: '#6C5CE7', borderRadius: 6, borderSkipped: false }]
+  });
+  const won = state.proposals.filter(p=>p.status==='won').length;
+  const lost = state.proposals.filter(p=>p.status==='lost').length;
+  const pending = state.proposals.filter(p=>p.status==='pending').length;
+  mkChart('chart-winrate', 'doughnut', {
+    labels: ['Won','Lost','Pending'],
+    datasets: [{ data: [won||0, lost||0, pending||0], backgroundColor: ['#16A34A','#e11d48','#f59e0b'], borderWidth: 0 }]
+  }, { plugins: { legend: { display: true, position: 'bottom' } }, scales: {} });
+  const daysData = (state.kpis.monthlyDays || Array(6).fill(0));
+  mkChart('chart-days', 'line', {
+    labels: months.slice(0, daysData.length),
+    datasets: [{ data: daysData, borderColor: '#6C5CE7', backgroundColor: 'rgba(108,92,231,0.08)', fill: true, tension: 0.4, pointRadius: 4 }]
+  });
+  const repData = (state.kpis.monthlyRecords || Array(6).fill(0));
+  mkChart('chart-credentials', 'bar', {
+    labels: months.slice(0, repData.length),
+    datasets: [{ data: repData, backgroundColor: '#16A34A', borderRadius: 6 }]
+  });
+}
+
+/* ─── Invoice actions ─── */
+function openInvoiceModal() { const m = $('invoice-modal'); if (m) { m.classList.add('active'); $('inv-client')?.focus(); } }
+function closeInvoiceModal() { const m = $('invoice-modal'); if (m) m.classList.remove('active'); }
+async function submitInvoice(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try {
+    const body = { client: $('inv-client').value, amount: Number($('inv-amount').value), dueDate: $('inv-due').value, description: $('inv-desc').value, paymentMethod: $('inv-rail').value };
+    await apiFetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    toast('Invoice created!'); closeInvoiceModal(); $('invoice-form').reset();
+    await loadAllData(true);
+  } catch(err) { toast('Error: ' + err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Create real record'; }
+}
+async function markPaid(id) {
+  if (!confirm(`Mark invoice ${id} as paid?`)) return;
+  try { await apiFetch(`/api/invoices/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'paid' }) }); toast('Marked paid!'); await loadAllData(true); }
+  catch(e) { toast(e.message, 'error'); }
+}
+async function deleteInvoice(id) {
+  if (!confirm(`Delete invoice ${id}? This cannot be undone.`)) return;
+  try { await apiFetch(`/api/invoices/${id}`, { method: 'DELETE' }); toast('Invoice deleted.'); closeDrawer(); await loadAllData(true); }
+  catch(e) { toast(e.message, 'error'); }
+}
+function copyPayLink(id) { const url = `${API_BASE}/pay/${id}`; navigator.clipboard?.writeText(url).then(() => toast('Payment link copied!')).catch(() => toast('Could not copy', 'error')); }
+function exportCSV() {
+  if (!state.invoices.length) { toast('No invoices to export', 'error'); return; }
+  const cols = ['id','client','amount','status','dueDate','description','paymentMethod','stripeUrl'];
+  const csv = [cols.join(','), ...state.invoices.map(i => cols.map(c => `"${String(i[c]||'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `hermeswork-invoices-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  toast('CSV downloaded!');
+}
+
+/* ─── Invoice drawer ─── */
+function openDrawerById(id) {
+  const inv = state.invoices.find(i => i.id === id);
+  if (!inv) return;
+  const title = $('drawer-title'); const body = $('drawer-body');
+  const drawer = $('invoice-drawer'); const backdrop = $('drawer-backdrop');
+  if (!drawer || !body) return;
+  if (title) title.textContent = `Invoice ${inv.id}`;
+  body.innerHTML = `
+    <div class="drawer-field"><span class="drawer-label">Client</span><span class="drawer-value">${esc(inv.client)}</span></div>
+    <div class="drawer-field"><span class="drawer-label">Amount</span><span class="drawer-value" style="font-size:22px;font-weight:800;color:var(--accent)">${money(inv.amount)}</span></div>
+    <div class="drawer-field"><span class="drawer-label">Status</span><span class="drawer-value">${badge(inv.status)}</span></div>
+    <div class="drawer-field"><span class="drawer-label">Due</span><span class="drawer-value">${dateFmt(inv.dueDate)}</span></div>
+    <div class="drawer-field"><span class="drawer-label">Description</span><span class="drawer-value">${esc(inv.description||'—')}</span></div>
+    <div class="drawer-field"><span class="drawer-label">Rail</span><span class="drawer-value">${esc(inv.paymentMethod||'stripe')}</span></div>
+    ${inv.stripeUrl?`<div class="drawer-field"><span class="drawer-label">Stripe</span><a href="${esc(inv.stripeUrl)}" target="_blank" rel="noopener" class="drawer-link">Open in Stripe ↗</a></div>`:''}
+    <div class="drawer-actions">
+      <button class="btn btn-primary" onclick="copyPayLink('${esc(inv.id)}')">Copy payment link</button>
+      ${inv.status!=='paid'?`<button class="btn btn-secondary" onclick="markPaid('${esc(inv.id)}')">Mark paid</button>`:''}
+      <button class="btn" style="background:#fee2e2;color:#e11d48;border:none" onclick="deleteInvoice('${esc(inv.id)}')">Delete</button>
+    </div>`;
+  drawer.classList.add('open'); if (backdrop) backdrop.classList.add('active');
+}
+function closeDrawer() {
+  $('invoice-drawer')?.classList.remove('open');
+  $('drawer-backdrop')?.classList.remove('active');
+}
+
+/* ─── Proposal actions ─── */
+function openProposalModal(clientName = '') {
+  const m = $('proposal-modal'); if (m) { m.classList.add('active'); if (clientName) { const c = $('prop-client'); if (c) c.value = clientName; } $('prop-title')?.focus(); }
+}
+function closeProposalModal() { $('proposal-modal')?.classList.remove('active'); }
+async function submitProposal(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const body = { title: $('prop-title').value, client: $('prop-client').value, platform: $('prop-platform').value, amount: Number($('prop-amount').value), status: $('prop-status').value, sentDate: new Date().toISOString() };
+    await apiFetch('/api/proposals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    toast('Proposal added!'); closeProposalModal(); $('proposal-form').reset(); await loadAllData(true);
+  } catch(err) { toast('Error: ' + err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Add proposal'; }
+}
+async function updateProposal(id, status) {
+  try { await apiFetch(`/api/proposals/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }); toast(`Proposal marked ${status}!`); await loadAllData(true); }
+  catch(e) { toast(e.message, 'error'); }
+}
+
+/* ─── Client actions ─── */
+function openClientModal() { $('client-modal')?.classList.add('active'); $('cli-name')?.focus(); }
+function closeClientModal() { $('client-modal')?.classList.remove('active'); }
+async function submitClient(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const body = { name: $('cli-name').value, company: $('cli-company').value, industry: $('cli-industry').value, email: $('cli-email').value };
+    await apiFetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    toast('Client added!'); closeClientModal(); $('client-form').reset(); await loadAllData(true);
+  } catch(err) { toast('Error: ' + err.message, 'error'); } finally { btn.disabled = false; btn.textContent = 'Add client'; }
+}
+function createInvoiceForClient(clientId) { openInvoiceModal(); setTimeout(() => { const c = $('inv-client'); if (c) c.value = clientId; }, 50); }
+function createProposalForClient(clientId) { openProposalModal(clientId); }
+
+/* ─── Settings actions ─── */
+function saveApiKeyFromField() { const k = $('hermes-api-key')?.value?.trim(); if (k) { localStorage.setItem('HERMESWORK_API_KEY', k); toast('API key saved.'); } else { toast('Enter a key first', 'error'); } }
+function testBackend() {
+  const url = $('backend-url')?.value?.trim();
+  if (url) { localStorage.setItem('HERMESWORK_BACKEND_URL', url); }
+  loadAllData(false);
+}
+function refreshData() { loadAllData(false); }
+function copyText(text) { navigator.clipboard?.writeText(text).then(() => toast('Copied!')).catch(() => toast('Could not copy', 'error')); }
+
+/* ─── Command palette ─── */
+function buildCmdItems() {
+  cmdItems = [
+    { label: 'Create invoice', icon: '＋', action: () => { closeCmdPalette(); openInvoiceModal(); } },
+    { label: 'Add proposal', icon: '＋', action: () => { closeCmdPalette(); openProposalModal(); } },
+    { label: 'Add client', icon: '＋', action: () => { closeCmdPalette(); openClientModal(); } },
+    { label: 'Export invoices CSV', icon: '↓', action: () => { closeCmdPalette(); exportCSV(); } },
+    { label: 'Sync live data', icon: '↻', action: () => { closeCmdPalette(); refreshData(); } },
+    { label: 'Go to Dashboard', icon: '⊞', action: () => { closeCmdPalette(); navigate('dashboard'); } },
+    { label: 'Go to Invoices', icon: '📄', action: () => { closeCmdPalette(); navigate('invoices'); } },
+    { label: 'Go to Clients', icon: '👥', action: () => { closeCmdPalette(); navigate('clients'); } },
+    { label: 'Go to Proposals', icon: '📨', action: () => { closeCmdPalette(); navigate('proposals'); } },
+    { label: 'Go to Reputation', icon: '🛡', action: () => { closeCmdPalette(); navigate('reputation'); } },
+    { label: 'Go to Payments', icon: '💳', action: () => { closeCmdPalette(); navigate('payments'); } },
+    { label: 'Go to Analytics', icon: '📊', action: () => { closeCmdPalette(); navigate('analytics'); } },
+    { label: 'Go to Settings', icon: '⚙', action: () => { closeCmdPalette(); navigate('settings'); } },
+    { label: 'Toggle dark mode', icon: '◑', action: () => { closeCmdPalette(); toggleDark(); } },
+    { label: 'Keyboard shortcuts', icon: '?', action: () => { closeCmdPalette(); openShortcuts(); } },
+    ...state.invoices.slice(0,10).map(i => ({ label: `Invoice ${i.id} — ${i.client} ${money(i.amount)}`, icon: '🧾', action: () => { closeCmdPalette(); navigate('invoices'); setTimeout(() => openDrawerById(i.id), 100); } })),
+    ...state.clients.slice(0,10).map(c => ({ label: `Client: ${c.company||c.name}`, icon: '👤', action: () => { closeCmdPalette(); navigate('clients'); } })),
+    ...state.proposals.slice(0,10).map(p => ({ label: `Proposal: ${p.title} — ${p.client}`, icon: '📝', action: () => { closeCmdPalette(); navigate('proposals'); } })),
+  ];
+}
+function openCmdPalette() {
+  buildCmdItems();
+  const overlay = $('cmd-palette'); if (!overlay) return;
+  overlay.classList.add('active');
+  const input = $('cmd-input'); if (input) { input.value = ''; input.focus(); }
+  cmdSelected = 0;
+  renderCmdResults('');
+}
+function closeCmdPalette() { $('cmd-palette')?.classList.remove('active'); }
+function renderCmdResults(q) {
+  const list = $('cmd-results'); if (!list) return;
+  const filtered = q ? cmdItems.filter(i => i.label.toLowerCase().includes(q.toLowerCase())) : cmdItems;
+  list.innerHTML = filtered.slice(0,12).map((item, i) =>
+    `<div class="cmd-item${i === cmdSelected ? ' selected' : ''}" onclick="cmdItems.find(x=>x.label===unescape('${escape(item.label)}'))?.action()">
+      <span class="cmd-icon">${item.icon}</span><span>${esc(item.label)}</span>
+    </div>`
+  ).join('') || `<div class="cmd-empty">No results for "${esc(q)}"</div>`;
+}
+function handleCmdKey(e) {
+  const list = $('cmd-results'); if (!list) return;
+  const items = list.querySelectorAll('.cmd-item');
+  if (e.key === 'ArrowDown') { cmdSelected = Math.min(cmdSelected + 1, items.length - 1); items.forEach((el,i)=>el.classList.toggle('selected',i===cmdSelected)); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { cmdSelected = Math.max(cmdSelected - 1, 0); items.forEach((el,i)=>el.classList.toggle('selected',i===cmdSelected)); e.preventDefault(); }
+  else if (e.key === 'Enter') { items[cmdSelected]?.click(); }
+  else if (e.key === 'Escape') { closeCmdPalette(); }
+}
+
+/* ─── Dark mode ─── */
+function toggleDark() {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  localStorage.setItem('hw-dark', isDark ? '1' : '0');
+  const btn = $('dark-toggle'); if (btn) btn.textContent = isDark ? '☀' : '◑';
+}
+function applyDark() {
+  if (localStorage.getItem('hw-dark') === '1') { document.body.classList.add('dark'); const btn = $('dark-toggle'); if (btn) btn.textContent = '☀'; }
+}
+
+/* ─── Shortcuts overlay ─── */
+function openShortcuts() { $('shortcuts-overlay')?.classList.add('active'); }
+function closeShortcuts() { $('shortcuts-overlay')?.classList.remove('active'); }
+
+/* ─── Keyboard shortcuts ─── */
+function initKeyboard() {
+  document.addEventListener('keydown', e => {
+    const tag = document.activeElement?.tagName;
+    const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCmdPalette(); return; }
+    if (e.key === 'Escape') { closeCmdPalette(); closeDrawer(); closeProposalModal(); closeClientModal(); closeShortcuts(); closeInvoiceModal(); return; }
+    if (inInput) return;
+    if (e.key === 'n') { openInvoiceModal(); return; }
+    if (e.key === 'p') { openProposalModal(); return; }
+    if (e.key === 'd') { toggleDark(); return; }
+    if (e.key === '?') { openShortcuts(); return; }
+    if (e.key === 'r') { refreshData(); return; }
+    if (e.key === 'g') { state._gPressed = true; setTimeout(() => { state._gPressed = false; }, 1000); return; }
+    if (state._gPressed) {
+      state._gPressed = false;
+      const map = { d: 'dashboard', i: 'invoices', c: 'clients', p: 'proposals', r: 'reputation', a: 'analytics', s: 'settings', x: 'payments' };
+      if (map[e.key]) { navigate(map[e.key]); return; }
+    }
+  });
+}
+
+/* ─── Live clock ─── */
+function startClock() {
+  function tick() {
+    const now = new Date();
+    setText('topbar-date', now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }));
+    setText('page-date', now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' }));
+  }
+  tick(); setInterval(tick, 60000);
+}
+
+/* ─── Init ─── */
+document.addEventListener('DOMContentLoaded', () => {
+  applyDark();
+  startClock();
+  initKeyboard();
+
+  const ki = $('hermes-api-key');
+  if (ki) ki.value = getApiKey();
+
+  const cmdInput = $('cmd-input');
+  if (cmdInput) {
+    cmdInput.addEventListener('input', e => { cmdSelected = 0; renderCmdResults(e.target.value); });
+    cmdInput.addEventListener('keydown', handleCmdKey);
+  }
+
+  const paletteOverlay = $('cmd-palette');
+  if (paletteOverlay) paletteOverlay.addEventListener('click', e => { if (e.target === paletteOverlay) closeCmdPalette(); });
+
+  const drawerBackdrop = $('drawer-backdrop');
+  if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+
+  loadAllData(false);
+  connectSSE();
+  startRealtime();
+});
