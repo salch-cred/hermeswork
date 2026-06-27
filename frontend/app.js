@@ -1,7 +1,8 @@
 /* ======================================================================
    HermesWork v2.1 — App Logic (re-audited)
    Fixes: safe toast, safe inline JS args, API key header support,
-   no localhost hardcode in production, safer manual payment confirmation.
+   no localhost hardcode in production, safer manual payment confirmation,
+   working Settings API-key field (saveApiKeyFromField + prefillSettings).
    ====================================================================== */
 
 const API_BASE = (() => {
@@ -136,7 +137,7 @@ function filterInvoices(filter, el) { state.invoiceFilter = filter; document.que
 function searchInvoices(q) { state.invoiceSearch = q; renderInvoices(); }
 function findInvoice(idArg) { const id = fromArg(idArg); return state.invoices.find(i => i.id === id); }
 function viewInvoice(idArg) { const inv = findInvoice(idArg); if (!inv) return; showToast('Invoice ' + inv.id + ' | ' + inv.client + ' | ' + fmt.currency(inv.amount)); console.log('[Invoice Details]', inv); }
-async function sendReminder(idArg) { const inv = findInvoice(idArg); if (!inv) return; try { await apiFetch('/invoice/send/' + encodeURIComponent(inv.id), { method: 'POST' }); showToast('Reminder sent to ' + inv.client + ' for ' + inv.id); } catch(e) { showToast(e.message + ' — set API key in localStorage/settings', 'error'); } }
+async function sendReminder(idArg) { const inv = findInvoice(idArg); if (!inv) return; try { await apiFetch('/invoice/send/' + encodeURIComponent(inv.id), { method: 'POST' }); showToast('Reminder sent to ' + inv.client + ' for ' + inv.id); } catch(e) { showToast(e.message + ' — set API key in Settings', 'error'); } }
 function copyX402(idArg) { const inv = findInvoice(idArg); if (!inv) return; const url = API_BASE + '/pay/' + inv.id; navigator.clipboard.writeText(url).then(() => showToast('x402 link copied')).catch(() => showToast(url)); }
 function copyX402Link(id) { copyX402(id); }
 
@@ -147,7 +148,7 @@ async function submitInvoice(e) {
   const payload = { client: document.getElementById('inv-client')?.value.trim(), amount: Number(document.getElementById('inv-amount')?.value || 0), dueDate: document.getElementById('inv-due')?.value || '', description: document.getElementById('inv-desc')?.value.trim() || '', paymentMethod: document.getElementById('inv-rail')?.value || 'stripe' };
   if (!payload.client || !payload.amount || !payload.dueDate) { showToast('Client, amount, and due date are required', 'error'); if (btn) { btn.textContent = 'Create Invoice →'; btn.disabled = false; } return; }
   try { const data = await apiFetch('/invoice/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); showToast(data.invoice.id + ' created - ' + fmt.currency(data.invoice.amount)); closeInvoiceModal(); loadAllData(); }
-  catch(err) { showToast(err.message + ' — add HERMESWORK_API_KEY if production', 'error'); }
+  catch(err) { showToast(err.message + ' — add API key in Settings if production', 'error'); }
   if (btn) { btn.textContent = 'Create Invoice →'; btn.disabled = false; }
 }
 
@@ -163,14 +164,16 @@ function renderSettings() { const cronEl = document.getElementById('cron-list');
 function showToast(msg, type = 'success') { const existing = document.querySelector('.toast'); if (existing) existing.remove(); const toast = document.createElement('div'); toast.className = 'toast' + (type === 'error' ? ' error' : ''); const icon = document.createElement('span'); icon.textContent = type === 'error' ? '✕' : '✓'; const text = document.createElement('span'); text.textContent = String(msg); toast.appendChild(icon); toast.appendChild(document.createTextNode(' ')); toast.appendChild(text); document.body.appendChild(toast); setTimeout(() => { toast.style.transition = 'opacity 0.3s,transform 0.3s'; toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; setTimeout(() => toast.remove(), 300); }, 3500); }
 function copyText(textArg) { const text = fromArg(textArg); navigator.clipboard.writeText(String(text)).then(() => showToast('Copied to clipboard')).catch(() => showToast(String(text))); }
 function sortTable(table, key) { if (table === 'invoices') { state.invoices.sort((a,b)=>typeof a[key]==='number'?b[key]-a[key]:String(a[key]).localeCompare(String(b[key]))); renderInvoices(); } }
-async function testBackend() { const urlEl = document.getElementById('backend-url'); const url = urlEl ? urlEl.value : API_BASE; try { const res = await fetch(url + '/health', { signal: AbortSignal.timeout(5000) }); const data = await res.json(); if (res.ok) showToast('Connected v' + data.version + ' | API key: ' + data.apiKey); else showToast('Backend responded ' + res.status, 'error'); } catch(e) { showToast('Cannot reach backend. Is it running?', 'error'); } }
+async function testBackend() { const urlEl = document.getElementById('backend-url'); const url = urlEl ? urlEl.value.trim() : API_BASE; if (urlEl) localStorage.setItem('HERMESWORK_BACKEND_URL', url); try { const res = await fetch(url + '/health', { signal: AbortSignal.timeout(5000) }); const data = await res.json(); if (res.ok) showToast('Connected v' + data.version + ' | API key: ' + data.apiKey); else showToast('Backend responded ' + res.status, 'error'); } catch(e) { showToast('Cannot reach backend. Is it running?', 'error'); } }
 function refreshData() { showToast('Refreshing data...'); loadAllData(); }
 async function seedDemoData() { try { const data = await apiFetch('/demo/seed', { method:'POST' }); showToast(data.message || 'Demo seeded'); setTimeout(loadAllData, 500); } catch(e) { showToast(e.message + ' — set API key and ENABLE_DEMO_SEED if production', 'error'); } }
 async function markPaid(idArg) { const inv = findInvoice(idArg); if (!inv) return; const txHash = prompt('Paste x402 tx hash (0x + 64 hex), or leave blank to use API key manual confirm:'); if (txHash === null) return; try { await apiFetch('/pay/' + encodeURIComponent(inv.id) + '/confirm', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ txHash }) }); showToast(inv.id + ' marked paid; credential minting'); setTimeout(loadAllData, 1000); } catch(e) { showToast(e.message, 'error'); } }
 function deleteInvoice(invoiceId) { showToast('Delete is disabled in UI until a backend delete route exists', 'error'); }
 function saveApiKey() { const value = prompt('Paste HERMESWORK_API_KEY for this browser only:'); if (value) { localStorage.setItem('HERMESWORK_API_KEY', value.trim()); showToast('API key saved locally'); } }
+function saveApiKeyFromField() { const el = document.getElementById('hermes-api-key'); const val = el ? el.value.trim() : ''; if (val) { localStorage.setItem('HERMESWORK_API_KEY', val); showToast('API key saved for this browser'); } else { localStorage.removeItem('HERMESWORK_API_KEY'); showToast('API key cleared', 'error'); } }
+function prefillSettings() { const keyEl = document.getElementById('hermes-api-key'); if (keyEl) keyEl.value = getApiKey(); const urlEl = document.getElementById('backend-url'); const savedUrl = localStorage.getItem('HERMESWORK_BACKEND_URL'); if (urlEl && savedUrl) urlEl.value = savedUrl; }
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInvoiceModal(); if (e.key === 'n' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); openInvoiceModal(); } });
 const overlay = document.getElementById('invoice-modal'); if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeInvoiceModal(); });
-function init() { initDate(); loadAllData(); setInterval(loadAllData, 60000); }
+function init() { initDate(); prefillSettings(); loadAllData(); setInterval(loadAllData, 60000); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
