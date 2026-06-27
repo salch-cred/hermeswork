@@ -3,81 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HermesWork — Operations Dashboard</title>
-  <meta name="description" content="HermesWork dashboard for invoices, clients, payment rails, and reputation records.">
+  <title>HermesWork — Professional Operations Dashboard</title>
+  <meta name="description" content="HermesWork professional dashboard for invoices, clients, payment rails, and payment-backed reputation records.">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 10h18M7 15h4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 19a4 4 0 0 0-8 0"/><circle cx="12" cy="8" r="4"/><path d="M20 19a3 3 0 0 0-3-3M4 19a3 3 0 0 1 3-3"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m9 12 2 2 4-5"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a8 8 0 0 0 .1-2l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.7-1L15 5.5h-4L10.6 8a8 8 0 0 0-1.7 1l-2.4-1-2 3.5L6.5 13a8 8 0 0 0 .1 2l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.7 1l.3 2.5h4l.4-2.5a8 8 0 0 0 1.7-1l2.4 1 2-3.5z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M19 11a7 7 0 0 0-12-4M5 13a7 7 0 0 0 12 4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l2 2M14 9l2 2"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></symbol>
+</svg>
+
 <div class="app-shell">
-  <nav class="sidebar" aria-label="Main navigation">
-    <div class="sidebar-logo"><div class="logo-icon">H</div><div class="logo-text">Hermes<span>Work</span></div></div>
+  <aside class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-logo">
+      <div class="logo-icon">H</div>
+      <div><div class="logo-text">Hermes<span>Work</span></div><div class="logo-sub">Operations OS</div></div>
+    </div>
     <div class="sidebar-nav">
       <div class="nav-section-label">Overview</div>
-      <div class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')">Dashboard</div>
+      <button class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')"><svg><use href="#i-grid"/></svg><span>Dashboard</span></button>
       <div class="nav-section-label">Finance</div>
-      <div class="nav-item" id="nav-invoices" onclick="navigate('invoices')">Invoices <span class="nav-badge" id="badge-overdue">0</span></div>
-      <div class="nav-item" id="nav-payments" onclick="navigate('payments')">Payments</div>
-      <div class="nav-item" id="nav-analytics" onclick="navigate('analytics')">Analytics</div>
+      <button class="nav-item" id="nav-invoices" onclick="navigate('invoices')"><svg><use href="#i-file"/></svg><span>Invoices</span><span class="nav-badge" id="badge-overdue">0</span></button>
+      <button class="nav-item" id="nav-payments" onclick="navigate('payments')"><svg><use href="#i-card"/></svg><span>Payments</span></button>
+      <button class="nav-item" id="nav-analytics" onclick="navigate('analytics')"><svg><use href="#i-chart"/></svg><span>Analytics</span></button>
       <div class="nav-section-label">CRM</div>
-      <div class="nav-item" id="nav-clients" onclick="navigate('clients')">Clients</div>
-      <div class="nav-item" id="nav-proposals" onclick="navigate('proposals')">Proposals</div>
+      <button class="nav-item" id="nav-clients" onclick="navigate('clients')"><svg><use href="#i-users"/></svg><span>Clients</span></button>
+      <button class="nav-item" id="nav-proposals" onclick="navigate('proposals')"><svg><use href="#i-send"/></svg><span>Proposals</span></button>
       <div class="nav-section-label">Trust</div>
-      <div class="nav-item" id="nav-reputation" onclick="navigate('reputation')">Reputation <span class="nav-badge green">0</span></div>
+      <button class="nav-item" id="nav-reputation" onclick="navigate('reputation')"><svg><use href="#i-shield"/></svg><span>Reputation</span><span class="nav-badge green">0</span></button>
       <div class="nav-section-label">System</div>
-      <div class="nav-item" id="nav-settings" onclick="navigate('settings')">Settings</div>
+      <button class="nav-item" id="nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button>
     </div>
-    <div class="sidebar-footer"><div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label">Checking backend</div><div class="status-sub">Render connection</div></div></div></div>
-  </nav>
+    <div class="sidebar-footer">
+      <div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label">Checking backend</div><div class="status-sub">Render connection</div></div></div>
+    </div>
+  </aside>
 
   <div class="main-content">
     <header class="topbar">
       <div><div class="page-title" id="page-title">Dashboard</div><div class="page-subtitle" id="page-date"></div></div>
-      <div class="topbar-right"><div class="topbar-date" id="topbar-date"></div><button class="topbar-btn" onclick="refreshData()">↻</button><div class="user-avatar">S</div></div>
+      <div class="topbar-right"><div class="topbar-date" id="topbar-date"></div><button class="topbar-btn" onclick="refreshData()" title="Refresh"><svg><use href="#i-refresh"/></svg></button><div class="user-avatar">S</div></div>
     </header>
 
     <main class="page-content active fade-in" id="page-dashboard">
+      <section class="hero-strip">
+        <div><p class="overline">Live operations</p><h1>Freelance revenue, client risk, and proof — in one place.</h1><p>Connected to the Render backend. Save your API key once, then create invoices, seed sample records, and confirm payments from the dashboard.</p></div>
+        <button class="btn btn-primary" onclick="navigate('settings')"><svg><use href="#i-key"/></svg> Configure access</button>
+      </section>
       <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Monthly Revenue</div><div class="kpi-value" id="kpi-mrr">$0</div><div class="kpi-trend up">live from backend</div><div class="mini-chart" id="sparkline-mrr"></div></div>
-        <div class="kpi-card"><div class="kpi-label">Active Invoices</div><div class="kpi-value" id="kpi-invoices">0</div><div class="kpi-trend neutral">unpaid records</div></div>
-        <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="kpi-winrate">0%</div><div class="kpi-trend up">decided proposals</div></div>
-        <div class="kpi-card"><div class="kpi-label">Reputation Score</div><div class="kpi-value" id="kpi-rep">0</div><div class="kpi-trend up">payment-backed records</div></div>
-        <div class="kpi-card"><div class="kpi-label">Days to Payment</div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-trend neutral">collection time</div></div>
-        <div class="kpi-card"><div class="kpi-label">Active Projects</div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">open work</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Monthly Revenue</span><svg><use href="#i-chart"/></svg></div><div class="kpi-value" id="kpi-mrr">$0</div><div class="kpi-trend up">live from backend</div><div class="mini-chart" id="sparkline-mrr"></div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Active Invoices</span><svg><use href="#i-file"/></svg></div><div class="kpi-value" id="kpi-invoices">0</div><div class="kpi-trend neutral">unpaid records</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Win Rate</span><svg><use href="#i-send"/></svg></div><div class="kpi-value" id="kpi-winrate">0%</div><div class="kpi-trend up">decided proposals</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Reputation Score</span><svg><use href="#i-shield"/></svg></div><div class="kpi-value" id="kpi-rep">0</div><div class="kpi-trend up">payment-backed records</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Days to Payment</span><svg><use href="#i-card"/></svg></div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-trend neutral">collection time</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Active Projects</span><svg><use href="#i-bolt"/></svg></div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">open work</div></div>
       </div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><div><div class="card-title">Operational workflows</div><div class="card-subtitle">Backend scheduled tasks</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
-        <div class="card"><div class="card-header"><div><div class="card-title">Recent activity</div><div class="card-subtitle">Latest backend events</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> Operational workflows</div><div class="card-subtitle">Backend scheduled tasks</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-refresh"/></svg> Recent activity</div><div class="card-subtitle">Latest backend events</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
       </div>
     </main>
 
     <main class="page-content fade-in" id="page-invoices">
-      <div class="section-header"><div><div class="section-title">Invoices</div><div class="section-subtitle">Create, track, and confirm payments</div></div><button class="btn btn-primary" onclick="openInvoiceModal()">+ Create Invoice</button></div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"><div class="filter-tabs" id="invoice-filters"><div class="filter-tab active" onclick="filterInvoices('all',this)">All</div><div class="filter-tab" onclick="filterInvoices('paid',this)">Paid</div><div class="filter-tab" onclick="filterInvoices('pending',this)">Pending</div><div class="filter-tab" onclick="filterInvoices('overdue',this)">Overdue</div></div><div class="search-input"><input id="invoice-search" placeholder="Search invoices" oninput="searchInvoices(this.value)"></div></div>
-      <div class="card" style="padding:0"><div class="table-wrap"><table class="data-table"><thead><tr><th onclick="sortTable('invoices','id')">Invoice</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th>Rail</th><th>Actions</th></tr></thead><tbody id="invoices-tbody"></tbody></table></div><div class="summary-bar" id="invoice-summary"><span>Outstanding: <strong>$0</strong></span><span><span id="invoice-count">0</span> invoices</span></div></div>
+      <div class="section-header"><div><p class="overline">Finance</p><div class="section-title">Invoices</div><div class="section-subtitle">Create, track, and confirm payments</div></div><button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create Invoice</button></div>
+      <div class="toolbar"><div class="filter-tabs" id="invoice-filters"><button class="filter-tab active" onclick="filterInvoices('all',this)">All</button><button class="filter-tab" onclick="filterInvoices('paid',this)">Paid</button><button class="filter-tab" onclick="filterInvoices('pending',this)">Pending</button><button class="filter-tab" onclick="filterInvoices('overdue',this)">Overdue</button></div><div class="search-input"><input id="invoice-search" placeholder="Search invoices" oninput="searchInvoices(this.value)"></div></div>
+      <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th onclick="sortTable('invoices','id')">Invoice</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th>Rail</th><th>Actions</th></tr></thead><tbody id="invoices-tbody"></tbody></table></div><div class="summary-bar" id="invoice-summary"><span>Outstanding: <strong>$0</strong></span><span><span id="invoice-count">0</span> invoices</span></div></div>
     </main>
 
-    <main class="page-content fade-in" id="page-clients"><div class="section-header"><div><div class="section-title">Clients</div><div class="section-subtitle">Relationship and payment signals</div></div></div><div class="grid-auto" id="clients-grid"></div></main>
-    <main class="page-content fade-in" id="page-proposals"><div class="section-header"><div><div class="section-title">Proposals</div><div class="section-subtitle">Win rate and pipeline quality</div></div></div><div class="stats-row" id="proposal-stats"></div><div class="card" style="padding:0"><div class="table-wrap"><table class="data-table"><thead><tr><th>Title</th><th>Client</th><th>Platform</th><th>Amount</th><th>Status</th><th>Sent</th><th>Score</th></tr></thead><tbody id="proposals-tbody"></tbody></table></div></div></main>
-    <main class="page-content fade-in" id="page-reputation"><div class="section-header"><div><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed work records</div></div></div><div class="stats-row"><div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Credentials</div></div><div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Verified</div></div><div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">On-chain value</div></div></div><div class="grid-auto" id="reputation-grid"></div></main>
-    <main class="page-content fade-in" id="page-payments"><div class="section-header"><div><div class="section-title">Payments</div><div class="section-subtitle">Stripe and x402 payment rails</div></div></div><div class="payment-rails"><div class="rail-card"><div class="rail-name">Stripe</div><div class="rail-subtitle">Card and invoice payment rail</div><div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div><div class="rail-status">● Connected</div></div><div class="rail-card"><div class="rail-name">x402</div><div class="rail-subtitle">USDC payment-required flow on Base Sepolia</div><div class="rail-stat"><span>Volume</span><strong id="x402-volume">$0</strong></div><div class="rail-status">● Connected</div></div></div><div class="card" style="padding:0"><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead><tbody id="payments-tbody"></tbody></table></div></div></main>
-    <main class="page-content fade-in" id="page-analytics"><div class="section-header"><div><div class="section-title">Analytics</div><div class="section-subtitle">Revenue, collection speed, and trust records</div></div></div><div class="stats-row" id="analytics-stats"></div><div class="two-col"><div class="card"><div class="card-title">Revenue</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div><div class="card"><div class="card-title">Win rate</div><div class="chart-container"><canvas id="chart-winrate"></canvas></div></div><div class="card"><div class="card-title">Days to payment</div><div class="chart-container"><canvas id="chart-days"></canvas></div></div><div class="card"><div class="card-title">Credentials</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div></div><div class="card" style="padding:0;margin-top:20px"><div class="table-wrap"><table class="data-table"><thead><tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Current</th><th>Status</th></tr></thead><tbody id="hypothesis-tbody"></tbody></table></div></div></main>
+    <main class="page-content fade-in" id="page-clients"><div class="section-header"><div><p class="overline">CRM</p><div class="section-title">Clients</div><div class="section-subtitle">Relationship and payment signals</div></div></div><div class="grid-auto" id="clients-grid"></div></main>
+    <main class="page-content fade-in" id="page-proposals"><div class="section-header"><div><p class="overline">Pipeline</p><div class="section-title">Proposals</div><div class="section-subtitle">Win rate and pipeline quality</div></div></div><div class="stats-row" id="proposal-stats"></div><div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Title</th><th>Client</th><th>Platform</th><th>Amount</th><th>Status</th><th>Sent</th><th>Score</th></tr></thead><tbody id="proposals-tbody"></tbody></table></div></div></main>
+    <main class="page-content fade-in" id="page-reputation"><div class="section-header"><div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed work records</div></div></div><div class="stats-row"><div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Credentials</div></div><div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Verified</div></div><div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">On-chain value</div></div></div><div class="grid-auto" id="reputation-grid"></div></main>
+    <main class="page-content fade-in" id="page-payments"><div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div><div class="section-subtitle">Stripe and x402 payment rails</div></div></div><div class="payment-rails"><div class="rail-card"><div class="rail-logo"><svg><use href="#i-card"/></svg></div><div class="rail-name">Stripe</div><div class="rail-subtitle">Card and invoice payment rail</div><div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div><div class="rail-status">● Connected</div></div><div class="rail-card"><div class="rail-logo cyan"><svg><use href="#i-bolt"/></svg></div><div class="rail-name">x402</div><div class="rail-subtitle">USDC payment-required flow on Base Sepolia</div><div class="rail-stat"><span>Volume</span><strong id="x402-volume">$0</strong></div><div class="rail-status">● Connected</div></div></div><div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead><tbody id="payments-tbody"></tbody></table></div></div></main>
+    <main class="page-content fade-in" id="page-analytics"><div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Revenue, collection speed, and trust records</div></div></div><div class="stats-row" id="analytics-stats"></div><div class="two-col"><div class="card"><div class="card-title">Revenue</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div><div class="card"><div class="card-title">Win rate</div><div class="chart-container"><canvas id="chart-winrate"></canvas></div></div><div class="card"><div class="card-title">Days to payment</div><div class="chart-container"><canvas id="chart-days"></canvas></div></div><div class="card"><div class="card-title">Credentials</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div></div><div class="card table-card" style="margin-top:20px"><div class="table-wrap"><table class="data-table"><thead><tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Current</th><th>Status</th></tr></thead><tbody id="hypothesis-tbody"></tbody></table></div></div></main>
 
     <main class="page-content fade-in" id="page-settings">
-      <div class="section-header"><div><div class="section-title">Settings</div><div class="section-subtitle">Live backend and browser-only API key</div></div></div>
+      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div><div class="section-subtitle">Live backend and browser-only API key</div></div></div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><div class="card-title">Access</div></div><div class="form-group"><label class="form-label">HermesWork API Key</label><div style="display:flex;gap:8px"><input type="password" class="form-input" id="hermes-api-key" placeholder="Paste HERMESWORK_API_KEY"><button class="btn btn-primary" onclick="saveApiKeyFromField()">Save</button></div><div style="font-size:11px;color:var(--text-muted);margin-top:6px">Stored only in this browser. Required for write actions.</div></div></div>
-        <div class="card"><div class="card-header"><div class="card-title">Backend</div></div><div class="form-group"><label class="form-label">Backend URL</label><div style="display:flex;gap:8px"><input type="text" class="form-input" id="backend-url" value="https://hermeswork.onrender.com"><button class="btn btn-primary" onclick="testBackend()">Test</button></div></div><button class="btn btn-secondary" onclick="seedDemoData()">Seed Sample Data</button><div style="font-size:11px;color:var(--text-muted);margin-top:10px">Use this to load sample records for judging and UI verification.</div></div>
-        <div class="card" style="grid-column:1/-1"><div class="card-header"><div class="card-title">Scheduled tasks</div><span class="badge badge-paid">Active</span></div><div id="cron-list"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-key"/></svg> Access</div></div><div class="form-group"><label class="form-label">HermesWork API Key</label><div class="input-row"><input type="password" class="form-input" id="hermes-api-key" placeholder="Paste HERMESWORK_API_KEY"><button class="btn btn-primary" onclick="saveApiKeyFromField()">Save</button></div><div class="help-text">Stored only in this browser. Required for write actions.</div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-link"/></svg> Backend</div></div><div class="form-group"><label class="form-label">Backend URL</label><div class="input-row"><input type="text" class="form-input" id="backend-url" value="https://hermeswork.onrender.com"><button class="btn btn-primary" onclick="testBackend()">Test</button></div></div><button class="btn btn-secondary" onclick="seedDemoData()">Seed Sample Data</button><div class="help-text">Use this to load sample records for judging and UI verification.</div></div>
+        <div class="card" style="grid-column:1/-1"><div class="card-header"><div class="card-title"><svg><use href="#i-bolt"/></svg> Scheduled tasks</div><span class="badge badge-paid">Active</span></div><div id="cron-list"></div></div>
       </div>
     </main>
   </div>
 </div>
 
-<div class="mobile-nav"><div class="mobile-nav-item active" id="mob-nav-dashboard" onclick="navigate('dashboard')"><div class="mobile-nav-label">Home</div></div><div class="mobile-nav-item" id="mob-nav-invoices" onclick="navigate('invoices')"><div class="mobile-nav-label">Invoices</div></div><div class="mobile-nav-item" id="mob-nav-clients" onclick="navigate('clients')"><div class="mobile-nav-label">Clients</div></div><div class="mobile-nav-item" id="mob-nav-reputation" onclick="navigate('reputation')"><div class="mobile-nav-label">Trust</div></div><div class="mobile-nav-item" id="mob-nav-settings" onclick="navigate('settings')"><div class="mobile-nav-label">Settings</div></div></div>
+<nav class="mobile-nav"><button class="mobile-nav-item active" id="mob-nav-dashboard" onclick="navigate('dashboard')"><svg><use href="#i-grid"/></svg><span>Home</span></button><button class="mobile-nav-item" id="mob-nav-invoices" onclick="navigate('invoices')"><svg><use href="#i-file"/></svg><span>Invoices</span></button><button class="mobile-nav-item" id="mob-nav-clients" onclick="navigate('clients')"><svg><use href="#i-users"/></svg><span>Clients</span></button><button class="mobile-nav-item" id="mob-nav-reputation" onclick="navigate('reputation')"><svg><use href="#i-shield"/></svg><span>Trust</span></button><button class="mobile-nav-item" id="mob-nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button></nav>
 
-<div class="modal-overlay" id="invoice-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Create Invoice</div><div class="modal-close" onclick="closeInvoiceModal()">×</div></div><form id="invoice-form" onsubmit="submitInvoice(event)"><div class="form-group"><label class="form-label">Client</label><input class="form-input" id="inv-client" required placeholder="TechCorp Inc."></div><div class="form-row"><div class="form-group"><label class="form-label">Amount</label><input type="number" class="form-input" id="inv-amount" required min="1"></div><div class="form-group"><label class="form-label">Due date</label><input type="date" class="form-input" id="inv-due" required></div></div><div class="form-group"><label class="form-label">Description</label><input class="form-input" id="inv-desc" placeholder="AI dashboard build"></div><div class="form-group"><label class="form-label">Payment rail</label><select class="form-select" id="inv-rail"><option value="stripe">Stripe</option><option value="x402">x402</option><option value="both">Both</option></select></div><div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create Invoice</button></div></form></div></div>
-
+<div class="modal-overlay" id="invoice-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Create Invoice</div><button class="modal-close" type="button" onclick="closeInvoiceModal()">×</button></div><form id="invoice-form" onsubmit="submitInvoice(event)"><div class="form-group"><label class="form-label">Client</label><input class="form-input" id="inv-client" required placeholder="TechCorp Inc."></div><div class="form-row"><div class="form-group"><label class="form-label">Amount</label><input type="number" class="form-input" id="inv-amount" required min="1"></div><div class="form-group"><label class="form-label">Due date</label><input type="date" class="form-input" id="inv-due" required></div></div><div class="form-group"><label class="form-label">Description</label><input class="form-input" id="inv-desc" placeholder="AI dashboard build"></div><div class="form-group"><label class="form-label">Payment rail</label><select class="form-select" id="inv-rail"><option value="stripe">Stripe</option><option value="x402">x402</option><option value="both">Both</option></select></div><div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create Invoice</button></div></form></div></div>
 <script src="app.js"></script>
 </body>
 </html>
