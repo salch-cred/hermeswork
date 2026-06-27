@@ -3,551 +3,576 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HermesWork — Run on facts, not guesswork.</title>
-<meta name="description" content="HermesWork connects your invoices, clients, payments, and proof, then shows you who pays late and what’s actually working. Built for independent builders.">
+<title>HermesWork — Your freelance back-office, finally sorted.</title>
+<meta name="description" content="Invoices, clients, payments, and proof in one place. No spreadsheets. No guessing. Built on real data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#ffffff;
-  --bg2:#f7f7f5;
-  --bg3:#f0f0ec;
-  --ink:#0f0f0e;
+  --bg:#fff;
+  --bg2:#f8f8f6;
+  --bg3:#f1f1ee;
+  --ink:#111110;
   --ink2:#3a3a36;
-  --muted:#7a7a72;
-  --faint:#c4c4bb;
-  --line:#e8e8e2;
+  --muted:#72726a;
+  --faint:#c0c0b6;
+  --line:#e6e6e0;
   --brand:#1a6bff;
-  --brand-bg:#eef4ff;
-  --green:#16a34a;
+  --brand-bg:rgba(26,107,255,.08);
+  --green:#15803d;
   --green-bg:#f0fdf4;
-  --yellow:#b45309;
-  --yellow-bg:#fffbeb;
-  --r:16px;
-  --max:1140px;
+  --amber:#92400e;
+  --amber-bg:#fffbeb;
+  --r:18px;
+  --max:1120px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{text-decoration:none;color:inherit}button{font:inherit;cursor:pointer;border:0;background:0}
-.wrap{max-width:var(--max);margin:0 auto;padding:0 32px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 28px}
 
-/* nav */
-nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
-.nav{height:64px;display:flex;align-items:center;justify-content:space-between;gap:24px}
-.brand{display:flex;align-items:center;gap:9px;font-weight:900;letter-spacing:-.04em;font-size:17px;color:var(--ink)}
-.mark{width:32px;height:32px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:900}
-.navlinks{display:flex;gap:28px;font-size:14px;font-weight:600;color:var(--muted)}
-.navlinks a:hover{color:var(--ink);transition:.15s}
-.nav-ctas{display:flex;gap:10px}
-.btn{display:inline-flex;align-items:center;gap:7px;border-radius:10px;padding:9px 16px;font-size:13.5px;font-weight:700;transition:.18s;white-space:nowrap}
-.btn.primary{background:var(--ink);color:#fff}
-.btn.primary:hover{background:#1a1a18}
-.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink2)}
-.btn.ghost:hover{border-color:var(--ink);color:var(--ink)}
-.btn.brand{background:var(--brand);color:#fff;box-shadow:0 4px 16px rgba(26,107,255,.22)}
-.btn.brand:hover{background:#1558e0;box-shadow:0 6px 20px rgba(26,107,255,.3);transform:translateY(-1px)}
+/* ---- NAV ---- */
+nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.85);backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--line);transition:.3s}
+.nav-inner{height:62px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:900;font-size:16px;letter-spacing:-.04em;color:var(--ink)}
+.mark{width:30px;height:30px;background:var(--ink);border-radius:8px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:900}
+.navlinks{display:flex;gap:24px}
+.navlinks a{font-size:13.5px;font-weight:600;color:var(--muted);transition:color .15s}
+.navlinks a:hover{color:var(--ink)}
+.nav-actions{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:9px 15px;font-size:13px;font-weight:800;transition:all .18s;cursor:pointer;white-space:nowrap;border:0}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink2)}
+.btn-ghost:hover{border-color:var(--ink);color:var(--ink)}
+.btn-dark{background:var(--ink);color:#fff}
+.btn-dark:hover{background:#1c1c1a;transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.btn-blue{background:var(--brand);color:#fff;box-shadow:0 4px 14px rgba(26,107,255,.25)}
+.btn-blue:hover{background:#155ae0;transform:translateY(-1px);box-shadow:0 8px 20px rgba(26,107,255,.35)}
 
-/* hero */
-.hero{padding:96px 0 0;text-align:center}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--bg2);border:1.5px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:800;color:var(--muted);margin-bottom:28px}
-.live-dot{width:6px;height:6px;border-radius:99px;background:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.18);animation:pulse 2s ease infinite}
-@keyframes pulse{50%{transform:scale(.65);opacity:.5}}
-h1{font-size:clamp(46px,7vw,88px);font-weight:900;letter-spacing:-.07em;line-height:.93;color:var(--ink);max-width:860px;margin:0 auto 20px}
-h1 em{font-style:normal;color:var(--muted)}
-.hero-sub{font-size:19px;color:var(--muted);max-width:580px;margin:0 auto 36px;line-height:1.65;font-weight:400}
-.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.hero-note{margin-top:16px;font-size:13px;color:var(--faint);font-weight:600}
+/* ---- HERO ---- */
+.hero{padding:88px 0 0;text-align:center}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--bg2);border:1.5px solid var(--line);
+  border-radius:999px;padding:6px 14px;
+  font-size:12px;font-weight:800;color:var(--muted);
+  margin-bottom:32px;
+  animation:fadeUp .5s ease both;
+}
+.live-dot{width:6px;height:6px;border-radius:99px;background:var(--green);flex-shrink:0;animation:livepulse 2s ease infinite}
+@keyframes livepulse{0%,100%{box-shadow:0 0 0 0 rgba(21,128,61,.4)}50%{box-shadow:0 0 0 5px rgba(21,128,61,0)}}
+.hero h1{font-size:clamp(48px,8vw,92px);font-weight:900;letter-spacing:-.075em;line-height:.9;color:var(--ink);margin:0 auto 22px;max-width:820px;animation:fadeUp .55s .05s ease both}
+.hero h1 .dim{color:var(--faint)}
+.hero-sub{font-size:18px;color:var(--muted);max-width:520px;margin:0 auto 36px;line-height:1.65;font-weight:400;animation:fadeUp .55s .1s ease both}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fadeUp .55s .15s ease both}
+.hero-footnote{margin-top:14px;font-size:12.5px;color:var(--faint);font-weight:700;animation:fadeUp .55s .2s ease both}
 
-/* product shell */
-.hero-product{margin-top:72px;border-radius:24px 24px 0 0;background:var(--bg2);border:1.5px solid var(--line);border-bottom:0;padding:18px 18px 0;box-shadow:0 -4px 80px rgba(0,0,0,.06)}
-.product-inner{background:#fff;border-radius:16px 16px 0 0;border:1.5px solid var(--line);border-bottom:0;overflow:hidden}
-.p-topbar{height:44px;background:var(--bg2);border-bottom:1.5px solid var(--line);display:flex;align-items:center;padding:0 16px;gap:8px}
-.dot{width:10px;height:10px;border-radius:99px}
+/* floating product card */
+.hero-card-wrap{margin-top:64px;animation:fadeUp .7s .25s ease both}
+.hero-card-float{animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hero-card{
+  background:#fff;
+  border:1.5px solid var(--line);
+  border-radius:24px 24px 0 0;
+  overflow:hidden;
+  box-shadow:0 24px 80px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.04);
+  text-align:left;
+}
+.hc-bar{height:42px;background:var(--bg2);border-bottom:1.5px solid var(--line);display:flex;align-items:center;padding:0 16px;gap:7px}
+.dot{width:11px;height:11px;border-radius:99px}
 .dot.r{background:#ff5f57}.dot.y{background:#ffbd2e}.dot.g{background:#28c941}
-.p-layout{display:grid;grid-template-columns:220px 1fr;min-height:480px}
-.p-sidebar{background:var(--bg2);border-right:1.5px solid var(--line);padding:20px 14px}
-.p-logo{font-weight:900;font-size:15px;letter-spacing:-.04em;padding:0 8px;margin-bottom:24px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;font-size:13.5px;font-weight:700;color:var(--muted);margin-bottom:2px;cursor:default}
-.nav-item.active{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.nav-icon{width:20px;height:20px;border-radius:6px;background:var(--line);display:grid;place-items:center;font-size:10px;flex:0 0 20px}
-.nav-item.active .nav-icon{background:var(--ink);color:#fff}
-.p-main{padding:28px}
-.p-greeting{font-size:22px;font-weight:900;letter-spacing:-.04em;margin-bottom:20px;color:var(--ink)}
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
-.kpi-c{background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:16px}
-.kpi-c span{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-.kpi-c strong{display:block;font-size:28px;font-weight:900;letter-spacing:-.05em;margin-top:6px;color:var(--ink)}
-.kpi-c .delta{font-size:12px;font-weight:800;color:var(--green)}
-.section-label{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px}
-.inv-table{border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
-.inv-head{display:grid;grid-template-columns:2fr 1fr 1fr 100px;gap:12px;padding:10px 16px;background:var(--bg2);border-bottom:1.5px solid var(--line);font-size:12px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-.inv-row{display:grid;grid-template-columns:2fr 1fr 1fr 100px;gap:12px;padding:12px 16px;border-bottom:1.5px solid var(--line);font-size:13.5px;align-items:center}
-.inv-row:last-child{border:0}
-.inv-row b{font-weight:800;color:var(--ink)}
-.inv-row sub{display:block;font-size:11px;color:var(--muted);margin-top:2px;font-style:normal}
-.badge{font-size:11.5px;font-weight:900;border-radius:99px;padding:4px 10px;display:inline-block}
-.b-paid{background:var(--green-bg);color:var(--green)}
-.b-over{background:var(--yellow-bg);color:var(--yellow)}
-.b-chain{background:var(--brand-bg);color:var(--brand)}
+.hc-body{display:grid;grid-template-columns:200px 1fr}
+.hc-sidebar{background:var(--bg2);border-right:1.5px solid var(--line);padding:18px 12px}
+.hc-logo{font-size:14px;font-weight:900;letter-spacing:-.04em;padding:0 8px;margin-bottom:20px}
+.si{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:1px}
+.si.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.si-ic{width:18px;height:18px;border-radius:5px;background:var(--line);display:grid;place-items:center;font-size:9px;flex-shrink:0}
+.si.on .si-ic{background:var(--ink);color:#fff}
+.hc-main{padding:24px}
+.hc-greet{font-size:20px;font-weight:900;letter-spacing:-.04em;margin-bottom:18px}
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}
+.kc{background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;padding:14px}
+.kc label{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:6px}
+.kc .val{font-size:26px;font-weight:900;letter-spacing:-.05em;color:var(--ink)}
+.kc .up{font-size:11.5px;font-weight:800;color:var(--green);margin-top:2px}
+.itab{border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.itab-head{display:grid;grid-template-columns:2fr 1fr 90px;padding:9px 14px;background:var(--bg2);border-bottom:1.5px solid var(--line);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.irow{display:grid;grid-template-columns:2fr 1fr 90px;padding:12px 14px;border-bottom:1.5px solid var(--line);font-size:13px;align-items:center}
+.irow:last-child{border:0}
+.irow b{font-weight:800}
+.irow small{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+.chip{display:inline-block;font-size:11px;font-weight:900;border-radius:99px;padding:3px 9px}
+.c-green{background:var(--green-bg);color:var(--green)}
+.c-amber{background:var(--amber-bg);color:var(--amber)}
+.c-blue{background:var(--brand-bg);color:var(--brand)}
 
-/* marquee */
-.marquee{border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line);overflow:hidden;background:var(--bg)}
-.m-track{display:flex;width:max-content;animation:scroll 28s linear infinite}
-.mchip{padding:18px 22px;border-right:1.5px solid var(--line);font-size:13.5px;font-weight:700;color:var(--muted);white-space:nowrap}
-.mchip b{color:var(--ink);margin-right:8px}
-@keyframes scroll{to{transform:translateX(-50%)}}
+/* ---- MARQUEE ---- */
+.ticker{overflow:hidden;border-top:1.5px solid var(--line);border-bottom:1.5px solid var(--line);background:var(--bg)}
+.ticker-track{display:flex;width:max-content;animation:ticker 26s linear infinite}
+.ticker-track:hover{animation-play-state:paused}
+.tick{padding:18px 22px;border-right:1.5px solid var(--line);font-size:13.5px;font-weight:700;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.tick b{color:var(--ink)}
+@keyframes ticker{to{transform:translateX(-50%)}}
 
-/* sections */
+/* ---- SECTIONS ---- */
 section{padding:96px 0;border-top:1.5px solid var(--line)}
-.kicker{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:14px}
-h2{font-size:clamp(32px,4.5vw,56px);font-weight:900;letter-spacing:-.06em;line-height:1;margin-bottom:16px;color:var(--ink)}
-.lead{font-size:17px;color:var(--muted);line-height:1.65}
-.section-head{max-width:680px;margin-bottom:56px}
+.tag{font-size:11.5px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:14px}
+h2{font-size:clamp(32px,4.5vw,54px);font-weight:900;letter-spacing:-.065em;line-height:.97;color:var(--ink);margin-bottom:16px}
+h2 .muted{color:var(--faint)}
+.lede{font-size:16.5px;color:var(--muted);line-height:1.7;max-width:600px}
+.sh{margin-bottom:52px}
 
-/* steps */
-.step-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-.step-card{border:1.5px solid var(--line);border-radius:20px;padding:32px;background:var(--bg);transition:.25s ease}
-.step-card:hover{border-color:#bbb;box-shadow:0 8px 32px rgba(0,0,0,.07);transform:translateY(-3px)}
-.step-n{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:20px}
-.step-card h3{font-size:24px;font-weight:900;letter-spacing:-.05em;line-height:1.1;margin-bottom:10px;color:var(--ink)}
-.step-card p{color:var(--muted);font-size:15px;line-height:1.65}
-.step-chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;color:var(--muted);margin-bottom:16px;background:var(--bg2)}
+/* STEPS */
+.step-row{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.sc{
+  border:1.5px solid var(--line);
+  border-radius:20px;padding:30px;
+  background:var(--bg);
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+  opacity:0;transform:translateY(22px);
+  transition:opacity .55s ease,transform .55s ease,border-color .2s,box-shadow .2s;
+}
+.sc.in{opacity:1;transform:none}
+.sc:hover{border-color:#aaa;transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.08)}
+.sc-n{font-size:11.5px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:18px}
+.sc h3{font-size:23px;font-weight:900;letter-spacing:-.05em;line-height:1.1;margin-bottom:10px}
+.sc p{font-size:15px;color:var(--muted);line-height:1.65}
 
-/* 2-col alternating */
-.alt{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-bottom:80px}
-.alt:last-child{margin-bottom:0}
-.alt.flip .alt-text{order:2}.alt.flip .alt-vis{order:1}
-.alt-text h2{font-size:clamp(28px,3.5vw,44px)}
-.alt-vis{background:var(--bg2);border:1.5px solid var(--line);border-radius:20px;padding:28px;min-height:320px}
+/* 2-COL ALT */
+.twoX{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-bottom:80px}
+.twoX:last-child{margin:0}
+.twoX.rev .tx-copy{order:2}
+.twoX.rev .tx-vis{order:1}
+.tx-copy h2{font-size:clamp(28px,3.5vw,44px)}
+.tx-vis{background:var(--bg2);border:1.5px solid var(--line);border-radius:20px;padding:26px}
 
-/* compare */
-.compare{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.comp-card{border:1.5px solid var(--line);border-radius:20px;padding:32px;background:var(--bg)}
-.comp-card.active{border-color:var(--ink);background:var(--ink);color:#fff}
-.comp-card h3{font-size:22px;font-weight:900;letter-spacing:-.04em;margin-bottom:20px}
-.comp-card.active h3{color:#fff}
-.check-list{list-style:none;display:grid;gap:14px}
-.check-list li{display:flex;gap:10px;font-size:15px;line-height:1.5;align-items:flex-start;color:var(--muted)}
-.comp-card.active .check-list li{color:rgba(255,255,255,.65)}
-.ci{width:22px;height:22px;border-radius:99px;flex:0 0 22px;display:grid;place-items:center;font-size:11px;font-weight:900;margin-top:1px}
-.ci.ok{background:#fff;color:var(--ink)}
-.ci.no{background:var(--bg3);color:var(--faint)}
-.ci.nod{background:rgba(255,255,255,.1);color:rgba(255,255,255,.3)}
+/* NUMBER COUNTER */
+.big-num{font-size:48px;font-weight:900;letter-spacing:-.06em;color:var(--ink)}
+.num-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.nc{}
+.nc label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.bar-wrap{height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
+.bar-fill{height:100%;background:var(--ink);border-radius:99px;width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.bar-fill.in{width:var(--w)}
 
-/* rails */
-.rail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.rail-card{border:1.5px solid var(--line);border-radius:20px;padding:28px;background:var(--bg);transition:.25s ease}
-.rail-card:hover{border-color:#bbb;box-shadow:0 8px 32px rgba(0,0,0,.07);transform:translateY(-3px)}
-.rail-icon{font-size:28px;margin-bottom:16px}
-.rail-card h3{font-size:20px;font-weight:900;letter-spacing:-.04em;margin-bottom:8px}
-.rail-card p{color:var(--muted);font-size:14.5px;line-height:1.6;margin-bottom:16px}
-.rail-meta{border-top:1.5px solid var(--line);margin-top:16px;padding-top:14px;display:grid;gap:8px}
-.rm{display:flex;justify-content:space-between;font-size:13px}
+/* COMPARE */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cp{border:1.5px solid var(--line);border-radius:20px;padding:28px;background:var(--bg)}
+.cp.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.cp h3{font-size:20px;font-weight:900;letter-spacing:-.04em;margin-bottom:18px}
+.cp.dark h3{color:#fff}
+.cl{list-style:none;display:grid;gap:12px}
+.cl li{display:flex;gap:10px;font-size:14.5px;line-height:1.5;align-items:flex-start;color:var(--muted)}
+.cp.dark .cl li{color:rgba(255,255,255,.6)}
+.ci{width:20px;height:20px;border-radius:99px;flex-shrink:0;display:grid;place-items:center;font-size:10px;font-weight:900;margin-top:2px}
+.ci.y{background:var(--bg3);color:var(--faint)}
+.ci.g{background:#fff;color:var(--ink)}
+
+/* RAILS */
+.rail-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.rc{
+  border:1.5px solid var(--line);
+  border-radius:20px;padding:28px;
+  background:var(--bg);
+  opacity:0;transform:translateY(20px);
+  transition:opacity .5s ease,transform .5s ease,border-color .2s,box-shadow .2s;
+}
+.rc.in{opacity:1;transform:none}
+.rc:hover{border-color:#aaa;transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.08)}
+.rc-ico{font-size:26px;margin-bottom:14px}
+.rc h3{font-size:19px;font-weight:900;letter-spacing:-.04em;margin-bottom:8px}
+.rc p{font-size:14px;color:var(--muted);line-height:1.65}
+.rc-meta{margin-top:16px;border-top:1.5px solid var(--line);padding-top:14px;display:grid;gap:7px}
+.rm{display:flex;justify-content:space-between;font-size:12.5px}
 .rm span{color:var(--muted)}
 .rm strong{font-weight:800;color:var(--ink)}
 
-/* deploy */
-.deploy-strip{background:var(--ink);border-radius:24px;padding:56px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-.deploy-strip h2{color:#fff}
-.deploy-strip p{color:rgba(255,255,255,.55)}
-.deploy-strip .btn.brand{box-shadow:0 4px 24px rgba(26,107,255,.4)}
-.deploy-steps{display:grid;gap:10px}
-.ds{display:flex;align-items:center;justify-content:space-between;gap:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;font-size:13.5px;color:#fff}
-.ds span{color:rgba(255,255,255,.45)}
-.code-block{background:#000;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:20px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#7dd3fc;line-height:1.9;margin-top:12px;overflow:auto}
-.code-block .cm{color:#4b5563}
+/* DEPLOY */
+.deploy-card{background:var(--ink);border-radius:24px;padding:52px;display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start}
+.deploy-card h2{color:#fff}
+.deploy-card .lede{color:rgba(255,255,255,.5);max-width:100%;margin-bottom:28px}
+.dstep{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:11px 14px;font-size:13px;color:#fff;margin-bottom:8px}
+.dstep span{color:rgba(255,255,255,.4)}
+.term{font-family:ui-monospace,Menlo,monospace;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;color:#7dd3fc;font-size:12px;line-height:1.9;margin-top:4px}
+.term .c{color:rgba(255,255,255,.2)}
 
-/* insights */
-.insight-box{border:1.5px solid var(--line);border-radius:20px;padding:28px;background:var(--bg)}
-.insight-badge{display:inline-flex;align-items:center;gap:7px;background:var(--yellow-bg);border:1.5px solid #fde68a;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:900;color:var(--yellow);margin-bottom:16px}
-.insight-text{font-size:18px;font-weight:800;letter-spacing:-.03em;line-height:1.4;color:var(--ink);margin-bottom:10px}
-.insight-sub{font-size:14px;color:var(--muted)}
-.client-row{display:flex;align-items:center;gap:10px;margin-top:20px;background:var(--bg2);border-radius:12px;padding:12px 14px;font-size:13.5px}
-.avatar{width:32px;height:32px;border-radius:99px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:900;flex:0 0 32px}
-.client-row b{font-weight:800;font-size:13.5px}
-.client-row sub{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-style:normal}
-.action-row{margin-top:10px;background:var(--brand-bg);border:1.5px solid rgba(26,107,255,.15);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--brand);font-weight:700}
+/* INSIGHT */
+.ins-card{background:var(--bg2);border:1.5px solid var(--line);border-radius:18px;padding:24px}
+.ins-badge{display:inline-flex;align-items:center;gap:6px;background:var(--amber-bg);border:1.5px solid #fde68a;border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:900;color:var(--amber);margin-bottom:14px}
+.ins-main{font-size:17px;font-weight:800;letter-spacing:-.03em;line-height:1.4;color:var(--ink);margin-bottom:8px}
+.ins-sub{font-size:13.5px;color:var(--muted);line-height:1.6}
+.ins-client{display:flex;align-items:center;gap:10px;margin-top:18px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px}
+.av{width:30px;height:30px;background:var(--ink);color:#fff;border-radius:99px;display:grid;place-items:center;font-size:11px;font-weight:900;flex-shrink:0}
+.ins-client b{font-size:13.5px;font-weight:800}
+.ins-client small{font-size:11.5px;color:var(--muted)}
+.ins-action{margin-top:10px;background:var(--brand-bg);border:1.5px solid rgba(26,107,255,.14);border-radius:12px;padding:11px 14px;font-size:13px;font-weight:700;color:var(--brand)}
 
-/* faq */
-.faq-2col{display:grid;grid-template-columns:.75fr 1.25fr;gap:56px}
+/* FAQ */
+.faq-wrap{display:grid;grid-template-columns:.72fr 1.28fr;gap:52px}
+.faq-aside{}
 .faq-list{border-top:1.5px solid var(--line)}
-.faq-item{border-bottom:1.5px solid var(--line);padding:24px 0}
-.faq-q{font-size:16.5px;font-weight:800;letter-spacing:-.03em;margin-bottom:8px;color:var(--ink)}
-.faq-a{font-size:15px;color:var(--muted);line-height:1.65}
+.fi{border-bottom:1.5px solid var(--line);padding:22px 0;cursor:pointer}
+.fi-q{
+  font-size:16px;font-weight:800;letter-spacing:-.03em;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  transition:color .15s;
+}
+.fi-q:hover{color:var(--ink2)}
+.fi-q .arr{transition:transform .3s;color:var(--faint);flex-shrink:0}
+.fi.open .fi-q .arr{transform:rotate(180deg)}
+.fi-a{font-size:14.5px;color:var(--muted);line-height:1.7;max-height:0;overflow:hidden;transition:max-height .35s ease,margin-top .35s ease}
+.fi.open .fi-a{max-height:200px;margin-top:12px}
 
-/* cta strip */
-.cta-strip{text-align:center;padding:96px 0}
-.cta-strip h2{font-size:clamp(34px,5vw,64px);max-width:700px;margin:0 auto 20px}
-.cta-strip p{color:var(--muted);font-size:17px;margin-bottom:36px}
+/* CTA */
+.cta{text-align:center;padding:88px 0}
+.cta h2{font-size:clamp(36px,5.5vw,68px);max-width:680px;margin:0 auto 18px}
+.cta p{color:var(--muted);font-size:16.5px;margin-bottom:32px}
 
-/* footer */
 footer{border-top:1.5px solid var(--line);padding:40px 0}
-.foot{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
-.foot-brand{font-weight:900;font-size:16px;letter-spacing:-.04em;color:var(--ink)}
-.foot-links{display:flex;gap:24px;font-size:14px;font-weight:700;color:var(--muted)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.foot-brand{font-weight:900;font-size:15px;letter-spacing:-.04em}
+.foot-links{display:flex;gap:22px}
+.foot-links a{font-size:13.5px;font-weight:700;color:var(--muted);transition:color .15s}
 .foot-links a:hover{color:var(--ink)}
-.foot-copy{font-size:13px;color:var(--faint)}
+.foot-copy{font-size:12.5px;color:var(--faint)}
 
-/* reveal */
-.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
-.reveal.in{opacity:1;transform:none}
-.d1{transition-delay:.06s}.d2{transition-delay:.12s}.d3{transition-delay:.18s}
+/* REVEAL (generic) */
+.rv{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.rv.in{opacity:1;transform:none}
+.d1{transition-delay:.07s}.d2{transition-delay:.14s}.d3{transition-delay:.21s}.d4{transition-delay:.28s}
 
-/* bars */
-.bars{height:80px;display:flex;align-items:flex-end;gap:6px;margin-top:16px}
-.bars i{flex:1;border-radius:5px 5px 0 0;background:var(--ink);opacity:.12;transform-origin:bottom;animation:grow 1.2s cubic-bezier(.2,.8,.2,1) both;animation-play-state:paused}
-.bars i.active{opacity:1;background:var(--ink)}
-.bars.visible i{animation-play-state:running}
-@keyframes grow{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 
-@media(max-width:900px){
-  .hero-product .p-layout{grid-template-columns:1fr}.p-sidebar{display:none}
-  .kpi-row{grid-template-columns:1fr 1fr}
-  .step-grid,.rail-grid{grid-template-columns:1fr}
-  .alt,.compare,.faq-2col,.deploy-strip{grid-template-columns:1fr}
-  .alt.flip .alt-text,.alt.flip .alt-vis{order:unset}
-  .navlinks{display:none}
-  .nav-ctas .ghost{display:none}
-  .inv-head,.inv-row{grid-template-columns:2fr 1fr 80px}
-  .inv-head >*:nth-child(3),.inv-row >*:nth-child(3){display:none}
+/* RESPONSIVE */
+@media(max-width:920px){
+  .navlinks,.nav-actions .btn-ghost{display:none}
+  .hc-body{grid-template-columns:1fr}.hc-sidebar{display:none}
+  .krow{grid-template-columns:1fr 1fr}
+  .step-row,.rail-row,.cmp,.faq-wrap,.deploy-card{grid-template-columns:1fr}
+  .twoX{grid-template-columns:1fr;gap:32px}
+  .twoX.rev .tx-copy,.twoX.rev .tx-vis{order:unset}
+  .itab-head>*:nth-child(3),.irow>*:nth-child(3){display:none}
 }
 @media(max-width:560px){
-  .wrap{padding:0 20px}
-  h1{font-size:44px}
-  .hero{padding:72px 0 0}
-  .deploy-strip{padding:32px 24px}
+  .wrap{padding:0 18px}
+  h1{font-size:46px}
+  .hero{padding:68px 0 0}
   section{padding:72px 0}
-  .cta-strip{padding:72px 0}
+  .deploy-card{padding:28px 22px}
+  .cta{padding:72px 0}
 }
 </style>
 </head>
 <body>
 
-<!-- nav -->
-<nav><div class="wrap nav">
-  <a class="brand" href="/frontend/landing.html"><span class="mark">H</span> HermesWork</a>
-  <div class="navlinks">
-    <a href="#workflow">How it works</a>
-    <a href="#product">Product</a>
-    <a href="#payments">Payments</a>
-    <a href="#deploy">Deploy</a>
+<nav>
+  <div class="wrap nav-inner">
+    <a class="brand" href="/frontend/landing.html"><span class="mark">H</span> HermesWork</a>
+    <div class="navlinks">
+      <a href="#how">How it works</a>
+      <a href="#product">Product</a>
+      <a href="#payments">Payments</a>
+      <a href="#deploy">Deploy</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-ghost" href="https://github.com/salch-cred/hermeswork" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-dark" href="/frontend/index.html">Dashboard &rarr;</a>
+    </div>
   </div>
-  <div class="nav-ctas">
-    <a class="btn ghost" href="https://github.com/salch-cred/hermeswork" target="_blank" rel="noopener">GitHub</a>
-    <a class="btn primary" href="/frontend/index.html">Open dashboard &rarr;</a>
-  </div>
-</div></nav>
+</nav>
 
-<!-- hero -->
-<section class="hero" style="border:0;padding-bottom:0">
-<div class="wrap">
-  <div class="hero-eyebrow"><span class="live-dot"></span> Live on Render &middot; Stripe test mode &middot; Real invoices</div>
-  <h1>Run on facts,<br><em>not guesswork.</em></h1>
-  <p class="hero-sub">HermesWork connects your invoices, clients, payments, and proof, then shows you who pays late and what&rsquo;s actually working.</p>
-  <div class="hero-ctas">
-    <a class="btn brand" href="/frontend/index.html">Open live dashboard &rarr;</a>
-    <a class="btn ghost" href="#workflow">See how it works</a>
+<!-- HERO -->
+<div class="hero"><div class="wrap">
+  <div class="hero-badge"><span class="live-dot"></span> Live on Render &middot; Stripe test &middot; Real records</div>
+  <h1>Your back-office,<br><span class="dim">finally sorted.</span></h1>
+  <p class="hero-sub">Invoices, clients, payments, and on-chain proof in one place. See who pays late, what settles fastest, and what&rsquo;s actually working.</p>
+  <div class="hero-actions">
+    <a class="btn btn-blue" href="/frontend/index.html">Open dashboard &rarr;</a>
+    <a class="btn btn-ghost" href="#how">See how it works</a>
   </div>
-  <p class="hero-note">No demo data &mdash; real invoices and Stripe test payments only.</p>
-  <div class="hero-product">
-    <div class="product-inner">
-      <div class="p-topbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-      <div class="p-layout">
-        <div class="p-sidebar">
-          <div class="p-logo">HermesWork</div>
-          <div class="nav-item active"><span class="nav-icon">&#9632;</span> Dashboard</div>
-          <div class="nav-item"><span class="nav-icon">&#9632;</span> Invoices</div>
-          <div class="nav-item"><span class="nav-icon">&#9632;</span> Clients</div>
-          <div class="nav-item"><span class="nav-icon">&#9632;</span> Payments</div>
-          <div class="nav-item"><span class="nav-icon">&#9632;</span> Records</div>
-          <div class="nav-item"><span class="nav-icon">&#9632;</span> Settings</div>
-        </div>
-        <div class="p-main">
-          <div class="p-greeting">Good evening, Salman &mdash; here&rsquo;s your cockpit.</div>
-          <div class="kpi-row">
-            <div class="kpi-c"><span>Revenue</span><strong>$18,400</strong><span class="delta">&uarr; 12% this month</span></div>
-            <div class="kpi-c"><span>Pending</span><strong>$11,200</strong></div>
-            <div class="kpi-c"><span>Win rate</span><strong>72%</strong></div>
-            <div class="kpi-c"><span>Records</span><strong>5</strong></div>
+  <p class="hero-footnote">No demo data. Real invoices and Stripe test payments only.</p>
+  <div class="hero-card-wrap">
+    <div class="hero-card-float">
+      <div class="hero-card">
+        <div class="hc-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+        <div class="hc-body">
+          <div class="hc-sidebar">
+            <div class="hc-logo">HermesWork</div>
+            <div class="si on"><span class="si-ic">&#9632;</span> Overview</div>
+            <div class="si"><span class="si-ic">&#9632;</span> Invoices</div>
+            <div class="si"><span class="si-ic">&#9632;</span> Clients</div>
+            <div class="si"><span class="si-ic">&#9632;</span> Payments</div>
+            <div class="si"><span class="si-ic">&#9632;</span> Records</div>
+            <div class="si"><span class="si-ic">&#9632;</span> Settings</div>
           </div>
-          <div class="section-label">Recent invoices</div>
-          <div class="inv-table">
-            <div class="inv-head"><span>Client</span><span>Amount</span><span>Rail</span><span>Status</span></div>
-            <div class="inv-row"><div><b>TechCorp</b><sub>AI dashboard &middot; Jun 25</sub></div><strong>$4,800</strong><span>Stripe</span><span class="badge b-paid">Paid</span></div>
-            <div class="inv-row"><div><b>Web3Labs</b><sub>Frontend sprint &middot; Jun 18</sub></div><strong>$3,600</strong><span>Stripe</span><span class="badge b-over">Overdue</span></div>
-            <div class="inv-row"><div><b>FinTech Ltd</b><sub>Mobile delivery &middot; Jun 10</sub></div><strong>$8,500</strong><span>x402</span><span class="badge b-chain">Proof</span></div>
+          <div class="hc-main">
+            <div class="hc-greet">Good evening &mdash; here&rsquo;s your cockpit.</div>
+            <div class="krow">
+              <div class="kc"><label>Revenue</label><div class="val" data-count="18400" data-prefix="$">$0</div><div class="up">&uarr; 12% this month</div></div>
+              <div class="kc"><label>Outstanding</label><div class="val" data-count="11200" data-prefix="$">$0</div></div>
+              <div class="kc"><label>Win rate</label><div class="val" data-count="72" data-suffix="%">0%</div></div>
+              <div class="kc"><label>Records</label><div class="val" data-count="5">0</div></div>
+            </div>
+            <div class="itab">
+              <div class="itab-head"><span>Client</span><span>Amount</span><span>Status</span></div>
+              <div class="irow"><div><b>Acme Labs</b><small>Product sprint &middot; Jun 25</small></div><strong>$4,800</strong><span class="chip c-green">Paid</span></div>
+              <div class="irow"><div><b>Dune Media</b><small>Brand refresh &middot; Jun 18</small></div><strong>$3,600</strong><span class="chip c-amber">6d late</span></div>
+              <div class="irow"><div><b>Solaris</b><small>API integration &middot; Jun 10</small></div><strong>$8,500</strong><span class="chip c-blue">x402</span></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
-</section>
-
-<!-- marquee -->
-<div class="marquee"><div class="m-track">
-  <span class="mchip"><b>Hermes</b> Freelance OS</span>
-  <span class="mchip"><b>Stripe</b> Test mode</span>
-  <span class="mchip"><b>x402</b> Crypto-native rail</span>
-  <span class="mchip"><b>ERC-8004</b> Work records</span>
-  <span class="mchip"><b>Base Sepolia</b> Testnet</span>
-  <span class="mchip"><b>Render</b> Live deployment</span>
-  <span class="mchip"><b>Helmet</b> Security hardened</span>
-  <span class="mchip"><b>Webhooks</b> Payment confirmed</span>
-  <span class="mchip"><b>Real invoices</b> No mock rows</span>
-  <span class="mchip"><b>API-key</b> Protected writes</span>
-  <span class="mchip"><b>Hermes</b> Freelance OS</span>
-  <span class="mchip"><b>Stripe</b> Test mode</span>
-  <span class="mchip"><b>x402</b> Crypto-native rail</span>
-  <span class="mchip"><b>ERC-8004</b> Work records</span>
-  <span class="mchip"><b>Base Sepolia</b> Testnet</span>
-  <span class="mchip"><b>Render</b> Live deployment</span>
-  <span class="mchip"><b>Helmet</b> Security hardened</span>
-  <span class="mchip"><b>Webhooks</b> Payment confirmed</span>
-  <span class="mchip"><b>Real invoices</b> No mock rows</span>
-  <span class="mchip"><b>API-key</b> Protected writes</span>
 </div></div>
 
-<!-- how it works -->
-<section id="workflow"><div class="wrap">
-  <div class="section-head reveal">
-    <div class="kicker">How to get started</div>
-    <h2>Your first win is five minutes away.</h2>
-    <p class="lead">No long onboarding. No demo wizard. Create a real invoice, collect payment, earn a record.</p>
-  </div>
-  <div class="step-grid">
-    <div class="step-card reveal d1">
-      <div class="step-n">Step 01</div>
-      <div class="step-chip">&#x1F4CB; Invoice</div>
-      <h3>Create a real invoice</h3>
-      <p>Open the dashboard, hit &ldquo;Create Invoice,&rdquo; pick a client and amount, choose Stripe or x402. A real record goes straight to the live backend &mdash; no mock rows.</p>
+<!-- MARQUEE -->
+<div class="ticker"><div class="ticker-track">
+  <span class="tick"><b>Hermes</b> Freelance OS</span>
+  <span class="tick"><b>Stripe</b> Test mode</span>
+  <span class="tick"><b>x402</b> Crypto-native rail</span>
+  <span class="tick"><b>ERC-8004</b> Portable work records</span>
+  <span class="tick"><b>Base Sepolia</b> Testnet</span>
+  <span class="tick"><b>Render</b> No credit card</span>
+  <span class="tick"><b>Helmet</b> Security hardened</span>
+  <span class="tick"><b>Webhooks</b> Payment confirmed</span>
+  <span class="tick"><b>Real invoices</b> No seed data</span>
+  <span class="tick"><b>Rate-limited</b> API writes</span>
+  <span class="tick"><b>Hermes</b> Freelance OS</span>
+  <span class="tick"><b>Stripe</b> Test mode</span>
+  <span class="tick"><b>x402</b> Crypto-native rail</span>
+  <span class="tick"><b>ERC-8004</b> Portable work records</span>
+  <span class="tick"><b>Base Sepolia</b> Testnet</span>
+  <span class="tick"><b>Render</b> No credit card</span>
+  <span class="tick"><b>Helmet</b> Security hardened</span>
+  <span class="tick"><b>Webhooks</b> Payment confirmed</span>
+  <span class="tick"><b>Real invoices</b> No seed data</span>
+  <span class="tick"><b>Rate-limited</b> API writes</span>
+</div></div>
+
+<!-- HOW IT WORKS -->
+<section id="how"><div class="wrap">
+  <div class="sh rv"><div class="tag">How it works</div><h2>Five minutes to your first real invoice.</h2><p class="lede">No onboarding wizard. No sample data to delete. Open the dashboard, create an invoice, get paid.</p></div>
+  <div class="step-row">
+    <div class="sc d1">
+      <div class="sc-n">01 &mdash; Create</div>
+      <h3>Make a real invoice</h3>
+      <p>Pick a client, set an amount, choose Stripe or x402. One click &mdash; it hits the live backend immediately. No templates, no config.</p>
     </div>
-    <div class="step-card reveal d2">
-      <div class="step-n">Step 02</div>
-      <div class="step-chip">&#x1F4B3; Collect</div>
-      <h3>Send a pay link</h3>
-      <p>Share the hosted pay link. Your client pays through Stripe test mode or x402 on Base Sepolia. A webhook hits the backend the moment payment confirms.</p>
+    <div class="sc d2">
+      <div class="sc-n">02 &mdash; Collect</div>
+      <h3>Send a pay link, get paid</h3>
+      <p>Your client pays through Stripe (test mode) or x402 on Base Sepolia. A webhook fires the moment it confirms and updates your dashboard live.</p>
     </div>
-    <div class="step-card reveal d3">
-      <div class="step-n">Step 03</div>
-      <div class="step-chip">&#x1F9FE; Proof</div>
-      <h3>Own your work record</h3>
-      <p>Confirmed payments mint an ERC-8004&ndash;style record &mdash; a portable, verifiable history of paid work that belongs to you, not any platform.</p>
+    <div class="sc d3">
+      <div class="sc-n">03 &mdash; Prove</div>
+      <h3>Own a work record</h3>
+      <p>Every confirmed payment can mint an ERC-8004&ndash;style credential. Portable proof of paid work &mdash; not locked to any platform or employer.</p>
     </div>
   </div>
 </div></section>
 
-<!-- from lead to paid -->
+<!-- PRODUCT -->
 <section id="product"><div class="wrap">
-  <div class="section-head reveal">
-    <div class="kicker">The Operations Platform</div>
-    <h2>From invoice to paid proof.<br>All in one place.</h2>
-    <p class="lead">Stay on top of invoices, clients, payments, and records &mdash; without the spreadsheet mess.</p>
-  </div>
-  <div class="alt">
-    <div class="alt-text reveal">
-      <div class="kicker">Invoices</div>
-      <h2>Send invoices in under two minutes.</h2>
-      <p class="lead" style="margin-bottom:24px">No templates to configure. Pick a client, add an amount, choose a payment rail, hit send. The record is live the moment you submit.</p>
-      <a class="btn primary" href="/frontend/index.html">Create your first invoice &rarr;</a>
+  <div class="sh rv"><div class="tag">Product</div><h2>Everything in one cockpit. <span class="muted">Nothing to bolt on.</span></h2></div>
+  <div class="twoX">
+    <div class="tx-copy rv">
+      <div class="tag">Invoices</div>
+      <h2>Under two minutes to send an invoice.</h2>
+      <p class="lede" style="margin-bottom:22px">No template library, no setup steps. Pick a client, set the amount and rail, hit send. The record is in the backend before the tab closes.</p>
+      <a class="btn btn-dark" href="/frontend/index.html">Create one now &rarr;</a>
     </div>
-    <div class="alt-vis reveal d2">
-      <div class="section-label">New invoice</div>
-      <div style="display:grid;gap:10px;margin-top:8px">
-        <div style="background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px"><span style="color:var(--muted);font-size:12px;font-weight:800;display:block;margin-bottom:4px">CLIENT</span><b>TechCorp Inc.</b></div>
+    <div class="tx-vis rv d2">
+      <div style="display:grid;gap:10px">
+        <div style="background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:13px 15px"><span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:4px">Client</span><b style="font-size:15px">Acme Labs</b></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div style="background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px"><span style="color:var(--muted);font-size:12px;font-weight:800;display:block;margin-bottom:4px">AMOUNT</span><b>$4,800.00</b></div>
-          <div style="background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px"><span style="color:var(--muted);font-size:12px;font-weight:800;display:block;margin-bottom:4px">DUE</span><b>Net 14</b></div>
+          <div style="background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:13px 15px"><span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:4px">Amount</span><b style="font-size:15px">$4,800</b></div>
+          <div style="background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:13px 15px"><span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:4px">Due</span><b style="font-size:15px">Net 14</b></div>
         </div>
-        <div style="background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px"><span style="color:var(--muted);font-size:12px;font-weight:800;display:block;margin-bottom:4px">PAYMENT RAIL</span><b>Stripe test mode</b></div>
-        <button style="background:var(--ink);color:#fff;border-radius:10px;padding:13px;font-size:14px;font-weight:800;width:100%;cursor:pointer">Send invoice &rarr;</button>
+        <div style="background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:13px 15px"><span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:4px">Rail</span><b style="font-size:15px">Stripe test mode</b></div>
+        <button onclick="this.textContent='Sending…';setTimeout(()=>this.textContent='Invoice sent ✓',900)" style="background:var(--ink);color:#fff;border:0;border-radius:11px;padding:14px;font-size:14px;font-weight:900;cursor:pointer;transition:.2s">Send invoice &rarr;</button>
       </div>
     </div>
   </div>
-  <div class="alt flip">
-    <div class="alt-text reveal">
-      <div class="kicker">Dashboard</div>
-      <h2>See your cockpit come alive.</h2>
-      <p class="lead">Every invoice, payment, and record you create instantly shapes your cockpit. Live KPIs, revenue trends, and client health &mdash; auto-refreshed every 10 seconds from the live backend.</p>
+  <div class="twoX rev">
+    <div class="tx-copy rv">
+      <div class="tag">Dashboard</div>
+      <h2>Your cockpit fills in from day one.</h2>
+      <p class="lede">Every invoice and payment you log shapes the overview instantly. Revenue, win rate, outstanding balance &mdash; pulled live from the backend every 10 seconds.</p>
     </div>
-    <div class="alt-vis reveal d2">
-      <div class="section-label">Revenue this month</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div><span style="font-size:11.5px;font-weight:800;color:var(--muted)">TOTAL</span><div style="font-size:32px;font-weight:900;letter-spacing:-.06em;margin-top:4px">$18,400</div></div>
-        <div><span style="font-size:11.5px;font-weight:800;color:var(--muted)">WIN RATE</span><div style="font-size:32px;font-weight:900;letter-spacing:-.06em;margin-top:4px">72%</div></div>
+    <div class="tx-vis rv d2">
+      <div class="num-row">
+        <div class="nc"><label>Revenue</label><div class="big-num" data-count="18400" data-prefix="$">$0</div><div class="bar-wrap" style="margin-top:10px"><div class="bar-fill" style="--w:78%"></div></div></div>
+        <div class="nc"><label>Win rate</label><div class="big-num" data-count="72" data-suffix="%">0%</div><div class="bar-wrap" style="margin-top:10px"><div class="bar-fill" style="--w:72%"></div></div></div>
       </div>
-      <div class="bars"><i style="height:42%"></i><i style="height:61%"></i><i style="height:50%"></i><i style="height:78%" class="active"></i><i style="height:65%"></i><i style="height:95%" class="active"></i></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px">
+        <div style="background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;letter-spacing:-.05em" data-count="3">0</div><div style="font-size:11px;font-weight:800;color:var(--muted);margin-top:4px">Active</div></div>
+        <div style="background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;letter-spacing:-.05em" data-count="5">0</div><div style="font-size:11px;font-weight:800;color:var(--muted);margin-top:4px">Records</div></div>
+        <div style="background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;letter-spacing:-.05em;color:var(--green)" data-count="14">0</div><div style="font-size:11px;font-weight:800;color:var(--muted);margin-top:4px">Avg days paid</div></div>
+      </div>
     </div>
   </div>
-  <div class="alt">
-    <div class="alt-text reveal">
-      <div class="kicker">Smart Insights</div>
-      <h2>Know who pays late and what&rsquo;s working.</h2>
-      <p class="lead">The patterns hiding in your business, surfaced automatically. Which clients pay slow, which projects earn the most, what rail settles fastest.</p>
+  <div class="twoX">
+    <div class="tx-copy rv">
+      <div class="tag">Insights</div>
+      <h2>Know who pays late before it costs you.</h2>
+      <p class="lede">Payment patterns surface automatically. Which clients consistently pay slow, which projects earn the most per hour &mdash; the intel a connected system can deliver.</p>
     </div>
-    <div class="alt-vis reveal d2">
-      <div class="insight-box">
-        <div class="insight-badge">&#x26A0; Needs attention</div>
-        <div class="insight-text">Web3Labs is 6 days overdue on a $3,600 invoice.</div>
-        <div class="insight-sub">This client has averaged 9 days late over the last 3 invoices. Consider Net-7 terms or upfront deposit next time.</div>
-        <div class="client-row"><span class="avatar">W3</span><div><b>Web3Labs</b><sub>Frontend sprint &middot; $3,600 overdue</sub></div></div>
-        <div class="action-row">&#x1F4AC; Draft a follow-up payment reminder &rarr;</div>
+    <div class="tx-vis rv d2">
+      <div class="ins-card">
+        <div class="ins-badge">&#9888; Needs attention</div>
+        <div class="ins-main">Dune Media is 6 days overdue on a $3,600 invoice.</div>
+        <div class="ins-sub">This client has averaged 9 days late across the last 3 invoices. Consider Net&ndash;7 terms or an upfront deposit next time.</div>
+        <div class="ins-client"><span class="av">DM</span><div><b>Dune Media</b><small>Brand refresh &middot; $3,600 overdue</small></div></div>
+        <div class="ins-action">Draft a follow-up payment reminder &rarr;</div>
       </div>
     </div>
   </div>
 </div></section>
 
-<!-- compare -->
+<!-- COMPARE -->
 <section><div class="wrap">
-  <div class="section-head reveal">
-    <div class="kicker">Before &amp; After</div>
-    <h2>Fewer tools. Better insight.</h2>
-    <p class="lead">When everything is connected, you finally see what&rsquo;s working &mdash; and what&rsquo;s not.</p>
-  </div>
-  <div class="compare">
-    <div class="comp-card reveal d1">
-      <h3>The usual mess</h3>
-      <ul class="check-list">
-        <li><span class="ci no">&times;</span>Invoices in Figma, clients in spreadsheets, leads in notes</li>
-        <li><span class="ci no">&times;</span>No verifiable record of paid work</li>
-        <li><span class="ci no">&times;</span>Card-only &mdash; no crypto-native settlement</li>
-        <li><span class="ci no">&times;</span>Manual status chasing, stale dashboards</li>
-        <li><span class="ci no">&times;</span>Zero intel on who actually pays on time</li>
+  <div class="sh rv"><div class="tag">Before &amp; after</div><h2>Fewer tools. <span class="muted">Actual clarity.</span></h2></div>
+  <div class="cmp">
+    <div class="cp rv d1">
+      <h3>The usual approach</h3>
+      <ul class="cl">
+        <li><span class="ci y">&times;</span>Invoices in Figma, clients in a spreadsheet, leads somewhere else</li>
+        <li><span class="ci y">&times;</span>No record of who paid you or when &mdash; just bank entries</li>
+        <li><span class="ci y">&times;</span>Card payments only, no crypto-native settlement option</li>
+        <li><span class="ci y">&times;</span>Chasing payments manually, one message at a time</li>
+        <li><span class="ci y">&times;</span>No idea which client is actually worth keeping</li>
       </ul>
     </div>
-    <div class="comp-card active reveal d2">
+    <div class="cp dark rv d2">
       <h3>HermesWork</h3>
-      <ul class="check-list">
-        <li><span class="ci ok">&#10003;</span>Invoices, clients, payments, and proof in one cockpit</li>
-        <li><span class="ci ok">&#10003;</span>Payment-backed ERC-8004&ndash;style work records you own</li>
-        <li><span class="ci ok">&#10003;</span>Dual rails: Stripe test mode + x402 on Base Sepolia</li>
-        <li><span class="ci ok">&#10003;</span>Webhook-confirmed status, live-refreshing automatically</li>
-        <li><span class="ci ok">&#10003;</span>Client payment history &amp; late-pay signals built in</li>
+      <ul class="cl">
+        <li><span class="ci g">&#10003;</span>Invoices, clients, payments, and proof in a single cockpit</li>
+        <li><span class="ci g">&#10003;</span>Payment-backed ERC-8004 work records you own outright</li>
+        <li><span class="ci g">&#10003;</span>Stripe test mode and x402 on Base Sepolia, both in one flow</li>
+        <li><span class="ci g">&#10003;</span>Webhook-confirmed status, auto-refreshing every 10 seconds</li>
+        <li><span class="ci g">&#10003;</span>Late-payment signals and client health, built in &mdash; no add-ons</li>
       </ul>
     </div>
   </div>
 </div></section>
 
-<!-- payments -->
+<!-- PAYMENTS -->
 <section id="payments"><div class="wrap">
-  <div class="section-head reveal">
-    <div class="kicker">Payment rails</div>
-    <h2>Two rails. One ledger.</h2>
-    <p class="lead">Choose the right rail per invoice. Both confirm via the backend and feed the same live ledger and proof system.</p>
-  </div>
-  <div class="rail-grid">
-    <div class="rail-card reveal d1">
-      <div class="rail-icon">&#x1F4B3;</div>
-      <h3>Stripe test mode</h3>
-      <p>Real Stripe integration with test keys. Hosted pay links, automatic webhook confirmation, and real invoice records &mdash; without moving real money.</p>
-      <div class="rail-meta">
-        <div class="rm"><span>Key type</span><strong>sk_test_&hellip;</strong></div>
-        <div class="rm"><span>Confirmation</span><strong>Webhook event</strong></div>
-        <div class="rm"><span>Status</span><strong style="color:var(--green)">Connected</strong></div>
-      </div>
-    </div>
-    <div class="rail-card reveal d2">
-      <div class="rail-icon">&#x26A1;</div>
-      <h3>x402 crypto-native</h3>
-      <p>Payment-proof route for on-chain settlement. USDC on Base Sepolia with a verifiable proof flow that updates the same dashboard live.</p>
-      <div class="rail-meta">
-        <div class="rm"><span>Asset</span><strong>USDC</strong></div>
-        <div class="rm"><span>Chain</span><strong>Base Sepolia</strong></div>
-        <div class="rm"><span>Proof</span><strong>ERC-8004 record</strong></div>
-      </div>
-    </div>
-    <div class="rail-card reveal d3">
-      <div class="rail-icon">&#x1F9FE;</div>
-      <h3>Work records</h3>
-      <p>Every confirmed payment can mint an ERC-8004&ndash;style record &mdash; a portable, verifiable history of paid work you carry with you, not locked in any platform.</p>
-      <div class="rail-meta">
-        <div class="rm"><span>Standard</span><strong>ERC-8004</strong></div>
-        <div class="rm"><span>Portable</span><strong>Yes &mdash; you own it</strong></div>
-        <div class="rm"><span>Chains</span><strong>Base Sepolia</strong></div>
-      </div>
-    </div>
+  <div class="sh rv"><div class="tag">Payment rails</div><h2>Two rails. <span class="muted">One reconciliation.</span></h2><p class="lede">Choose per invoice. Both hit the same backend, confirm via webhook or proof, and feed the same ledger.</p></div>
+  <div class="rail-row">
+    <div class="rc d1"><div class="rc-ico">&#x1F4B3;</div><h3>Stripe test mode</h3><p>Real Stripe integration, test keys. Hosted pay links and webhook-confirmed payment events. Nothing moves until you swap to live keys.</p><div class="rc-meta"><div class="rm"><span>Key type</span><strong>sk_test_&hellip;</strong></div><div class="rm"><span>Confirm via</span><strong>Stripe webhook</strong></div><div class="rm"><span>Real money?</span><strong>No &mdash; test only</strong></div></div></div>
+    <div class="rc d2"><div class="rc-ico">&#x26A1;</div><h3>x402 crypto-native</h3><p>Payment-proof route using USDC on Base Sepolia. Submit proof, backend verifies on-chain, dashboard updates live.</p><div class="rc-meta"><div class="rm"><span>Asset</span><strong>USDC</strong></div><div class="rm"><span>Chain</span><strong>Base Sepolia</strong></div><div class="rm"><span>Settlement</span><strong>On-chain proof</strong></div></div></div>
+    <div class="rc d3"><div class="rc-ico">&#x1F9FE;</div><h3>Work records</h3><p>Confirmed payments mint ERC-8004&ndash;style records. Portable, verifiable, yours &mdash; not locked to any platform or client relationship.</p><div class="rc-meta"><div class="rm"><span>Standard</span><strong>ERC-8004</strong></div><div class="rm"><span>Portable</span><strong>Yes &mdash; you own it</strong></div><div class="rm"><span>Chain</span><strong>Base Sepolia</strong></div></div></div>
   </div>
 </div></section>
 
-<!-- deploy -->
+<!-- DEPLOY -->
 <section id="deploy"><div class="wrap">
-  <div class="deploy-strip reveal">
+  <div class="deploy-card rv">
     <div>
-      <div class="kicker" style="color:rgba(255,255,255,.4)">Zero-cost deployment</div>
-      <h2>Live on Render in minutes.<br>No credit card.</h2>
-      <p style="margin-bottom:28px">Backend as a web service. Frontend as a static site. Free SSL and auto deploys from GitHub.</p>
-      <a class="btn brand" href="/frontend/index.html">Open dashboard &rarr;</a>
-      <div class="deploy-steps" style="margin-top:28px">
-        <div class="ds"><span>Backend</span><strong>Web Service &middot; node server.js</strong></div>
-        <div class="ds"><span>Frontend</span><strong>Static Site &middot; publish .</strong></div>
-        <div class="ds"><span>SSL</span><strong>Automatic</strong></div>
-        <div class="ds"><span>Card required?</span><strong>No</strong></div>
+      <div class="tag" style="color:rgba(255,255,255,.35)">Zero-cost deployment</div>
+      <h2>Live in 10 minutes. <span style="color:rgba(255,255,255,.3)">No card.</span></h2>
+      <p class="lede">Backend as a Render web service. Frontend as a static site. Free SSL, auto-deploys on every push.</p>
+      <a class="btn btn-blue" href="/frontend/index.html" style="margin-bottom:28px">Open dashboard &rarr;</a>
+      <div>
+        <div class="dstep"><span>Backend</span><strong>Web Service &middot; node server.js</strong></div>
+        <div class="dstep"><span>Frontend</span><strong>Static Site &middot; publish directory .</strong></div>
+        <div class="dstep"><span>SSL</span><strong>Automatic, no config</strong></div>
+        <div class="dstep"><span>Credit card?</span><strong>Not required</strong></div>
       </div>
     </div>
     <div>
-      <div class="code-block"><span class="cm"># backend (Render Web Service)</span><br>Root Directory: backend<br>Build: npm install<br>Start: node server.js<br><br><span class="cm"># live backend</span><br>GET  /health   &rarr; { status: &quot;ok&quot; }<br>GET  /api/kpis &rarr; live KPIs<br>POST /invoice/create &rarr; &#x1F512; api-key</div>
+      <div class="term"><span class="c"># backend root dir: backend/</span><br>Build:  npm install<br>Start:  node server.js<br><br><span class="c"># live endpoints</span><br>GET  /health          &rarr; { status:&quot;ok&quot; }<br>GET  /api/kpis        &rarr; live numbers<br>POST /invoice/create  &rarr; &#x1F512; api-key<br>POST /webhooks/stripe &rarr; confirmed</div>
     </div>
   </div>
 </div></section>
 
-<!-- faq -->
+<!-- FAQ -->
 <section><div class="wrap">
-  <div class="faq-2col">
-    <div class="reveal">
-      <div class="kicker">FAQ</div>
+  <div class="faq-wrap">
+    <div class="rv">
+      <div class="tag">FAQ</div>
       <h2>Totally fair to ask.</h2>
-      <p class="lead" style="margin-top:16px">HermesWork is built for independent builders who want a real operating system, not a wireframe or a SaaS demo.</p>
+      <p class="lede" style="margin-top:14px">HermesWork is a real tool for real work. No closed beta, no waitlist &mdash; just open the dashboard and start.</p>
     </div>
-    <div class="faq-list reveal d1">
-      <div class="faq-item"><div class="faq-q">Is this real data or demo data?</div><div class="faq-a">Real data only. The dashboard stays empty until you create real invoices or Stripe test webhooks confirm payments. Only Stripe runs in test mode &mdash; no other demo layer.</div></div>
-      <div class="faq-item"><div class="faq-q">What does &ldquo;Stripe test mode&rdquo; mean?</div><div class="faq-a">Full Stripe integration using test keys &mdash; so you can run the entire payment flow, see webhooks fire, and confirm payments without moving real money.</div></div>
-      <div class="faq-item"><div class="faq-q">What is the x402 rail?</div><div class="faq-a">A crypto-native payment-proof route using USDC on Base Sepolia. Payment proof is verified and recorded the same way as Stripe &mdash; one record, two rails.</div></div>
-      <div class="faq-item"><div class="faq-q">How do I deploy it?</div><div class="faq-a">Render: backend as a web service, frontend as a static site. No credit card required, free SSL, auto deploys from GitHub every push.</div></div>
-      <div class="faq-item"><div class="faq-q">What are ERC-8004 work records?</div><div class="faq-a">A portable credential standard for freelancers. Every confirmed payment can mint a record &mdash; verifiable, on-chain proof of paid work that you own and can carry anywhere.</div></div>
+    <div class="faq-list rv d1">
+      <div class="fi"><div class="fi-q">Is this real data or a demo? <span class="arr">&#8964;</span></div><div class="fi-a">Real data only. The dashboard starts empty and fills in as you create invoices, confirm payments, and receive webhooks. No seed data, no sample rows to clean up.</div></div>
+      <div class="fi"><div class="fi-q">What does Stripe test mode mean exactly? <span class="arr">&#8964;</span></div><div class="fi-a">Full Stripe integration using test-mode keys. You run the complete payment flow &mdash; hosted page, webhook, confirmation &mdash; without any real money involved. Swap to live keys when ready.</div></div>
+      <div class="fi"><div class="fi-q">What is the x402 payment rail? <span class="arr">&#8964;</span></div><div class="fi-a">A crypto-native payment-proof route. Your client submits a USDC payment on Base Sepolia, the backend verifies the on-chain proof, and the invoice is marked confirmed &mdash; same as Stripe.</div></div>
+      <div class="fi"><div class="fi-q">How do I deploy it for free? <span class="arr">&#8964;</span></div><div class="fi-a">Render: backend as a Web Service (root dir: backend, start: node server.js), frontend as a Static Site. No credit card required. Free SSL. Auto-deploys from GitHub on every push.</div></div>
+      <div class="fi"><div class="fi-q">What are ERC-8004 work records? <span class="arr">&#8964;</span></div><div class="fi-a">A portable credential for freelancers. Every confirmed payment can generate a signed, on-chain record that proves you did the work and got paid &mdash; no middleman, no platform lock-in.</div></div>
     </div>
   </div>
 </div></section>
 
-<!-- cta strip -->
-<div class="cta-strip"><div class="wrap">
-  <div class="reveal">
-    <h2>Stop running on guesswork.</h2>
-    <p>Real invoices, live backend, dual payment rails, and work records you own &mdash; open the dashboard and start today.</p>
-    <a class="btn brand" href="/frontend/index.html">Open live dashboard &rarr;</a>
-  </div>
+<div class="cta"><div class="wrap">
+  <div class="rv"><h2>Stop guessing. <span style="color:var(--faint)">Start knowing.</span></h2><p>Real invoices, live payments, and work records you own &mdash; open the dashboard now.</p><a class="btn btn-blue" href="/frontend/index.html">Open dashboard &rarr;</a></div>
 </div></div>
 
 <footer><div class="wrap foot">
   <div class="foot-brand">HermesWork</div>
-  <div class="foot-links">
-    <a href="/frontend/index.html">Dashboard</a>
-    <a href="https://github.com/salch-cred/hermeswork" target="_blank" rel="noopener">GitHub</a>
-    <a href="#workflow">How it works</a>
-    <a href="#payments">Payments</a>
-  </div>
+  <div class="foot-links"><a href="/frontend/index.html">Dashboard</a><a href="https://github.com/salch-cred/hermeswork" target="_blank">GitHub</a><a href="#how">How it works</a><a href="#payments">Payments</a></div>
   <div class="foot-copy">Built for independent builders.</div>
 </div></footer>
 
 <script>
-const io = new IntersectionObserver(es => {
-  es.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.classList.add('in');
-      const b = e.target.querySelector('.bars');
-      if (b) b.classList.add('visible');
-      io.unobserve(e.target);
-    }
+// ---- scroll reveal ----
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('in');
+    // trigger bar fills inside
+    e.target.querySelectorAll('.bar-fill').forEach(b => b.classList.add('in'));
+    io.unobserve(e.target);
   });
-}, { threshold: 0.15 });
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-document.querySelectorAll('.bars').forEach(b => {
-  const o = new IntersectionObserver(es => {
-    es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); o.unobserve(e.target); } });
-  }, { threshold: 0.3 });
-  o.observe(b);
+}, { threshold: 0.12 });
+document.querySelectorAll('.rv,.sc,.rc').forEach(el => io.observe(el));
+
+// ---- animated counters ----
+function animateCount(el) {
+  const target = parseInt(el.dataset.count, 10);
+  const prefix = el.dataset.prefix || '';
+  const suffix = el.dataset.suffix || '';
+  const duration = 1200;
+  const start = performance.now();
+  function fmt(n) {
+    if (target >= 1000) return prefix + n.toLocaleString('en-US') + suffix;
+    return prefix + n + suffix;
+  }
+  function step(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3); // cubic out
+    el.textContent = fmt(Math.round(ease * target));
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+const countIO = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.querySelectorAll('[data-count]').forEach(animateCount);
+    countIO.unobserve(e.target);
+  });
+}, { threshold: 0.2 });
+document.querySelectorAll('.hero-card,.tx-vis,.krow').forEach(el => countIO.observe(el));
+
+// ---- faq accordion ----
+document.querySelectorAll('.fi').forEach(fi => {
+  fi.querySelector('.fi-q').addEventListener('click', () => {
+    const isOpen = fi.classList.contains('open');
+    document.querySelectorAll('.fi.open').forEach(f => f.classList.remove('open'));
+    if (!isOpen) fi.classList.add('open');
+  });
 });
+
+// ---- nav shadow on scroll ----
+window.addEventListener('scroll', () => {
+  document.querySelector('nav').style.boxShadow =
+    window.scrollY > 10 ? '0 1px 24px rgba(0,0,0,.08)' : 'none';
+}, { passive: true });
 </script>
 </body>
 </html>
