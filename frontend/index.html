@@ -13,84 +13,54 @@
 
 <div class="app-shell">
 
-  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
     <div class="sidebar-logo">
       <div class="logo-icon">
         <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
-      <div>
-        <div class="logo-text">Hermes<span>Work</span></div>
-      </div>
+      <div><div class="logo-text">Hermes<span>Work</span></div></div>
     </div>
 
     <div class="sidebar-nav">
       <div class="nav-section-label">Overview</div>
-
       <div class="nav-item active" onclick="navigate('dashboard')" id="nav-dashboard" role="button" tabindex="0" aria-label="Dashboard">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
         Dashboard
       </div>
-
       <div class="nav-section-label" style="margin-top:16px">Finance</div>
-
       <div class="nav-item" onclick="navigate('invoices')" id="nav-invoices" role="button" tabindex="0" aria-label="Invoices">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
         Invoices
-        <span class="nav-badge" id="badge-overdue">1</span>
+        <span class="nav-badge" id="badge-overdue">0</span>
       </div>
-
       <div class="nav-item" onclick="navigate('payments')" id="nav-payments" role="button" tabindex="0" aria-label="Payments">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
         Payments
       </div>
-
       <div class="nav-item" onclick="navigate('analytics')" id="nav-analytics" role="button" tabindex="0" aria-label="Analytics">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
         Analytics
       </div>
-
       <div class="nav-section-label" style="margin-top:16px">CRM</div>
-
       <div class="nav-item" onclick="navigate('clients')" id="nav-clients" role="button" tabindex="0" aria-label="Clients">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
         Clients
       </div>
-
       <div class="nav-item" onclick="navigate('proposals')" id="nav-proposals" role="button" tabindex="0" aria-label="Proposals">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
         Proposals
-        <span class="nav-badge yellow" id="badge-pending">2</span>
+        <span class="nav-badge yellow" id="badge-pending">0</span>
       </div>
-
       <div class="nav-section-label" style="margin-top:16px">Reputation</div>
-
       <div class="nav-item" onclick="navigate('reputation')" id="nav-reputation" role="button" tabindex="0" aria-label="Reputation">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>
         Reputation
-        <span class="nav-badge green">5</span>
+        <span class="nav-badge green">0</span>
       </div>
-
       <div class="nav-section-label" style="margin-top:16px">System</div>
-
       <div class="nav-item" onclick="navigate('settings')" id="nav-settings" role="button" tabindex="0" aria-label="Settings">
-        <span class="nav-icon">
-          <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </span>
+        <span class="nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
         Settings
       </div>
     </div>
@@ -99,18 +69,15 @@
       <div class="agent-status">
         <div class="status-dot"></div>
         <div class="status-info">
-          <div class="status-label">System Active</div>
-          <div class="status-sub">All Rails Connected</div>
+          <div class="status-label">Connecting…</div>
+          <div class="status-sub">Checking backend</div>
         </div>
         <span style="font-size:14px">🟢</span>
       </div>
     </div>
   </nav>
 
-  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
   <div class="main-content">
-
-    <!-- ─── Top Bar ─── -->
     <header class="topbar" role="banner">
       <div class="topbar-left">
         <div>
@@ -123,7 +90,7 @@
         <button class="topbar-btn" id="btn-refresh" title="Refresh data" aria-label="Refresh data" onclick="refreshData()">
           <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
         </button>
-        <button class="topbar-btn" id="btn-notifications" title="Notifications" aria-label="Notifications" onclick="showToast('📨 3 new notifications from Hermes', 'success')">
+        <button class="topbar-btn" id="btn-notifications" title="Notifications" aria-label="Notifications" onclick="showToast('3 new notifications from Hermes', 'success')">
           <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="badge">3</span>
         </button>
@@ -131,91 +98,63 @@
       </div>
     </header>
 
-    <!-- ═══════════════════ PAGE: DASHBOARD ═══════════════════ -->
+    <!-- DASHBOARD -->
     <main class="page-content active fade-in" id="page-dashboard" role="main" aria-label="Dashboard">
-      <!-- KPI Grid -->
       <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-icon purple">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
+          <div class="kpi-icon purple"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <div class="kpi-label">Monthly Revenue</div>
-          <div class="kpi-value" id="kpi-mrr">$8,650</div>
-          <div class="kpi-trend up">↑ 18.5% vs last month</div>
+          <div class="kpi-value" id="kpi-mrr">$0</div>
+          <div class="kpi-trend up">live from backend</div>
           <div class="mini-chart" id="sparkline-mrr"></div>
         </div>
-
         <div class="kpi-card">
-          <div class="kpi-icon cyan">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          </div>
+          <div class="kpi-icon cyan"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <div class="kpi-label">Active Invoices</div>
-          <div class="kpi-value" id="kpi-invoices">3</div>
-          <div class="kpi-trend neutral">$15,200 outstanding</div>
+          <div class="kpi-value" id="kpi-invoices">0</div>
+          <div class="kpi-trend neutral">outstanding</div>
         </div>
-
         <div class="kpi-card">
-          <div class="kpi-icon green">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-          </div>
+          <div class="kpi-icon green"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
           <div class="kpi-label">Proposal Win Rate</div>
-          <div class="kpi-value" id="kpi-winrate">75%</div>
-          <div class="kpi-trend up">↑ 2pts this month</div>
+          <div class="kpi-value" id="kpi-winrate">0%</div>
+          <div class="kpi-trend up">decided proposals</div>
         </div>
-
         <div class="kpi-card">
-          <div class="kpi-icon gold">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-          </div>
+          <div class="kpi-icon gold"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div>
           <div class="kpi-label">Reputation Score</div>
-          <div class="kpi-value" style="color:var(--accent-gold)" id="kpi-rep">1,060</div>
-          <div class="kpi-trend up">Elite · 5 credentials</div>
+          <div class="kpi-value" style="color:var(--accent-gold)" id="kpi-rep">0</div>
+          <div class="kpi-trend up">ERC-8004 credentials</div>
         </div>
-
         <div class="kpi-card">
-          <div class="kpi-icon blue">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
+          <div class="kpi-icon blue"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
           <div class="kpi-label">Avg Days to Payment</div>
-          <div class="kpi-value" id="kpi-days">7.3</div>
-          <div class="kpi-trend up">↓ 4.7 days faster</div>
+          <div class="kpi-value" id="kpi-days">0</div>
+          <div class="kpi-trend up">collection time</div>
         </div>
-
         <div class="kpi-card">
-          <div class="kpi-icon purple">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
+          <div class="kpi-icon purple"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
           <div class="kpi-label">Active Projects</div>
-          <div class="kpi-value" id="kpi-hours">4</div>
-          <div class="kpi-trend up">2 finishing this month</div>
+          <div class="kpi-value" id="kpi-hours">0</div>
+          <div class="kpi-trend up">in progress</div>
         </div>
       </div>
 
-      <!-- Bottom grid: Platform Schedules + Recent Activity -->
       <div class="two-col" style="gap:20px; margin-bottom:24px">
-        <!-- Platform Schedules -->
         <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title">
-                <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Automated Workflows
-              </div>
+              <div class="card-title"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Automated Workflows</div>
               <div class="card-subtitle">HermesWork system schedules</div>
             </div>
             <div class="badge badge-paid" style="font-size:12px">● ACTIVE</div>
           </div>
           <div id="scheduled-tasks-mini"></div>
         </div>
-
-        <!-- Recent Activity -->
         <div class="card">
           <div class="card-header">
             <div>
-              <div class="card-title">
-                <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Recent Activity
-              </div>
+              <div class="card-title"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Recent Activity</div>
               <div class="card-subtitle">Latest platform activity</div>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="navigate('settings')">View All</button>
@@ -225,18 +164,15 @@
       </div>
     </main>
 
-    <!-- ═══════════════════ PAGE: INVOICES ═══════════════════ -->
+    <!-- INVOICES -->
     <main class="page-content fade-in" id="page-invoices" role="main" aria-label="Invoices">
       <div class="section-header">
         <div>
           <div class="section-title">Invoices</div>
           <div class="section-subtitle">Manage your freelance billing</div>
         </div>
-        <button class="btn btn-primary" id="btn-create-invoice" onclick="openInvoiceModal()" aria-label="Create new invoice">
-          + Create Invoice
-        </button>
+        <button class="btn btn-primary" id="btn-create-invoice" onclick="openInvoiceModal()" aria-label="Create new invoice">+ Create Invoice</button>
       </div>
-
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap">
         <div class="filter-tabs" id="invoice-filters">
           <div class="filter-tab active" onclick="filterInvoices('all', this)">All</div>
@@ -249,7 +185,6 @@
           <input type="text" id="invoice-search" placeholder="Search invoices…" oninput="searchInvoices(this.value)" aria-label="Search invoices">
         </div>
       </div>
-
       <div class="card" style="padding:0">
         <div class="table-wrap">
           <table class="data-table" id="invoices-table">
@@ -274,31 +209,28 @@
       </div>
     </main>
 
-    <!-- ═══════════════════ PAGE: CLIENTS ═══════════════════ -->
+    <!-- CLIENTS -->
     <main class="page-content fade-in" id="page-clients" role="main" aria-label="Clients CRM">
       <div class="section-header">
         <div>
           <div class="section-title">Clients</div>
           <div class="section-subtitle">Your CRM — know every relationship</div>
         </div>
-        <button class="btn btn-primary" onclick="showToast('👥 Add Client coming soon!', 'success')" aria-label="Add new client">+ Add Client</button>
+        <button class="btn btn-primary" onclick="showToast('Add Client coming soon', 'success')" aria-label="Add new client">+ Add Client</button>
       </div>
-
       <div class="grid-auto fade-in" id="clients-grid"></div>
     </main>
 
-    <!-- ═══════════════════ PAGE: PROPOSALS ═══════════════════ -->
+    <!-- PROPOSALS -->
     <main class="page-content fade-in" id="page-proposals" role="main" aria-label="Proposals">
       <div class="section-header">
         <div>
           <div class="section-title">Proposals</div>
           <div class="section-subtitle">Track wins, learn from losses</div>
         </div>
-        <button class="btn btn-primary" onclick="showToast('✍️ Generating draft proposal…', 'success')" aria-label="Generate new proposal">✨ Draft Proposal</button>
+        <button class="btn btn-primary" onclick="showToast('Generating draft proposal…', 'success')" aria-label="Generate new proposal">Draft Proposal</button>
       </div>
-
       <div class="stats-row" id="proposal-stats"></div>
-
       <div class="card" style="padding:0">
         <div class="table-wrap">
           <table class="data-table" id="proposals-table">
@@ -319,27 +251,22 @@
       </div>
     </main>
 
-    <!-- ═══════════════════ PAGE: REPUTATION ═══════════════════ -->
+    <!-- REPUTATION -->
     <main class="page-content fade-in" id="page-reputation" role="main" aria-label="On-chain Reputation">
       <div class="section-header">
         <div>
           <div class="section-title">On-Chain Reputation</div>
           <div class="section-subtitle">ERC-8004 credentials on Base Sepolia</div>
         </div>
-        <button class="btn btn-secondary" onclick="showToast('🔗 Profile link copied!', 'success')">🔗 Copy Profile Link</button>
+        <button class="btn btn-secondary" onclick="showToast('Profile link copied', 'success')">Copy Profile Link</button>
       </div>
-
       <div class="two-col" style="margin-bottom:24px">
-        <!-- Score card -->
         <div class="card" style="background:linear-gradient(135deg,rgba(79,70,229,0.04),rgba(13,148,136,0.02)); border-color:var(--border-default)">
           <div style="text-align:center; padding:12px 0">
             <div class="score-gauge">
               <svg width="140" height="140" viewBox="0 0 140 140">
                 <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(0,0,0,0.03)" stroke-width="12"/>
-                <circle cx="70" cy="70" r="58" fill="none"
-                  stroke="url(#scoreGrad)" stroke-width="12"
-                  stroke-dasharray="364" stroke-dashoffset="36"
-                  stroke-linecap="round"/>
+                <circle cx="70" cy="70" r="58" fill="none" stroke="url(#scoreGrad)" stroke-width="12" stroke-dasharray="364" stroke-dashoffset="364" stroke-linecap="round"/>
                 <defs>
                   <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stop-color="#4F46E5"/>
@@ -347,46 +274,24 @@
                   </linearGradient>
                 </defs>
               </svg>
-              <div class="score-value">
-                <div class="number">990</div>
-                <div class="label">/ 1000</div>
-              </div>
+              <div class="score-value"><div class="number">0</div><div class="label">/ 1000</div></div>
             </div>
-            <div style="font-size:22px; font-weight:800; margin-bottom:4px" class="gradient-text">Elite</div>
-            <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px">Top 1% of verified freelancers</div>
+            <div style="font-size:22px; font-weight:800; margin-bottom:4px" class="gradient-text">Emerging</div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px">Build reputation by getting paid</div>
             <div class="three-col" style="gap:12px; text-align:center">
-              <div>
-                <div style="font-size:22px; font-weight:800; color:var(--accent-gold)" id="rep-total">5</div>
-                <div style="font-size:11px; color:var(--text-muted)">Credentials</div>
-              </div>
-              <div>
-                <div style="font-size:22px; font-weight:800; color:var(--color-success)" id="rep-verified">4</div>
-                <div style="font-size:11px; color:var(--text-muted)">Verified</div>
-              </div>
-              <div>
-                <div style="font-size:22px; font-weight:800; color:var(--accent-cyan)" id="rep-earnings">$19,450</div>
-                <div style="font-size:11px; color:var(--text-muted)">On-chain</div>
-              </div>
+              <div><div style="font-size:22px; font-weight:800; color:var(--accent-gold)" id="rep-total">0</div><div style="font-size:11px; color:var(--text-muted)">Credentials</div></div>
+              <div><div style="font-size:22px; font-weight:800; color:var(--color-success)" id="rep-verified">0</div><div style="font-size:11px; color:var(--text-muted)">Verified</div></div>
+              <div><div style="font-size:22px; font-weight:800; color:var(--accent-cyan)" id="rep-earnings">$0</div><div style="font-size:11px; color:var(--text-muted)">On-chain</div></div>
             </div>
           </div>
         </div>
-
-        <!-- Share Section -->
         <div class="card">
-          <div class="card-title" style="margin-bottom:16px">📤 Share Your Reputation</div>
+          <div class="card-title" style="margin-bottom:16px">Share Your Reputation</div>
           <div style="display:flex; flex-direction:column; gap:10px">
-            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="showToast('📋 Badge URL copied!', 'success')">
-              🔗 Copy Reputation Badge URL
-            </button>
-            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="showToast('💼 Added to Upwork profile!', 'success')">
-              💼 Add to Upwork Profile
-            </button>
-            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="showToast('🔗 Shared on LinkedIn!', 'success')">
-              in Share on LinkedIn
-            </button>
-            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="window.open('https://8004scan.io', '_blank')">
-              🔍 View on 8004scan.io ↗
-            </button>
+            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="showToast('Badge URL copied', 'success')">Copy Reputation Badge URL</button>
+            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="showToast('Added to Upwork profile', 'success')">Add to Upwork Profile</button>
+            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="showToast('Shared on LinkedIn', 'success')">Share on LinkedIn</button>
+            <button class="btn btn-secondary" style="justify-content:flex-start; gap:10px" onclick="window.open('https://8004scan.io', '_blank')">View on 8004scan.io ↗</button>
           </div>
           <div style="margin-top:20px; padding:12px; background:var(--bg-card); border-radius:var(--radius-sm); border:1px solid var(--border-default)">
             <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px">On-Chain Identity</div>
@@ -395,13 +300,11 @@
           </div>
         </div>
       </div>
-
-      <!-- Credential Cards -->
-      <div class="section-title" style="margin-bottom:16px">🪙 On-Chain Credentials</div>
+      <div class="section-title" style="margin-bottom:16px">On-Chain Credentials</div>
       <div class="grid-auto" id="reputation-grid"></div>
     </main>
 
-    <!-- ═══════════════════ PAGE: PAYMENTS ═══════════════════ -->
+    <!-- PAYMENTS -->
     <main class="page-content fade-in" id="page-payments" role="main" aria-label="Payments Hub">
       <div class="section-header">
         <div>
@@ -414,86 +317,40 @@
           <span style="font-size:12px; color:var(--accent-gold)">● Base Sepolia</span>
         </div>
       </div>
-
       <div class="payment-rails">
         <div class="rail-card stripe">
-          <div class="rail-logo">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          </div>
+          <div class="rail-logo"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
           <div class="rail-name">Stripe</div>
           <div class="rail-subtitle">Fiat Payment Gateway</div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Accepts</span>
-            <span class="rail-stat-value">USD, EUR, GBP</span>
-          </div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Settlement</span>
-            <span class="rail-stat-value">2–7 business days</span>
-          </div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Fee</span>
-            <span class="rail-stat-value">2.9% + $0.30</span>
-          </div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Volume (June)</span>
-            <span class="rail-stat-value" style="color:var(--color-success)">$8,200</span>
-          </div>
-          <div class="rail-status">
-            <span>●</span> Connected ✓
-          </div>
+          <div class="rail-stat"><span class="rail-stat-label">Accepts</span><span class="rail-stat-value">USD, EUR, GBP</span></div>
+          <div class="rail-stat"><span class="rail-stat-label">Settlement</span><span class="rail-stat-value">2–7 business days</span></div>
+          <div class="rail-stat"><span class="rail-stat-label">Fee</span><span class="rail-stat-value">2.9% + $0.30</span></div>
+          <div class="rail-stat"><span class="rail-stat-label">Volume</span><span class="rail-stat-value" style="color:var(--color-success)" id="stripe-volume">$0</span></div>
+          <div class="rail-status"><span>●</span> Connected ✓</div>
         </div>
-
         <div class="rail-card x402">
-          <div class="rail-logo">
-            <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
+          <div class="rail-logo"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
           <div class="rail-name">x402 Protocol</div>
           <div class="rail-subtitle">USDC Stablecoin · Base Network</div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Accepts</span>
-            <span class="rail-stat-value">USDC on Base</span>
-          </div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Settlement</span>
-            <span class="rail-stat-value" style="color:var(--accent-cyan)">&lt; 1 second</span>
-          </div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Fee</span>
-            <span class="rail-stat-value" style="color:var(--color-success)">&lt; $0.01 gas</span>
-          </div>
-          <div class="rail-stat">
-            <span class="rail-stat-label">Volume (June)</span>
-            <span class="rail-stat-value" style="color:var(--accent-cyan)">1,800 USDC</span>
-          </div>
-          <div class="rail-status" style="color:var(--accent-cyan)">
-            <span>●</span> Connected (Base Sepolia)
-          </div>
+          <div class="rail-stat"><span class="rail-stat-label">Accepts</span><span class="rail-stat-value">USDC on Base</span></div>
+          <div class="rail-stat"><span class="rail-stat-label">Settlement</span><span class="rail-stat-value" style="color:var(--accent-cyan)">&lt; 1 second</span></div>
+          <div class="rail-stat"><span class="rail-stat-label">Fee</span><span class="rail-stat-value" style="color:var(--color-success)">&lt; $0.01 gas</span></div>
+          <div class="rail-stat"><span class="rail-stat-label">Volume</span><span class="rail-stat-value" style="color:var(--accent-cyan)" id="x402-volume">$0</span></div>
+          <div class="rail-status" style="color:var(--accent-cyan)"><span>●</span> Connected (Base Sepolia)</div>
         </div>
       </div>
-
-      <!-- Recent Payments -->
       <div class="card" style="padding:0">
-        <div style="padding:16px 20px; border-bottom:1px solid var(--border-default)">
-          <div class="card-title">Recent Payments</div>
-        </div>
+        <div style="padding:16px 20px; border-bottom:1px solid var(--border-default)"><div class="card-title">Recent Payments</div></div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Client</th>
-                <th>Amount</th>
-                <th>Rail</th>
-                <th>Transaction ID</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Transaction ID</th></tr></thead>
             <tbody id="payments-tbody"></tbody>
           </table>
         </div>
       </div>
     </main>
 
-    <!-- ═══════════════════ PAGE: ANALYTICS ═══════════════════ -->
+    <!-- ANALYTICS -->
     <main class="page-content fade-in" id="page-analytics" role="main" aria-label="Analytics">
       <div class="section-header">
         <div>
@@ -506,67 +363,39 @@
           <div class="filter-tab" onclick="this.parentElement.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active')">1yr</div>
         </div>
       </div>
-
       <div class="stats-row" style="margin-bottom:24px" id="analytics-stats"></div>
-
       <div class="two-col" style="margin-bottom:24px">
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">Revenue Over Time</div>
-            <div style="font-size:11px; color:var(--text-muted)">Monthly USD</div>
-          </div>
+          <div class="card-header"><div class="card-title">Revenue Over Time</div><div style="font-size:11px; color:var(--text-muted)">Monthly USD</div></div>
           <div class="chart-container"><canvas id="chart-revenue"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">Proposal Win Rate</div>
-            <div style="font-size:11px; color:var(--text-muted)">% won over total decided</div>
-          </div>
+          <div class="card-header"><div class="card-title">Proposal Win Rate</div><div style="font-size:11px; color:var(--text-muted)">% won over total decided</div></div>
           <div class="chart-container"><canvas id="chart-winrate"></canvas></div>
         </div>
       </div>
-
       <div class="two-col" style="margin-bottom:24px">
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">Days to Payment</div>
-            <div style="font-size:11px; color:var(--text-muted)">Average collection time</div>
-          </div>
+          <div class="card-header"><div class="card-title">Days to Payment</div><div style="font-size:11px; color:var(--text-muted)">Average collection time</div></div>
           <div class="chart-container"><canvas id="chart-days"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">ERC-8004 Credentials</div>
-            <div style="font-size:11px; color:var(--text-muted)">On-chain badges per month</div>
-          </div>
+          <div class="card-header"><div class="card-title">ERC-8004 Credentials</div><div style="font-size:11px; color:var(--text-muted)">On-chain badges per month</div></div>
           <div class="chart-container"><canvas id="chart-credentials"></canvas></div>
         </div>
       </div>
-
-      <!-- Performance Target Tracker -->
       <div class="card" style="padding:0">
-        <div style="padding:16px 20px; border-bottom:1px solid var(--border-default)">
-          <div class="card-title">📈 Performance Target Tracker</div>
-          <div class="card-subtitle">Platform baseline vs actual metrics</div>
-        </div>
+        <div style="padding:16px 20px; border-bottom:1px solid var(--border-default)"><div class="card-title">Performance Target Tracker</div><div class="card-subtitle">Platform baseline vs actual metrics</div></div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Baseline</th>
-                <th>Target</th>
-                <th>Current</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Current</th><th>Status</th></tr></thead>
             <tbody id="hypothesis-tbody"></tbody>
           </table>
         </div>
       </div>
     </main>
 
-    <!-- ═══════════════════ PAGE: SETTINGS ═══════════════════ -->
+    <!-- SETTINGS -->
     <main class="page-content fade-in" id="page-settings" role="main" aria-label="Settings">
       <div class="section-header">
         <div>
@@ -574,191 +403,96 @@
           <div class="section-subtitle">Configure your platform preferences</div>
         </div>
       </div>
-
       <div class="two-col">
-        <!-- API Keys -->
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">🔑 API Keys</div>
-          </div>
+          <div class="card-header"><div class="card-title">API Keys</div></div>
           <div class="form-group">
-            <label class="form-label">Stripe Secret Key</label>
-            <input type="password" class="form-input" value="sk_test_••••••••••••••••" readonly>
-          </div>
-          <div class="form-group">
-            <label class="form-label">OpenRouter API Key</label>
-            <input type="password" class="form-input" value="sk-or-v1-••••••••" readonly>
-          </div>
-          <div class="form-group">
-            <label class="form-label">HermesWork API Key (for Zite)</label>
+            <label class="form-label">HermesWork API Key (required for writes)</label>
             <div style="display:flex; gap:8px">
-              <input type="password" class="form-input" id="api-key-field" value="hwk_live_••••••••••••" readonly>
-              <button class="btn btn-secondary btn-sm" onclick="showToast('📋 API key copied!', 'success')">Copy</button>
+              <input type="password" class="form-input" id="hermes-api-key" placeholder="Paste your HERMESWORK_API_KEY">
+              <button class="btn btn-primary btn-sm" onclick="saveApiKeyFromField()">Save</button>
             </div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px">Stored only in this browser (localStorage). Must match the backend HERMESWORK_API_KEY. Required to create invoices, seed data, and confirm payments in production.</div>
           </div>
           <div class="form-group">
             <label class="form-label">x402 Payment Address</label>
             <input type="text" class="form-input mono" value="0x742d35Cc...f44e" readonly>
           </div>
-          <button class="btn btn-primary" onclick="showToast('✅ Keys saved securely!', 'success')">Save Keys</button>
         </div>
-
-        <!-- Automation Settings -->
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">⚙️ Automation Toggles</div>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Auto Follow-up Emails</div>
-              <div class="setting-desc">Automatically send reminders for overdue invoices</div>
-            </div>
-            <label class="toggle" aria-label="Toggle auto follow-up">
-              <input type="checkbox" checked>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Auto Job Alerts</div>
-              <div class="setting-desc">Scan job boards for listings matching your profile</div>
-            </div>
-            <label class="toggle" aria-label="Toggle auto job scanning">
-              <input type="checkbox" checked>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Auto Proposal Drafts</div>
-              <div class="setting-desc">Automatically draft template proposals for review</div>
-            </div>
-            <label class="toggle" aria-label="Toggle auto proposal generation">
-              <input type="checkbox" checked>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Auto Credential Minting</div>
-              <div class="setting-desc">Automatically mint reputation badges on payment confirmation</div>
-            </div>
-            <label class="toggle" aria-label="Toggle auto credential minting">
-              <input type="checkbox" checked>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Telegram Alerts</div>
-              <div class="setting-desc">Send payments and settlement reports to Telegram</div>
-            </div>
-            <label class="toggle" aria-label="Toggle Telegram notifications">
-              <input type="checkbox" checked>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
+          <div class="card-header"><div class="card-title">Automation Toggles</div></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-label">Auto Follow-up Emails</div><div class="setting-desc">Automatically send reminders for overdue invoices</div></div><label class="toggle" aria-label="Toggle auto follow-up"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-label">Auto Job Alerts</div><div class="setting-desc">Scan job boards for listings matching your profile</div></div><label class="toggle" aria-label="Toggle auto job scanning"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-label">Auto Proposal Drafts</div><div class="setting-desc">Automatically draft template proposals for review</div></div><label class="toggle" aria-label="Toggle auto proposal generation"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-label">Auto Credential Minting</div><div class="setting-desc">Automatically mint reputation badges on payment confirmation</div></div><label class="toggle" aria-label="Toggle auto credential minting"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><div class="setting-info"><div class="setting-label">Telegram Alerts</div><div class="setting-desc">Send payments and settlement reports to Telegram</div></div><label class="toggle" aria-label="Toggle Telegram notifications"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
         </div>
-
-        <!-- Scheduled Tasks -->
         <div class="card col-span-2" style="grid-column:1/-1">
-          <div class="card-header">
-            <div class="card-title">⏰ Scheduled Tasks (Cron Jobs)</div>
-            <div class="badge badge-paid">5 Active</div>
-          </div>
+          <div class="card-header"><div class="card-title">Scheduled Tasks (Cron Jobs)</div><div class="badge badge-paid">5 Active</div></div>
           <div id="cron-list"></div>
         </div>
-
-        <!-- Backend Connection -->
         <div class="card col-span-2" style="grid-column:1/-1">
-          <div class="card-header">
-            <div class="card-title">🔌 Backend Connection</div>
-          </div>
+          <div class="card-header"><div class="card-title">Backend Connection</div></div>
           <div class="form-group">
             <label class="form-label">Backend URL</label>
             <div style="display:flex; gap:8px">
               <input type="text" class="form-input" value="http://localhost:3500" id="backend-url">
               <button class="btn btn-primary" onclick="testBackend()">Test Connection</button>
+              <button class="btn btn-secondary" onclick="seedDemoData()">Seed Demo Data</button>
             </div>
           </div>
-          <div style="font-size:12px; color:var(--text-muted)">
-            Deploy backend to Oracle Cloud and enter your VPS IP here. Frontend will pull live data.
-          </div>
+          <div style="font-size:12px; color:var(--text-muted)">Deploy backend to Oracle Cloud and enter your VPS IP here. Frontend pulls live data. Seeding requires a valid API key in production.</div>
         </div>
       </div>
     </main>
 
-  </div><!-- end main-content -->
-</div><!-- end app-shell -->
+  </div>
+</div>
 
-<!-- ═══════════════════ MOBILE STICKY BOTTOM NAV (Mobbin / 60fps) ═════════════ -->
+<!-- MOBILE NAV -->
 <div class="mobile-nav" id="mobile-nav" role="navigation" aria-label="Mobile Navigation">
   <div class="mobile-nav-item active" onclick="navigate('dashboard')" id="mob-nav-dashboard" role="button" tabindex="0">
-    <div class="mobile-nav-icon">
-      <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-    </div>
+    <div class="mobile-nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
     <div class="mobile-nav-label">Home</div>
   </div>
   <div class="mobile-nav-item" onclick="navigate('invoices')" id="mob-nav-invoices" role="button" tabindex="0">
-    <div class="mobile-nav-icon">
-      <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-    </div>
+    <div class="mobile-nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
     <div class="mobile-nav-label">Invoices</div>
   </div>
   <div class="mobile-nav-item" onclick="navigate('clients')" id="mob-nav-clients" role="button" tabindex="0">
-    <div class="mobile-nav-icon">
-      <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-    </div>
+    <div class="mobile-nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
     <div class="mobile-nav-label">Clients</div>
   </div>
   <div class="mobile-nav-item" onclick="navigate('reputation')" id="mob-nav-reputation" role="button" tabindex="0">
-    <div class="mobile-nav-icon">
-      <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-    </div>
+    <div class="mobile-nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div>
     <div class="mobile-nav-label">Reputation</div>
   </div>
   <div class="mobile-nav-item" onclick="navigate('settings')" id="mob-nav-settings" role="button" tabindex="0">
-    <div class="mobile-nav-icon">
-      <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </div>
+    <div class="mobile-nav-icon"><svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
     <div class="mobile-nav-label">Settings</div>
   </div>
 </div>
 
-<!-- ═══════════════════ MODAL: CREATE INVOICE ═══════════════════ -->
+<!-- MODAL: CREATE INVOICE -->
 <div class="modal-overlay" id="invoice-modal" role="dialog" aria-modal="true" aria-label="Create Invoice">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">🧾 Create Invoice</div>
+      <div class="modal-title">Create Invoice</div>
       <div class="modal-close" onclick="closeInvoiceModal()" aria-label="Close modal">✕</div>
     </div>
-
     <form id="invoice-form" onsubmit="submitInvoice(event)">
       <div class="form-group">
         <label class="form-label" for="inv-client">Client Name</label>
         <input type="text" class="form-input" id="inv-client" placeholder="e.g. TechCorp Inc." required>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="inv-amount">Amount (USD)</label>
-          <input type="number" class="form-input" id="inv-amount" placeholder="3500" required min="1">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="inv-due">Due Date</label>
-          <input type="date" class="form-input" id="inv-due" required>
-        </div>
+        <div class="form-group"><label class="form-label" for="inv-amount">Amount (USD)</label><input type="number" class="form-input" id="inv-amount" placeholder="3500" required min="1"></div>
+        <div class="form-group"><label class="form-label" for="inv-due">Due Date</label><input type="date" class="form-input" id="inv-due" required></div>
       </div>
-      <div class="form-group">
-        <label class="form-label" for="inv-desc">Description</label>
-        <input type="text" class="form-input" id="inv-desc" placeholder="Web development services, May 2026">
-      </div>
+      <div class="form-group"><label class="form-label" for="inv-desc">Description</label><input type="text" class="form-input" id="inv-desc" placeholder="Web development services, May 2026"></div>
       <div class="form-group">
         <label class="form-label" for="inv-rail">Payment Rail</label>
-        <select class="form-select" id="inv-rail">
-          <option value="stripe">💳 Stripe (Fiat)</option>
-          <option value="x402">⚡ x402 (USDC)</option>
-          <option value="both">Both</option>
-        </select>
+        <select class="form-select" id="inv-rail"><option value="stripe">Stripe (Fiat)</option><option value="x402">x402 (USDC)</option><option value="both">Both</option></select>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button>
@@ -768,8 +502,7 @@
   </div>
 </div>
 
-<!-- ═══════════════════ FAB ═══════════════════ -->
-<div class="fab" onclick="showToast('🦅 HermesWork: All payment rails and systems are fully operational.', 'success')" title="System Status" aria-label="System Status">
+<div class="fab" onclick="showToast('HermesWork: all payment rails and systems are operational.', 'success')" title="System Status" aria-label="System Status">
   <svg class="h-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 </div>
 
