@@ -1,29 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HermesWork — Freelance operations, payments, and proof</title>
-  <meta name="description" content="HermesWork helps independent builders manage invoices, payment status, client signals, and payment-backed work history from one focused dashboard.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root{--bg:#fbfbfa;--surface:#fff;--surface2:#f4f3ee;--ink:#141414;--muted:#676761;--faint:#9b9b93;--line:#e6e4dc;--green:#0f7a4f;--green2:#e7f5ee;--blue:#2457c5;--blue2:#e8efff;--amber:#a56412;--amber2:#fff2d9;--shadow:0 1px 2px rgba(20,20,20,.04),0 24px 70px rgba(20,20,20,.08);--max:1160px;--r:22px}*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;overflow-x:hidden}a{text-decoration:none;color:inherit}.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}.bg-grid{position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(20,20,20,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(20,20,20,.035) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,#000,transparent 82%)}.orb{position:fixed;border-radius:999px;filter:blur(45px);opacity:.65;pointer-events:none;animation:float 12s ease-in-out infinite}.orb.one{width:420px;height:420px;background:var(--green2);right:-120px;top:40px}.orb.two{width:360px;height:360px;background:var(--blue2);left:-120px;top:460px;animation-delay:-4s}@keyframes float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(18px,-24px,0)}}.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:13px;padding:12px 18px;font-size:14px;font-weight:800;border:1px solid transparent;transition:.18s ease}.btn.primary{background:var(--ink);color:#fff}.btn.secondary{background:rgba(255,255,255,.72);border-color:var(--line)}.btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.10)}nav{position:sticky;top:0;z-index:10;background:rgba(251,251,250,.78);backdrop-filter:blur(16px);border-bottom:1px solid rgba(230,228,220,.8)}.nav{height:68px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;gap:10px;align-items:center;font-weight:900}.mark{width:34px;height:34px;border-radius:11px;background:var(--ink);color:#fff;display:grid;place-items:center}.links{display:flex;gap:28px;color:var(--muted);font-size:14px;font-weight:700}.actions{display:flex;gap:10px}.hero{position:relative;padding:112px 0 84px}.hero-grid{display:grid;grid-template-columns:1.04fr .96fr;gap:56px;align-items:center}.eyebrow{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:800;color:var(--muted)}.dot{width:7px;height:7px;border-radius:99px;background:var(--green);box-shadow:0 0 0 5px var(--green2);animation:pulse 2s ease-in-out infinite}@keyframes pulse{50%{transform:scale(.72);opacity:.62}}h1{font-size:clamp(46px,7vw,80px);letter-spacing:-.07em;line-height:.95;margin:22px 0}p.lead{font-size:19px;color:var(--muted);max-width:650px}.ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}.proof-row{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.65);margin-top:40px}.proof-row div{padding:18px 20px}.proof-row div+div{border-left:1px solid var(--line)}.proof-row strong{font-size:24px;letter-spacing:-.04em}.proof-row span{display:block;color:var(--muted);font-size:13px}.product-shell{position:relative;background:#111;border-radius:28px;padding:10px;box-shadow:var(--shadow);transform:perspective(1100px) rotateY(-7deg) rotateX(3deg);transition:.35s ease}.product-shell:hover{transform:perspective(1100px) rotateY(-3deg) rotateX(1deg) translateY(-4px)}.product{background:var(--surface);border-radius:22px;overflow:hidden;border:1px solid var(--line)}.browser{height:42px;background:var(--surface2);display:flex;gap:7px;align-items:center;padding:0 16px;border-bottom:1px solid var(--line)}.browser i{width:9px;height:9px;background:#d8d5ca;border-radius:99px}.screen{padding:22px}.screen-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.screen-head b{font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}.status{font-size:12px;font-weight:900;color:var(--green);background:var(--green2);padding:5px 9px;border-radius:999px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}.metric{background:var(--surface2);border:1px solid var(--line);border-radius:15px;padding:14px}.metric span{font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:23px;letter-spacing:-.04em}.rows{border:1px solid var(--line);border-radius:17px;overflow:hidden}.row{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:14px;border-bottom:1px solid var(--line);font-size:13px;align-items:center}.row:last-child{border:0}.sub{display:block;color:var(--faint);font-size:12px}.tag{font-size:12px;font-weight:900;border-radius:999px;padding:4px 8px}.paid{background:var(--green2);color:var(--green)}.due{background:var(--amber2);color:var(--amber)}.chain{background:var(--blue2);color:var(--blue)}.marquee{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden}.track{display:flex;gap:12px;width:max-content;animation:marquee 28s linear infinite;padding:24px 0}.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:9px 15px;color:var(--muted);font-weight:750;font-size:14px}@keyframes marquee{to{transform:translateX(-50%)}}section{padding:92px 0;border-top:1px solid var(--line);position:relative}.kicker{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.09em;color:var(--green);margin-bottom:10px}h2{font-size:clamp(32px,4vw,50px);line-height:1.05;letter-spacing:-.045em;margin-bottom:14px}.section-head{max-width:720px;margin-bottom:36px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:var(--r);padding:28px;box-shadow:0 1px 1px rgba(0,0,0,.02);transition:.24s ease}.card:hover{transform:translateY(-5px);box-shadow:var(--shadow)}.num{width:36px;height:36px;display:grid;place-items:center;background:var(--surface2);border-radius:12px;font-weight:900;color:var(--muted);margin-bottom:18px}.card h3{font-size:23px;letter-spacing:-.04em;line-height:1.14;margin-bottom:10px}.card p{color:var(--muted);font-size:15px}.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}.panel{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:var(--r);padding:30px}.panel.dark{background:#111;color:#fff}.panel.dark p,.panel.dark li{color:#c9c9c2}.list{display:grid;gap:13px;list-style:none;margin-top:18px}.list li{display:flex;gap:10px;color:var(--muted)}.check,.x{width:22px;height:22px;border-radius:99px;display:grid;place-items:center;flex:0 0 22px;font-weight:900}.check{background:var(--green2);color:var(--green)}.x{background:#fff0e5;color:#9a3412}.showcase{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}.bars{height:150px;display:flex;align-items:flex-end;gap:8px;margin-top:22px}.bars i{flex:1;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#15875b,#cceede);transform-origin:bottom;animation:grow 1.2s cubic-bezier(.2,.8,.2,1) both}@keyframes grow{from{transform:scaleY(.1);opacity:.3}to{transform:scaleY(1);opacity:1}}.terminal{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#080808;color:#b6f3d0;border-radius:18px;padding:20px;line-height:1.8;font-size:13px;overflow:auto}.faq{display:grid;grid-template-columns:.8fr 1.2fr;gap:44px}.faq-list{border-top:1px solid var(--line)}.faq-item{padding:22px 0;border-bottom:1px solid var(--line)}.faq-item h3{font-size:17px;margin-bottom:8px}.faq-item p{color:var(--muted);font-size:15px}footer{padding:44px 0;border-top:1px solid var(--line);color:var(--muted)}.footer{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.footer a{font-weight:800;color:var(--ink)}.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}.reveal.in{opacity:1;transform:none}.delay1{transition-delay:.08s}.delay2{transition-delay:.16s}.delay3{transition-delay:.24s}@media(max-width:900px){.hero-grid,.split,.showcase,.faq{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.links{display:none}.product-shell{transform:none}.proof-row{grid-template-columns:1fr}.proof-row div+div{border-left:0;border-top:1px solid var(--line)}}@media(max-width:560px){.wrap{padding:0 18px}h1{font-size:42px}.actions .secondary{display:none}.metrics{grid-template-columns:1fr}.ctas{flex-direction:column}.btn{width:100%}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HermesWork — Freelance operations, payments, and proof</title>
+<meta name="description" content="HermesWork is one focused dashboard for real invoices, Stripe test payments, dual payment rails, and payment-backed work records for independent builders.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090f;--surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.07);--ink:#f0f2f8;--muted:#8891a8;--faint:#4a5068;--line:rgba(255,255,255,.08);--brand:#4f8eff;--brand2:rgba(79,142,255,.12);--green:#22c55e;--green2:rgba(34,197,94,.12);--max:1160px;--r:22px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}button{font:inherit;cursor:pointer;border:0;background:0}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 900px 700px at 70% -5%,rgba(79,142,255,.18) 0,transparent 70%),radial-gradient(ellipse 700px 600px at 0% 80%,rgba(34,197,94,.1) 0,transparent 65%),radial-gradient(ellipse 600px 500px at 100% 110%,rgba(139,92,246,.1) 0,transparent 60%)}
+.orb{position:fixed;border-radius:999px;filter:blur(72px);opacity:.4;pointer-events:none;z-index:0;animation:drift 14s ease-in-out infinite}
+.orb1{width:500px;height:500px;background:rgba(79,142,255,.25);right:-180px;top:60px}
+.orb2{width:420px;height:420px;background:rgba(139,92,246,.18);left:-150px;top:520px;animation-delay:-5s;animation-duration:18s}
+.orb3{width:360px;height:360px;background:rgba(34,197,94,.12);right:20%;bottom:-80px;animation-delay:-9s;animation-duration:16s}
+@keyframes drift{0%,100%{transform:translate(0,0)}33%{transform:translate(20px,-28px)}66%{transform:translate(-18px,18px)}}
+nav{position:sticky;top:0;z-index:50;background:rgba(7,9,15,.78);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.nav{height:68px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.03em;font-size:17px}
+.mark{width:36px;height:36px;border-radius:11px;background:linear-gradient(145deg,#4f8eff,#6366f1);display:grid;place-items:center;font-size:15px;font-weight:900;color:#fff;box-shadow:0 0 0 1px rgba(79,142,255,.3),0 8px 24px rgba(79,142,255,.25)}
+.navlinks{display:flex;gap:28px;font-size:14px;font-weight:600;color:var(--muted)}
+.navlinks a:hover{color:var(--ink)}
+.nav-ctas{display:flex;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:13px;padding:10px 16px;font-size:13.5px;font-weight:800;transition:.18s ease;white-space:nowrap}
+.btn.primary{background:linear-gradient(135deg,#4f8eff,#6366f1);color:#fff;box-shadow:0 8px 24px rgba(79,142,255,.28)}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(79,142,255,.38)}
+.btn.secondary{background:var(--surface2);border:1px solid var(--line);color:var(--ink)}
+.btn.secondary:hover{background:rgba(255,255,255,.1)}
+.hero{padding:110px 0 80px;overflow:hidden}
+.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.hero-badge{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:800;color:var(--green);margin-bottom:24px;animation:fadeUp .6s ease both}
+.pulse-dot{width:7px;height:7px;border-radius:99px;background:var(--green);box-shadow:0 0 0 4px rgba(34,197,94,.18);animation:pulse 2s ease infinite}
+@keyframes pulse{50%{transform:scale(.7);opacity:.5}}
+h1{font-size:clamp(42px,6.5vw,76px);font-weight:900;letter-spacing:-.07em;line-height:.95;animation:fadeUp .7s .05s ease both}
+h1 .accent{background:linear-gradient(135deg,#4f8eff 0,#a78bfa 60%,#f472b6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:18px;color:var(--muted);max-width:560px;margin-top:18px;line-height:1.65;animation:fadeUp .7s .1s ease both}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px;animation:fadeUp .7s .16s ease both}
+.hero-trust{display:flex;align-items:center;gap:10px;margin-top:28px;flex-wrap:wrap;animation:fadeUp .7s .2s ease both}
+.trust-pill{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 11px;font-size:12px;font-weight:800;color:var(--muted)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.product-wrap{animation:fadeUp .8s .25s ease both}
+.product-shell{border-radius:28px;background:linear-gradient(145deg,rgba(79,142,255,.12),rgba(139,92,246,.08));border:1px solid rgba(79,142,255,.22);padding:10px;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 32px 80px rgba(0,0,0,.5);transform:perspective(1200px) rotateY(-6deg) rotateX(2deg);transition:.5s ease}
+.product-shell:hover{transform:perspective(1200px) rotateY(-2deg) rotateX(0) translateY(-6px);box-shadow:0 0 0 1px rgba(79,142,255,.3),0 40px 100px rgba(79,142,255,.15)}
+.product-card{background:#0e1118;border-radius:21px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+.pc-bar{height:40px;background:#141720;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 14px;gap:7px}
+.pc-bar i{width:10px;height:10px;border-radius:99px}
+.pc-bar i:nth-child(1){background:#ff5f57}.pc-bar i:nth-child(2){background:#ffbd2e}.pc-bar i:nth-child(3){background:#28c941}
+.pc-body{padding:20px}
+.pc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.pc-head b{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:900}
+.pc-live{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:99px;padding:5px 10px}
+.pc-live-dot{width:6px;height:6px;background:var(--green);border-radius:99px;animation:pulse 1.5s ease infinite}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:16px}
+.kpi{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:13px}
+.kpi span{font-size:11px;color:var(--muted);font-weight:700}
+.kpi strong{display:block;font-size:22px;font-weight:900;letter-spacing:-.04em;margin-top:5px}
+.kpi.up strong{color:#4ade80}
+.rows-card{border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px;align-items:center}
+.row:last-child{border:0}
+.row b{font-weight:800;color:var(--ink)}
+.row sub{display:block;color:var(--muted);font-size:11px;margin-top:2px;font-style:normal}
+.tag{font-size:11px;font-weight:900;border-radius:99px;padding:4px 9px}
+.t-paid{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.t-due{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.15)}
+.t-chain{background:rgba(79,142,255,.12);color:#93c5fd;border:1px solid rgba(79,142,255,.2)}
+.marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);overflow:hidden}
+.marquee-track{display:flex;width:max-content;animation:scroll 32s linear infinite}
+.mchip{padding:20px;border-right:1px solid var(--line);font-size:13.5px;font-weight:800;color:var(--muted);white-space:nowrap}
+.mchip span{color:var(--faint);margin-right:8px}
+@keyframes scroll{to{transform:translateX(-50%)}}
+section{padding:100px 0;border-top:1px solid var(--line)}
+.kicker{font-size:11.5px;font-weight:900;text-transform:uppercase;letter-spacing:.14em;color:var(--brand);margin-bottom:12px}
+h2{font-size:clamp(30px,4vw,48px);font-weight:900;letter-spacing:-.055em;line-height:1.05;margin-bottom:16px}
+.lead{font-size:17px;color:var(--muted);max-width:640px;line-height:1.65}
+.section-head{max-width:680px;margin-bottom:48px}
+.step-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px;transition:.3s ease}
+.step-card:hover{background:var(--surface2);border-color:rgba(79,142,255,.25);transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.step-num{width:38px;height:38px;border-radius:12px;background:var(--brand2);border:1px solid rgba(79,142,255,.25);display:grid;place-items:center;font-size:15px;font-weight:900;color:var(--brand);margin-bottom:20px}
+.step-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--brand);margin-bottom:10px}
+.step-card h3{font-size:22px;font-weight:900;letter-spacing:-.04em;line-height:1.15;margin-bottom:10px}
+.step-card p{color:var(--muted);font-size:15px;line-height:1.6}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.panel{border:1px solid var(--line);border-radius:var(--r);padding:30px;background:var(--surface)}
+.panel.glow{border-color:rgba(79,142,255,.25);background:linear-gradient(145deg,rgba(79,142,255,.06),rgba(99,102,241,.04));box-shadow:0 0 0 1px rgba(79,142,255,.1),0 24px 60px rgba(0,0,0,.3)}
+.panel h3{font-size:26px;font-weight:900;letter-spacing:-.05em;margin-bottom:18px}
+.check-list{list-style:none;display:grid;gap:13px}
+.check-list li{display:flex;gap:10px;color:var(--muted);font-size:15px;align-items:flex-start}
+.ico{width:22px;height:22px;border-radius:99px;flex:0 0 22px;display:grid;place-items:center;font-size:11px;font-weight:900;margin-top:2px}
+.ico.ok{background:var(--green2);color:var(--green)}
+.ico.bad{background:rgba(239,68,68,.1);color:#f87171}
+.showcase{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:stretch}
+.feat-screen{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px}
+.feat-screen h3{font-size:18px;font-weight:900;letter-spacing:-.04em;margin-bottom:20px}
+.dash-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dash-s{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:15px}
+.dash-s span{font-size:11px;color:var(--muted);font-weight:700}
+.dash-s strong{display:block;font-size:28px;font-weight:900;letter-spacing:-.05em;margin-top:8px}
+.bars{height:120px;display:flex;align-items:flex-end;gap:7px;margin-top:20px}
+.bars i{flex:1;border-radius:7px 7px 0 0;background:linear-gradient(180deg,var(--brand),rgba(79,142,255,.2));transform-origin:bottom;animation:grow 1.4s cubic-bezier(.2,.8,.2,1) both;animation-play-state:paused}
+@keyframes grow{from{transform:scaleY(.05);opacity:.3}to{transform:scaleY(1);opacity:1}}
+.bars.visible i{animation-play-state:running}
+.r-row{display:flex;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.05);padding:13px 0;font-size:13px}
+.r-row:last-child{border:0}
+.r-row span{color:var(--muted)}
+.proof-box{margin-top:16px;background:#050810;border:1px solid rgba(79,142,255,.15);border-radius:14px;padding:16px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.8;color:#93c5fd}
+.rail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.rail-card{border:1px solid var(--line);border-radius:var(--r);padding:28px;background:var(--surface);transition:.3s ease}
+.rail-card:hover{background:var(--surface2);border-color:rgba(79,142,255,.25);transform:translateY(-3px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.rail-ico{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;margin-bottom:16px;font-size:18px}
+.rail-ico.purple{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2)}
+.rail-ico.blue{background:var(--brand2);border:1px solid rgba(79,142,255,.2)}
+.rail-ico.green{background:var(--green2);border:1px solid rgba(34,197,94,.2)}
+.rail-card h3{font-size:20px;font-weight:900;letter-spacing:-.04em;margin-bottom:8px}
+.rail-card p{color:var(--muted);font-size:14px;line-height:1.6}
+.rail-facts{margin-top:16px;border-top:1px solid var(--line)}
+.rf{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.rf span{color:var(--muted)}
+.rf strong{color:var(--ink)}
+.deploy-block{background:linear-gradient(135deg,rgba(79,142,255,.08),rgba(139,92,246,.06));border:1px solid rgba(79,142,255,.18);border-radius:28px;padding:48px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;box-shadow:inset 0 0 100px rgba(79,142,255,.05)}
+.steps{display:grid;gap:10px}
+.step-row{display:flex;align-items:center;justify-content:space-between;gap:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:13px 16px;font-size:13.5px}
+.step-row span{color:var(--muted)}
+.terminal{font-family:ui-monospace,Menlo,monospace;background:#020407;border:1px solid rgba(79,142,255,.15);border-radius:16px;padding:20px;color:#93c5fd;font-size:12.5px;line-height:1.9;margin-top:14px;overflow:auto}
+.terminal .cm{color:#4a5568}
+.faq-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:48px}
+.faq-list{border-top:1px solid var(--line)}
+.faq-item{border-bottom:1px solid var(--line);padding:22px 0}
+.faq-item h3{font-size:17px;font-weight:800;margin-bottom:8px;letter-spacing:-.03em}
+.faq-item p{color:var(--muted);font-size:15px;line-height:1.65}
+footer{padding:44px 0;border-top:1px solid var(--line);color:var(--muted)}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.footer-brand{font-weight:900;font-size:16px;color:var(--ink)}
+.footer a{font-weight:800;color:var(--muted);transition:.15s}
+.footer a:hover{color:var(--ink)}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.07s}.d2{transition-delay:.14s}.d3{transition-delay:.21s}
+@media(max-width:900px){.hero-inner,.split,.showcase,.deploy-block,.faq-grid{grid-template-columns:1fr}.step-cards,.rail-grid{grid-template-columns:1fr}.navlinks{display:none}.product-shell{transform:none}.nav-ctas .secondary{display:none}}
+@media(max-width:560px){.wrap{padding:0 18px}h1{font-size:40px}.hero{padding:80px 0 60px}.deploy-block{padding:28px;gap:28px}section{padding:72px 0}}
+</style>
 </head>
 <body>
-  <div class="bg-grid"></div><div class="orb one"></div><div class="orb two"></div>
-  <nav><div class="wrap nav"><a class="brand" href="/frontend/landing.html"><span class="mark">H</span><span>HermesWork</span></a><div class="links"><a href="#workflow">Workflow</a><a href="#product">Product</a><a href="#payments">Payments</a><a href="#deploy">Deploy</a></div><div class="actions"><a class="btn secondary" href="https://github.com/salch-cred/hermeswork">GitHub</a><a class="btn primary" href="/frontend/index.html">Open dashboard</a></div></div></nav>
-  <header class="hero"><div class="wrap hero-grid"><div class="reveal"><div class="eyebrow"><span class="dot"></span> Live on Render · backend connected</div><h1>Freelance operations without the back-office mess.</h1><p class="lead">HermesWork gives independent builders one place to track invoices, client health, payment status, and payment-backed work history. Built as a real operating layer, not a slideshow.</p><div class="ctas"><a class="btn primary" href="/frontend/index.html">Open live dashboard</a><a class="btn secondary" href="#workflow">See workflow</a></div><div class="proof-row"><div><strong>2 rails</strong><span>Stripe and x402</span></div><div><strong>1 view</strong><span>Clients, invoices, trust</span></div><div><strong>Live</strong><span>Render backend online</span></div></div></div><div class="product-shell reveal delay1"><div class="product"><div class="browser"><i></i><i></i><i></i></div><div class="screen"><div class="screen-head"><b>Operations cockpit</b><span class="status">API online</span></div><div class="metrics"><div class="metric"><span>Paid</span><strong>$18.0k</strong></div><div class="metric"><span>Pending</span><strong>$11.0k</strong></div><div class="metric"><span>Records</span><strong>5</strong></div></div><div class="rows"><div class="row"><div><b>TechCorp</b><span class="sub">AI dashboard build</span></div><strong>$4,800</strong><span class="tag paid">Paid</span></div><div class="row"><div><b>Web3Labs</b><span class="sub">Frontend sprint</span></div><strong>$3,600</strong><span class="tag due">Overdue</span></div><div class="row"><div><b>FinTech Ltd</b><span class="sub">Mobile delivery</span></div><strong>$8,500</strong><span class="tag chain">x402</span></div></div></div></div></div></div></header>
-  <div class="marquee"><div class="track"><span class="chip">Hermes</span><span class="chip">Stripe</span><span class="chip">x402</span><span class="chip">ERC-8004-style records</span><span class="chip">Base Sepolia</span><span class="chip">Render</span><span class="chip">API-key protected writes</span><span class="chip">Payment links</span><span class="chip">Hermes</span><span class="chip">Stripe</span><span class="chip">x402</span><span class="chip">ERC-8004-style records</span><span class="chip">Base Sepolia</span><span class="chip">Render</span><span class="chip">API-key protected writes</span><span class="chip">Payment links</span></div></div>
-  <section id="workflow"><div class="wrap"><div class="section-head reveal"><div class="kicker">Workflow</div><h2>From request to paid proof in three steps.</h2><p class="lead">Create the invoice, collect through the right rail, then attach payment-backed proof to completed work.</p></div><div class="cards"><article class="card reveal"><div class="num">1</div><h3>Create the invoice.</h3><p>Client, amount, due date, description, and payment rail are stored in one backend record.</p></article><article class="card reveal delay1"><div class="num">2</div><h3>Collect without guessing.</h3><p>Track paid, pending, and overdue work from the dashboard with live backend status.</p></article><article class="card reveal delay2"><div class="num">3</div><h3>Record the proof.</h3><p>Payment confirmation creates a reputation record with amount, client, rail, and transaction reference.</p></article></div></div></section>
-  <section><div class="wrap split"><div class="panel reveal"><div class="kicker">Before</div><h2>Scattered admin.</h2><ul class="list"><li><span class="x">×</span><span>Invoices, client notes, and payment references live in separate tools.</span></li><li><span class="x">×</span><span>No quick way to see which work is paid or overdue.</span></li><li><span class="x">×</span><span>Trust has to be rebuilt on every new platform.</span></li></ul></div><div class="panel dark reveal delay1"><div class="kicker" style="color:#8df0b8">After</div><h2>One operating layer.</h2><ul class="list"><li><span class="check">✓</span><span>Invoices, clients, payments, and reputation in one dashboard.</span></li><li><span class="check">✓</span><span>Stripe and x402 paths connected to the same invoice model.</span></li><li><span class="check">✓</span><span>Payment-backed records for finished work.</span></li></ul></div></div></section>
-  <section id="product"><div class="wrap"><div class="section-head reveal"><div class="kicker">Product</div><h2>Designed like a workbench, not a pitch deck.</h2><p class="lead">Numbers first, actions nearby, and live backend data driving the dashboard.</p></div><div class="showcase"><div class="panel reveal"><h3>Dashboard signals</h3><div class="metrics" style="margin-top:18px"><div class="metric"><span>Revenue</span><strong>$12.4k</strong></div><div class="metric"><span>Win rate</span><strong>75%</strong></div><div class="metric"><span>Speed</span><strong>3.1d</strong></div></div><div class="bars"><i style="height:35%"></i><i style="height:52%"></i><i style="height:42%"></i><i style="height:76%"></i><i style="height:64%"></i><i style="height:92%"></i></div></div><div class="panel reveal delay1"><h3>Payment-backed record</h3><ul class="list"><li><span class="check">✓</span><span>Client: TechCorp Inc.</span></li><li><span class="check">✓</span><span>Amount: $4,800</span></li><li><span class="check">✓</span><span>Rail: Stripe or x402</span></li><li><span class="check">✓</span><span>Status: confirmed</span></li></ul><div class="terminal" style="margin-top:18px">tx: 0xabc1...ef34<br>network: base-sepolia<br>source: payment confirmation</div></div></div></div></section>
-  <section id="payments"><div class="wrap"><div class="section-head reveal"><div class="kicker">Payments</div><h2>Keep both rails. Let the client choose.</h2><p class="lead">Stripe handles familiar invoice payments. x402 gives an HTTP payment-required path for crypto-native clients.</p></div><div class="cards"><article class="card reveal"><h3>Stripe</h3><p>Card and invoice payment support with webhook-ready backend handling.</p></article><article class="card reveal delay1"><h3>x402</h3><p>USDC-oriented payment confirmation path for Base Sepolia workflows.</p></article><article class="card reveal delay2"><h3>Reputation</h3><p>Paid invoices create portable work records for future trust flows.</p></article></div></div></section>
-  <section id="deploy"><div class="wrap"><div class="panel dark reveal" style="padding:46px"><div class="kicker" style="color:#8df0b8">Deploy</div><h2>Live backend. Static frontend. Render-safe.</h2><p class="lead">Backend runs at hermeswork.onrender.com. Frontend calls the backend directly and supports browser-stored API keys for protected writes.</p><div class="terminal" style="margin-top:22px">GET /health → ok<br>GET /api/kpis → live dashboard data<br>POST /demo/seed → API-key protected sample data<br>POST /invoice/create → real backend write</div></div></div></section>
-  <section><div class="wrap faq"><div class="section-head reveal"><div class="kicker">FAQ</div><h2>Practical answers.</h2></div><div class="faq-list reveal delay1"><div class="faq-item"><h3>Is the dashboard connected?</h3><p>Yes. The frontend now defaults to https://hermeswork.onrender.com on Render and only uses localhost during local development.</p></div><div class="faq-item"><h3>Why do I need an API key?</h3><p>Write actions are protected. Save HERMESWORK_API_KEY in Settings, then create invoices or seed sample data.</p></div><div class="faq-item"><h3>What is real today?</h3><p>The backend, read APIs, protected write APIs, Stripe integration path, x402 payment route, and reputation record flow are implemented.</p></div></div></div></section>
-  <footer><div class="wrap footer"><div><strong>HermesWork</strong><br><span>Freelance operations, payments, and proof.</span></div><div><a href="/frontend/index.html">Dashboard</a> · <a href="https://github.com/salch-cred/hermeswork">GitHub</a> · <a href="https://form.typeform.com/to/hpEifIK4">Submit</a></div></div></footer>
-  <script>const io=new IntersectionObserver((entries)=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12,rootMargin:'0px 0px -40px 0px'});document.querySelectorAll('.reveal').forEach(el=>io.observe(el));document.querySelectorAll('.card,.panel').forEach(el=>{el.addEventListener('mousemove',e=>{const r=el.getBoundingClientRect();el.style.transform=`translateY(-5px) rotateX(${-(e.clientY-r.top-r.height/2)/90}deg) rotateY(${(e.clientX-r.left-r.width/2)/90}deg)`});el.addEventListener('mouseleave',()=>el.style.transform='')});</script>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+<nav><div class="wrap nav">
+<a class="brand" href="/frontend/landing.html"><span class="mark">H</span><span>HermesWork</span></a>
+<div class="navlinks"><a href="#workflow">Workflow</a><a href="#product">Product</a><a href="#payments">Payments</a><a href="#deploy">Deploy</a></div>
+<div class="nav-ctas"><a class="btn secondary" href="https://github.com/salch-cred/hermeswork" target="_blank" rel="noopener">GitHub</a><a class="btn primary" href="/frontend/index.html">Open dashboard</a></div>
+</div></nav>
+<header class="hero"><div class="wrap hero-inner">
+<div>
+<div class="hero-badge"><span class="pulse-dot"></span> Live backend · Stripe test mode · Render</div>
+<h1>Freelance ops,<br>payments, and <span class="accent">proof.</span></h1>
+<p class="hero-sub">One dashboard for real invoices, client health, dual payment rails, and payment-backed work records. Built for independent builders who want a real operating system, not a slideshow.</p>
+<div class="hero-ctas"><a class="btn primary" href="/frontend/index.html">Open live dashboard</a><a class="btn secondary" href="#workflow">See how it works</a></div>
+<div class="hero-trust"><span class="trust-pill">Stripe test mode</span><span class="trust-pill">x402 proof routes</span><span class="trust-pill">ERC-8004–style records</span><span class="trust-pill">Render live</span></div>
+</div>
+<div class="product-wrap"><div class="product-shell"><div class="product-card">
+<div class="pc-bar"><i></i><i></i><i></i></div>
+<div class="pc-body">
+<div class="pc-head"><b>Operations dashboard</b><span class="pc-live"><span class="pc-live-dot"></span> live backend</span></div>
+<div class="kpis"><div class="kpi up"><span>Revenue</span><strong>$18k</strong></div><div class="kpi"><span>Pending</span><strong>$11k</strong></div><div class="kpi"><span>Records</span><strong>5</strong></div></div>
+<div class="rows-card">
+<div class="row"><div><b>TechCorp</b><sub>AI dashboard</sub></div><strong>$4,800</strong><span class="tag t-paid">Paid</span></div>
+<div class="row"><div><b>Web3Labs</b><sub>Frontend sprint</sub></div><strong>$3,600</strong><span class="tag t-due">Overdue</span></div>
+<div class="row"><div><b>FinTech Ltd</b><sub>Mobile delivery</sub></div><strong>$8,500</strong><span class="tag t-chain">x402</span></div>
+</div>
+</div>
+</div></div></div>
+</div></header>
+<div class="marquee"><div class="marquee-track">
+<span class="mchip"><span>—</span>Hermes</span><span class="mchip"><span>—</span>Stripe test mode</span><span class="mchip"><span>—</span>x402 payment routes</span><span class="mchip"><span>—</span>ERC-8004 credentials</span><span class="mchip"><span>—</span>Base Sepolia</span><span class="mchip"><span>—</span>Render live</span><span class="mchip"><span>—</span>Helmet + rate-limit</span><span class="mchip"><span>—</span>Real invoices</span><span class="mchip"><span>—</span>Webhook-ready</span><span class="mchip"><span>—</span>API-key writes</span>
+<span class="mchip"><span>—</span>Hermes</span><span class="mchip"><span>—</span>Stripe test mode</span><span class="mchip"><span>—</span>x402 payment routes</span><span class="mchip"><span>—</span>ERC-8004 credentials</span><span class="mchip"><span>—</span>Base Sepolia</span><span class="mchip"><span>—</span>Render live</span><span class="mchip"><span>—</span>Helmet + rate-limit</span><span class="mchip"><span>—</span>Real invoices</span><span class="mchip"><span>—</span>Webhook-ready</span><span class="mchip"><span>—</span>API-key writes</span>
+</div></div>
+<section id="workflow"><div class="wrap">
+<div class="section-head reveal"><div class="kicker">Workflow</div><h2>From request to paid proof in three steps.</h2><p class="lead">Create the invoice with the right payment rail, collect through Stripe test mode or x402, then turn every confirmed payment into a portable work record.</p></div>
+<div class="step-cards">
+<div class="step-card reveal d1"><div class="step-num">1</div><div class="step-kicker">Create</div><h3>Real invoices</h3><p>Spin up a real invoice in seconds, pick the payment rail, and send a hosted pay link. No mock rows — every record is created against the live backend.</p></div>
+<div class="step-card reveal d2"><div class="step-num">2</div><div class="step-kicker">Collect</div><h3>Dual rails</h3><p>Take card payments through Stripe test mode or settle crypto-native via x402 on Base Sepolia. Webhooks confirm payment and update the dashboard live.</p></div>
+<div class="step-card reveal d3"><div class="step-num">3</div><div class="step-kicker">Prove</div><h3>Payment-backed records</h3><p>Each confirmed payment can mint an ERC-8004–style work record — a portable, verifiable history of paid work you actually own.</p></div>
+</div>
+</div></section>
+<section id="product"><div class="wrap">
+<div class="section-head reveal"><div class="kicker">Product</div><h2>A real operations cockpit.</h2><p class="lead">Live KPIs, real invoices, and revenue trends — all driven by your backend, refreshed automatically every few seconds.</p></div>
+<div class="showcase">
+<div class="feat-screen reveal d1"><h3>Live revenue overview</h3>
+<div class="dash-stats"><div class="dash-s"><span>Total revenue</span><strong>$18,400</strong></div><div class="dash-s"><span>Win rate</span><strong>72%</strong></div><div class="dash-s"><span>Active invoices</span><strong>3</strong></div><div class="dash-s"><span>Records minted</span><strong>5</strong></div></div>
+<div class="bars"><i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:80%"></i><i style="height:66%"></i><i style="height:95%"></i></div>
+</div>
+<div class="feat-screen reveal d2"><h3>Invoice + proof</h3>
+<div class="r-row"><span>Client</span><strong>TechCorp</strong></div>
+<div class="r-row"><span>Amount</span><strong>$4,800.00</strong></div>
+<div class="r-row"><span>Rail</span><strong>Stripe test</strong></div>
+<div class="r-row"><span>Status</span><strong style="color:#4ade80">Paid</strong></div>
+<div class="proof-box">record: erc8004://0x74…8f44e<br>event: payment.confirmed<br>amount: 4800 USD<br>verified: true ✓</div>
+</div>
+</div>
+</div></section>
+<section><div class="wrap">
+<div class="section-head reveal"><div class="kicker">Why HermesWork</div><h2>Scattered tools vs one cockpit.</h2></div>
+<div class="split">
+<div class="panel reveal d1"><h3>The usual stack</h3><ul class="check-list">
+<li><span class="ico bad">✕</span> Invoices in one app, payments in another, proof nowhere</li>
+<li><span class="ico bad">✕</span> No verifiable, portable record of paid work</li>
+<li><span class="ico bad">✕</span> Card-only — no crypto-native settlement</li>
+<li><span class="ico bad">✕</span> Manual status chasing and stale spreadsheets</li>
+</ul></div>
+<div class="panel glow reveal d2"><h3>HermesWork</h3><ul class="check-list">
+<li><span class="ico ok">✓</span> Invoices, payments, and proof in one live dashboard</li>
+<li><span class="ico ok">✓</span> Payment-backed ERC-8004–style work records you own</li>
+<li><span class="ico ok">✓</span> Dual rails: Stripe test mode + x402 on Base Sepolia</li>
+<li><span class="ico ok">✓</span> Webhook-confirmed status, auto-refreshing live</li>
+</ul></div>
+</div>
+</div></section>
+<section id="payments"><div class="wrap">
+<div class="section-head reveal"><div class="kicker">Payments</div><h2>Two rails, one reconciliation.</h2><p class="lead">Choose the rail per invoice. Both confirm through the backend and feed the same live ledger and proof system.</p></div>
+<div class="rail-grid">
+<div class="rail-card reveal d1"><div class="rail-ico blue">💳</div><h3>Stripe test mode</h3><p>Safe, real Stripe integration using test keys. Hosted pay links and webhook-confirmed payment events.</p><div class="rail-facts"><div class="rf"><span>Keys</span><strong>sk_test_…</strong></div><div class="rf"><span>Confirm</span><strong>Webhook</strong></div></div></div>
+<div class="rail-card reveal d2"><div class="rail-ico purple">⚡</div><h3>x402 crypto-native</h3><p>Payment-proof route for on-chain settlement. USDC on Base Sepolia with a verifiable proof flow.</p><div class="rail-facts"><div class="rf"><span>Asset</span><strong>USDC</strong></div><div class="rf"><span>Chain</span><strong>Base Sepolia</strong></div></div></div>
+<div class="rail-card reveal d3"><div class="rail-ico green">🧾</div><h3>Proof records</h3><p>Confirmed payments mint ERC-8004–style records — a portable history of paid work you can carry anywhere.</p><div class="rail-facts"><div class="rf"><span>Standard</span><strong>ERC-8004</strong></div><div class="rf"><span>Portable</span><strong>Yes</strong></div></div></div>
+</div>
+</div></section>
+<section id="deploy"><div class="wrap">
+<div class="deploy-block reveal">
+<div><div class="kicker">Deploy</div><h2>Live on Render in minutes.</h2><p class="lead" style="margin-bottom:24px">No credit card. Backend as a web service, frontend as a static site. Free SSL, auto deploys from GitHub.</p>
+<div class="steps"><div class="step-row"><span>Backend</span><strong>Web Service · node server.js</strong></div><div class="step-row"><span>Frontend</span><strong>Static Site · publish .</strong></div><div class="step-row"><span>SSL</span><strong>Automatic</strong></div></div>
+</div>
+<div><div class="terminal"><span class="cm"># backend</span><br>npm install<br>node server.js<br><br><span class="cm"># live endpoints</span><br>GET /health → ok<br>GET /api/kpis → live<br>POST /invoice/create → 🔑 protected</div></div>
+</div>
+</div></section>
+<section><div class="wrap">
+<div class="section-head reveal"><div class="kicker">FAQ</div><h2>Questions, answered.</h2></div>
+<div class="faq-grid">
+<div class="reveal d1"><h2 style="font-size:24px">Built for builders.</h2><p class="lead">HermesWork keeps real invoices, payments, and proof in one place so you spend time on the work, not the admin.</p></div>
+<div class="faq-list reveal d2">
+<div class="faq-item"><h3>Is this real data or a demo?</h3><p>The dashboard is real-data-first. It stays empty until you create real records or Stripe test webhooks confirm payments. Only Stripe runs in test mode.</p></div>
+<div class="faq-item"><h3>What does Stripe test mode mean?</h3><p>Payments use real Stripe integration with test keys, so you can run the full flow safely without moving real money.</p></div>
+<div class="faq-item"><h3>What is the x402 rail?</h3><p>A crypto-native payment-proof route using USDC on Base Sepolia, with a verifiable proof flow that updates the same ledger.</p></div>
+<div class="faq-item"><h3>How do I deploy it?</h3><p>Render: backend as a web service, frontend as a static site. No credit card, free SSL, auto deploys from GitHub.</p></div>
+</div>
+</div>
+</div></section>
+<footer><div class="wrap footer">
+<div class="footer-brand">⚡ HermesWork</div>
+<div style="display:flex;gap:24px;font-size:14px"><a href="/frontend/index.html">Dashboard</a><a href="https://github.com/salch-cred/hermeswork" target="_blank" rel="noopener">GitHub</a><a href="#workflow">Workflow</a></div>
+<div style="font-size:13px">Built for independent builders.</div>
+</div></footer>
+<script>
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');if(e.target.querySelector&&e.target.classList.contains('feat-screen')){const b=e.target.querySelector('.bars');if(b)b.classList.add('visible')}io.unobserve(e.target)}})},{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+document.querySelectorAll('.bars').forEach(b=>{const o=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');o.unobserve(e.target)}})},{threshold:.3});o.observe(b)});
+</script>
 </body>
 </html>
