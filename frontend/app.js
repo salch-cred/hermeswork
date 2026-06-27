@@ -1,179 +1,332 @@
-/* ======================================================================
-   HermesWork v2.1 — App Logic (re-audited)
-   Fixes: safe toast, safe inline JS args, API key header support,
-   no localhost hardcode in production, safer manual payment confirmation,
-   working Settings API-key field (saveApiKeyFromField + prefillSettings).
-   ====================================================================== */
+/* HermesWork v2.2 — Render-safe dashboard logic */
 
 const API_BASE = (() => {
+  const saved = localStorage.getItem('HERMESWORK_BACKEND_URL');
+  if (saved) return saved.replace(/\/$/, '');
   const h = window.location.hostname;
   if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3500';
-  return window.location.protocol + '//' + h + ':3500';
+  return 'https://hermeswork.onrender.com';
 })();
 
-function getApiKey() {
-  return localStorage.getItem('HERMESWORK_API_KEY') || '';
-}
+let state = {
+  page: 'dashboard',
+  online: false,
+  kpis: {},
+  invoices: [],
+  clients: [],
+  proposals: [],
+  reputation: [],
+  payments: [],
+  activities: [],
+  scheduledTasks: [],
+  analytics: {},
+  invoiceFilter: 'all',
+  invoiceSearch: ''
+};
 
-function authHeaders(extra = {}) {
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const money = (n) => '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+const date = (d) => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch { return String(d || ''); } };
+const hash = (h) => { const s = String(h || ''); return s.length > 18 ? s.slice(0, 10) + '...' + s.slice(-6) : s; };
+const getApiKey = () => localStorage.getItem('HERMESWORK_API_KEY') || '';
+
+function headers(extra = {}) {
   const key = getApiKey();
   return key ? { ...extra, 'x-api-key': key } : extra;
 }
 
-console.log('[HermesWork] API_BASE:', API_BASE);
-
-let state = {
-  currentPage: 'dashboard',
-  kpis: { mrr: 0, mrrGrowth: 0, totalRevenue: 0, activeInvoices: 0, activeInvoiceValue: 0, winRate: 0, reputationScore: 0, reputationLevel: 'Emerging', daysToPayment: 0, activeProjects: 0, systemStatus: 'active', credentialsMinted: 0, monthlyRevenue: [0,0,0,0,0,0], winRateTrend: [0,0,0,0,0,0] },
-  invoices: [], clients: [], proposals: [], reputation: [], payments: [], activities: [], scheduledTasks: [],
-  analytics: { revenueOverTime: [0,0,0,0,0,0], winRateTrend: [0,0,0,0,0,0], daysToPayment: [0,0,0,0,0,0], credentialsPerMonth: [0,0,0,0,0,0], months: ['Jan','Feb','Mar','Apr','May','Jun'], hypotheses: [] },
-  invoiceFilter: 'all', invoiceSearch: '', charts: {}, backendOnline: false
-};
-
-function esc(str) {
-  if (str === null || str === undefined) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
-}
-function jsArg(str) { return encodeURIComponent(String(str ?? '')); }
-function fromArg(str) { try { return decodeURIComponent(String(str ?? '')); } catch(e) { return String(str ?? ''); } }
-
-const fmt = {
-  currency: (n) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0 }),
-  date: (d) => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch(e) { return String(d); } },
-  dateShort: (d) => { try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch(e) { return String(d); } },
-  hash: (h) => { const s = String(h || ''); return s.length > 16 ? s.slice(0, 8) + '...' + s.slice(-6) : s; },
-  relTime: (ts) => { try { const d = Math.floor((Date.now() - new Date(ts)) / 1000); if (d < 60) return 'just now'; if (d < 3600) return Math.floor(d/60) + 'm ago'; if (d < 86400) return Math.floor(d/3600) + 'h ago'; return Math.floor(d/86400) + 'd ago'; } catch(e) { return ''; } }
-};
-const industryTags = { Technology: 'tag-tech', SaaS: 'tag-saas', Media: 'tag-media', Design: 'tag-design', Cloud: 'tag-cloud', FinTech: 'tag-fintech', Blockchain: 'tag-tech' };
-
 async function apiFetch(path, options = {}) {
-  const opts = { ...options };
-  opts.headers = authHeaders(opts.headers || {});
+  const opts = { ...options, headers: headers(options.headers || {}) };
   const res = await fetch(API_BASE + path, opts);
-  let data = null;
-  try { data = await res.json(); } catch(e) { data = {}; }
-  if (!res.ok) {
-    const err = new Error(data.error || ('HTTP ' + res.status));
-    err.status = res.status; err.data = data; throw err;
-  }
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
 
-function navigate(page) {
-  document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelectorAll('.mobile-nav-item').forEach(m => m.classList.remove('active'));
-  const pageEl = document.getElementById('page-' + page), navEl = document.getElementById('nav-' + page), mobEl = document.getElementById('mob-nav-' + page);
-  if (pageEl) pageEl.classList.add('active');
-  if (navEl) navEl.classList.add('active');
-  if (mobEl) mobEl.classList.add('active');
-  state.currentPage = page;
-  const titles = { dashboard: 'Dashboard', invoices: 'Invoices', clients: 'Clients CRM', proposals: 'Proposals', reputation: 'Reputation', payments: 'Payments Hub', analytics: 'Analytics', settings: 'Settings' };
-  const titleEl = document.getElementById('page-title'); if (titleEl) titleEl.textContent = titles[page] || page;
-  if (page === 'analytics') initCharts(true);
-  window.scrollTo(0, 0);
+function toast(message, type = 'success') {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'error' ? ' error' : '');
+  el.textContent = message;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3600);
 }
 
-function initDate() {
-  const now = new Date(); const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const dateStr = now.toLocaleDateString('en-US', opts);
-  const el = document.getElementById('topbar-date'); if (el) el.textContent = dateStr;
-  const pd = document.getElementById('page-date'); if (pd) pd.textContent = 'Today, ' + dateStr;
+function setStatus(online, label) {
+  state.online = online;
+  document.querySelectorAll('.status-dot').forEach(el => el.style.background = online ? '#16A34A' : '#DC2626');
+  document.querySelectorAll('.status-label').forEach(el => el.textContent = label || (online ? 'Backend online' : 'Backend offline'));
+  const sub = document.querySelector('.status-sub');
+  if (sub) sub.textContent = online ? API_BASE.replace('https://', '') : 'Check backend URL';
 }
 
 async function loadAllData() {
-  const setOnline = (v) => { state.backendOnline = v; const dot = document.querySelector('.status-dot'), label = document.querySelector('.status-label'); if (dot) dot.style.background = v ? '#10B981' : '#EF4444'; if (label) label.textContent = v ? 'System Active' : 'Backend Offline'; };
   try {
-    const [kpiRes, invRes, cliRes, propRes, repRes, payRes, actRes, anaRes] = await Promise.all([
-      apiFetch('/api/kpis'), apiFetch('/api/invoices'), apiFetch('/api/clients'), apiFetch('/api/proposals'), apiFetch('/api/reputation'), apiFetch('/api/payments'), apiFetch('/api/activity'), apiFetch('/api/analytics')
+    const [health, kpis, invoices, clients, proposals, rep, payments, activity, analytics] = await Promise.all([
+      apiFetch('/health'),
+      apiFetch('/api/kpis'),
+      apiFetch('/api/invoices'),
+      apiFetch('/api/clients'),
+      apiFetch('/api/proposals'),
+      apiFetch('/api/reputation'),
+      apiFetch('/api/payments'),
+      apiFetch('/api/activity'),
+      apiFetch('/api/analytics')
     ]);
-    state.kpis = kpiRes; state.invoices = Array.isArray(invRes) ? invRes : []; state.clients = Array.isArray(cliRes) ? cliRes : []; state.proposals = Array.isArray(propRes) ? propRes : [];
-    state.reputation = repRes.credentials || (Array.isArray(repRes) ? repRes : []); state.payments = payRes.all || payRes.payments || (Array.isArray(payRes) ? payRes : []);
-    state.activities = actRes.activities || []; state.scheduledTasks = actRes.scheduledTasks || []; state.analytics = anaRes; if (anaRes.monthLabels) state.analytics.months = anaRes.monthLabels;
-    setOnline(true); updateUI();
-  } catch(e) { console.warn('[HermesWork] Backend offline:', e.message); setOnline(false); updateUI(); }
+    state.kpis = kpis || {};
+    state.invoices = Array.isArray(invoices) ? invoices : [];
+    state.clients = Array.isArray(clients) ? clients : [];
+    state.proposals = Array.isArray(proposals) ? proposals : [];
+    state.reputation = rep.credentials || [];
+    state.payments = payments.all || payments.payments || [];
+    state.activities = activity.activities || [];
+    state.scheduledTasks = activity.scheduledTasks || [];
+    state.analytics = analytics || {};
+    setStatus(true, `Online · v${health.version || '2.1.1'}`);
+    render();
+  } catch (e) {
+    console.warn('[HermesWork] Load failed:', e.message);
+    setStatus(false);
+    render();
+  }
 }
 
-function updateUI() {
-  const overdueCount = state.invoices.filter(i => i.status === 'overdue').length;
-  const overdueBadge = document.getElementById('badge-overdue'); if (overdueBadge) { overdueBadge.textContent = overdueCount; overdueBadge.style.display = overdueCount > 0 ? 'inline-flex' : 'none'; }
-  const pendingCount = state.proposals.filter(p => p.status === 'pending').length;
-  const pendingBadge = document.getElementById('badge-pending'); if (pendingBadge) { pendingBadge.textContent = pendingCount; pendingBadge.style.display = pendingCount > 0 ? 'inline-flex' : 'none'; }
-  const repBadge = document.querySelector('.nav-badge.green'); if (repBadge) repBadge.textContent = state.reputation.length;
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('kpi-mrr', fmt.currency(state.kpis.mrr)); set('kpi-invoices', state.kpis.activeInvoices); set('kpi-winrate', (state.kpis.winRate || 0) + '%'); set('kpi-rep', state.kpis.reputationScore || 0); set('kpi-days', state.kpis.daysToPayment || 0); set('kpi-hours', state.kpis.activeProjects || 0);
-  set('rep-total', state.reputation.length); set('rep-verified', state.reputation.filter(r => r.clientVerified).length); set('rep-earnings', fmt.currency(state.reputation.reduce((s, r) => s + (r.amount || 0), 0)));
-  const score = state.kpis.reputationScore || 0; const circle = document.querySelector('.score-gauge circle:last-child');
-  if (circle) { const c = 2 * Math.PI * 58; circle.setAttribute('stroke-dasharray', c.toFixed(0)); circle.setAttribute('stroke-dashoffset', (c - (score / 1000) * c).toFixed(0)); }
-  const scoreNumEl = document.querySelector('.score-value .number'); if (scoreNumEl) scoreNumEl.textContent = score;
-  renderDashboard(); renderInvoices(); renderClients(); renderProposals(); renderReputation(); renderPayments(); renderAnalyticsStats(); renderHypotheses(); renderSettings(); if (state.currentPage === 'analytics') initCharts(true);
+function navigate(page) {
+  state.page = page;
+  document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(n => n.classList.remove('active'));
+  $(`page-${page}`)?.classList.add('active');
+  $(`nav-${page}`)?.classList.add('active');
+  $(`mob-nav-${page}`)?.classList.add('active');
+  const titles = { dashboard:'Dashboard', invoices:'Invoices', clients:'Clients', proposals:'Proposals', reputation:'Reputation', payments:'Payments', analytics:'Analytics', settings:'Settings' };
+  $('page-title') && ($('page-title').textContent = titles[page] || page);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (page === 'analytics') setTimeout(drawCharts, 40);
 }
 
-function renderDashboard() {
-  const taskEl = document.getElementById('scheduled-tasks-mini');
-  if (taskEl) taskEl.innerHTML = !state.scheduledTasks.length ? '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12.5px">No scheduled workflows running</div>' : state.scheduledTasks.map(t => '<div class="cron-item"><div class="cron-status"></div><div><div class="cron-name">' + esc(t.name) + '</div><div class="cron-schedule">' + esc(t.schedule) + '</div></div><div class="cron-last-run">Last: ' + esc(t.lastRun) + '</div></div>').join('');
-  const feedEl = document.getElementById('activity-feed');
-  if (feedEl) feedEl.innerHTML = !state.activities.length ? '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:12.5px">No activity yet — run demo seed to populate</div>' : state.activities.slice(0, 8).map(a => '<div class="activity-item"><div class="activity-dot ' + esc(a.type) + '"><svg class="h-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/></svg></div><div class="activity-content"><div class="activity-text">' + esc(a.action) + '</div><div class="activity-time">' + fmt.relTime(a.timestamp) + '</div></div></div>').join('');
-  const sparkEl = document.getElementById('sparkline-mrr');
-  if (sparkEl) { const data = state.kpis.monthlyRevenue || [0,0,0,0,0,0]; const max = Math.max(...data, 1); sparkEl.innerHTML = data.map(v => '<div class="mini-bar" style="height:' + Math.max(4, Math.round((v / max) * 100)) + '%"></div>').join(''); }
+function setText(id, value) { const el = $(id); if (el) el.textContent = value; }
+
+function render() {
+  const k = state.kpis;
+  setText('kpi-mrr', money(k.mrr));
+  setText('kpi-invoices', k.activeInvoices || 0);
+  setText('kpi-winrate', (k.winRate || 0) + '%');
+  setText('kpi-rep', k.reputationScore || 0);
+  setText('kpi-days', k.daysToPayment || 0);
+  setText('kpi-hours', k.activeProjects || 0);
+  setText('rep-total', state.reputation.length);
+  setText('rep-verified', state.reputation.filter(r => r.clientVerified).length);
+  setText('rep-earnings', money(state.reputation.reduce((s, r) => s + Number(r.amount || 0), 0)));
+  setText('invoice-count', state.invoices.length);
+  renderSparkline();
+  renderActivity();
+  renderInvoices();
+  renderClients();
+  renderProposals();
+  renderReputation();
+  renderPayments();
+  renderAnalytics();
+  renderSettings();
+}
+
+function renderSparkline() {
+  const el = $('sparkline-mrr');
+  if (!el) return;
+  const data = state.kpis.monthlyRevenue || [];
+  const max = Math.max(...data, 1);
+  el.innerHTML = data.map(v => `<div class="mini-bar" style="height:${Math.max(6, Math.round(v / max * 100))}%"></div>`).join('');
+}
+
+function renderActivity() {
+  const tasks = $('scheduled-tasks-mini');
+  if (tasks) {
+    tasks.innerHTML = state.scheduledTasks.length ? state.scheduledTasks.slice(0, 5).map(t => `
+      <div class="cron-item"><div class="cron-status"></div><div><div class="cron-name">${esc(t.name)}</div><div class="cron-schedule">${esc(t.schedule)}</div></div><div class="cron-last-run">${esc(t.lastRun)}</div></div>
+    `).join('') : '<div class="empty-state-desc">No scheduled tasks loaded.</div>';
+  }
+  const feed = $('activity-feed');
+  if (feed) {
+    feed.innerHTML = state.activities.length ? state.activities.slice(0, 8).map(a => `
+      <div class="activity-item"><div class="activity-dot ${esc(a.type || 'invoice')}"></div><div class="activity-content"><div class="activity-text">${esc(a.action)}</div><div class="activity-time">${esc(a.time || '')}</div></div></div>
+    `).join('') : '<div class="empty-state"><div class="empty-state-title">No activity yet</div><div class="empty-state-desc">Save your API key, then seed sample data or create an invoice.</div></div>';
+  }
+}
+
+function badge(status) {
+  const map = { paid:'badge-paid', pending:'badge-pending', overdue:'badge-overdue', draft:'badge-draft', won:'badge-won', lost:'badge-lost' };
+  return `<span class="badge ${map[status] || 'badge-draft'}">${esc(status || 'unknown')}</span>`;
 }
 
 function renderInvoices() {
-  let filtered = [...state.invoices];
-  if (state.invoiceFilter !== 'all') filtered = filtered.filter(i => i.status === state.invoiceFilter);
-  if (state.invoiceSearch) { const q = state.invoiceSearch.toLowerCase(); filtered = filtered.filter(i => (i.client || '').toLowerCase().includes(q) || (i.id || '').toLowerCase().includes(q) || (i.description || '').toLowerCase().includes(q)); }
-  const tbody = document.getElementById('invoices-tbody'); if (!tbody) return;
-  if (!filtered.length) tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-title">No invoices found</div><div class="empty-state-desc">Create your first invoice or run demo seed</div><button class="btn btn-primary" onclick="openInvoiceModal()">+ Create Invoice</button></div></td></tr>';
-  else tbody.innerHTML = filtered.map(inv => {
-    const rail = inv.paymentMethod === 'x402' ? '<span class="badge badge-x402">&#9889; USDC</span>' : inv.paymentMethod === 'both' ? '<span class="badge badge-stripe">Both</span>' : '<span class="badge badge-stripe">&#128179; Stripe</span>';
-    const isDue = inv.status !== 'paid' && new Date(inv.dueDate) < new Date();
-    return '<tr' + (isDue ? ' style="background:rgba(239,68,68,0.03)"' : '') + '><td><span class="mono" style="color:var(--accent-cyan)">' + esc(inv.id) + '</span></td><td><strong>' + esc(inv.client) + '</strong></td><td style="font-weight:700;color:var(--text-primary)">' + fmt.currency(inv.amount) + '</td><td>' + getBadge(inv.status) + '</td><td' + (isDue ? ' style="color:var(--color-error);font-weight:600"' : '') + '>' + fmt.date(inv.dueDate) + '</td><td>' + rail + '</td><td class="table-actions"><button class="btn btn-ghost btn-xs" onclick="viewInvoice(\'' + jsArg(inv.id) + '\')">&#128196; View</button>' + (inv.status !== 'paid' ? '<button class="btn btn-ghost btn-xs" onclick="sendReminder(\'' + jsArg(inv.id) + '\')">&#128232; Remind</button><button class="btn btn-ghost btn-xs" onclick="markPaid(\'' + jsArg(inv.id) + '\')">&#10003; Paid</button>' : '') + '<button class="btn btn-ghost btn-xs" onclick="copyX402(\'' + jsArg(inv.id) + '\')">&#9889; Link</button></td></tr>';
-  }).join('');
-  const outstanding = state.invoices.filter(i => i.status !== 'paid').reduce((s, i) => s + (i.amount || 0), 0);
-  const summaryEl = document.getElementById('invoice-summary'); if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--text-muted)">Outstanding: <strong style="color:var(--color-warning)">' + fmt.currency(outstanding) + '</strong></span><span style="color:var(--text-muted)">' + filtered.length + ' of ' + state.invoices.length + ' invoices</span>';
+  let rows = [...state.invoices];
+  if (state.invoiceFilter !== 'all') rows = rows.filter(i => i.status === state.invoiceFilter);
+  if (state.invoiceSearch) {
+    const q = state.invoiceSearch.toLowerCase();
+    rows = rows.filter(i => `${i.id} ${i.client} ${i.description}`.toLowerCase().includes(q));
+  }
+  const tbody = $('invoices-tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-state-title">No invoices found</div><div class="empty-state-desc">Create one or seed sample data.</div></div></td></tr>';
+  } else {
+    tbody.innerHTML = rows.map(i => `
+      <tr>
+        <td class="mono">${esc(i.id)}</td><td><strong>${esc(i.client)}</strong><br><span style="font-size:11px;color:var(--text-muted)">${esc(i.description || '')}</span></td><td>${money(i.amount)}</td><td>${badge(i.status)}</td><td>${date(i.dueDate)}</td><td>${esc(i.paymentMethod || 'stripe')}</td>
+        <td class="table-actions"><button class="btn btn-ghost btn-xs" onclick="copyPayLink('${esc(i.id)}')">Copy link</button>${i.status !== 'paid' ? `<button class="btn btn-ghost btn-xs" onclick="markPaid('${esc(i.id)}')">Mark paid</button>` : ''}</td>
+      </tr>
+    `).join('');
+  }
+  const outstanding = state.invoices.filter(i => i.status !== 'paid').reduce((s, i) => s + Number(i.amount || 0), 0);
+  const bar = $('invoice-summary');
+  if (bar) bar.innerHTML = `<span>Outstanding: <strong>${money(outstanding)}</strong></span><span>${rows.length} of ${state.invoices.length} invoices</span>`;
 }
-function getBadge(status) { const map = { paid: '<span class="badge badge-paid">&#10003; Paid</span>', pending: '<span class="badge badge-pending">&#8987; Pending</span>', overdue: '<span class="badge badge-overdue"><span class="pulsing-dot"></span> Overdue</span>', draft: '<span class="badge badge-draft">Draft</span>' }; return map[status] || '<span class="badge">' + esc(status) + '</span>'; }
-function filterInvoices(filter, el) { state.invoiceFilter = filter; document.querySelectorAll('#invoice-filters .filter-tab').forEach(t => t.classList.remove('active')); if (el) el.classList.add('active'); renderInvoices(); }
+
+function filterInvoices(filter, el) {
+  state.invoiceFilter = filter;
+  document.querySelectorAll('#invoice-filters .filter-tab').forEach(t => t.classList.remove('active'));
+  el?.classList.add('active');
+  renderInvoices();
+}
 function searchInvoices(q) { state.invoiceSearch = q; renderInvoices(); }
-function findInvoice(idArg) { const id = fromArg(idArg); return state.invoices.find(i => i.id === id); }
-function viewInvoice(idArg) { const inv = findInvoice(idArg); if (!inv) return; showToast('Invoice ' + inv.id + ' | ' + inv.client + ' | ' + fmt.currency(inv.amount)); console.log('[Invoice Details]', inv); }
-async function sendReminder(idArg) { const inv = findInvoice(idArg); if (!inv) return; try { await apiFetch('/invoice/send/' + encodeURIComponent(inv.id), { method: 'POST' }); showToast('Reminder sent to ' + inv.client + ' for ' + inv.id); } catch(e) { showToast(e.message + ' — set API key in Settings', 'error'); } }
-function copyX402(idArg) { const inv = findInvoice(idArg); if (!inv) return; const url = API_BASE + '/pay/' + inv.id; navigator.clipboard.writeText(url).then(() => showToast('x402 link copied')).catch(() => showToast(url)); }
-function copyX402Link(id) { copyX402(id); }
+function sortTable(table, key) { if (table === 'invoices') { state.invoices.sort((a,b) => String(a[key] ?? '').localeCompare(String(b[key] ?? ''))); renderInvoices(); } }
 
-function openInvoiceModal() { const modal = document.getElementById('invoice-modal'); if (modal) modal.classList.add('open'); const due = new Date(); due.setDate(due.getDate() + 30); const dueEl = document.getElementById('inv-due'); if (dueEl) dueEl.value = due.toISOString().split('T')[0]; }
-function closeInvoiceModal() { const modal = document.getElementById('invoice-modal'); if (modal) modal.classList.remove('open'); const form = document.getElementById('invoice-form'); if (form) form.reset(); }
-async function submitInvoice(e) {
-  e.preventDefault(); const btn = document.getElementById('create-invoice-btn'); if (btn) { btn.textContent = 'Creating...'; btn.disabled = true; }
-  const payload = { client: document.getElementById('inv-client')?.value.trim(), amount: Number(document.getElementById('inv-amount')?.value || 0), dueDate: document.getElementById('inv-due')?.value || '', description: document.getElementById('inv-desc')?.value.trim() || '', paymentMethod: document.getElementById('inv-rail')?.value || 'stripe' };
-  if (!payload.client || !payload.amount || !payload.dueDate) { showToast('Client, amount, and due date are required', 'error'); if (btn) { btn.textContent = 'Create Invoice →'; btn.disabled = false; } return; }
-  try { const data = await apiFetch('/invoice/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); showToast(data.invoice.id + ' created - ' + fmt.currency(data.invoice.amount)); closeInvoiceModal(); loadAllData(); }
-  catch(err) { showToast(err.message + ' — add API key in Settings if production', 'error'); }
-  if (btn) { btn.textContent = 'Create Invoice →'; btn.disabled = false; }
+function renderClients() {
+  const grid = $('clients-grid');
+  if (!grid) return;
+  grid.innerHTML = state.clients.length ? state.clients.map(c => `
+    <div class="client-card"><div class="client-avatar">${esc((c.company || c.name || 'HW').slice(0,2).toUpperCase())}</div><h3 style="font-size:16px;margin-bottom:4px">${esc(c.company || c.name)}</h3><p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${esc(c.name || '')} · ${esc(c.industry || 'Client')}</p><div class="stats-row" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat-box"><div class="stat-box-value">${money(c.totalBilled)}</div><div class="stat-box-label">Billed</div></div><div class="stat-box"><div class="stat-box-value">${esc(c.paymentSpeed || 'N/A')}</div><div class="stat-box-label">Speed</div></div></div></div>
+  `).join('') : '<div class="card" style="grid-column:1/-1"><div class="empty-state-title">No clients yet</div><div class="empty-state-desc">Seed sample data or add clients from the API.</div></div>';
 }
 
-function renderClients() { const grid = document.getElementById('clients-grid'); if (!grid) return; if (!state.clients.length) { grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;padding:48px 16px"><div class="empty-state-title">No clients yet</div><div class="empty-state-desc">Run demo seed or add clients manually</div></div>'; return; } const initials = (name) => String(name).split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2); grid.innerHTML = state.clients.map(c => '<div class="client-card" role="button" tabindex="0"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px"><div class="client-avatar">' + esc(initials(c.name)) + '</div><div class="health-dot ' + esc(c.health || 'green') + '"></div></div><div style="font-size:15px;font-weight:700;margin-bottom:2px">' + esc(c.name) + '</div><div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">' + esc(c.company) + '</div><div style="margin-bottom:12px"><span class="tag ' + esc(industryTags[c.industry] || 'tag-tech') + '">' + esc(c.industry) + '</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px"><div><div style="color:var(--text-muted);margin-bottom:2px">Total Billed</div><div style="font-weight:600;color:var(--color-success)">' + fmt.currency(c.totalBilled) + '</div></div><div><div style="color:var(--text-muted);margin-bottom:2px">Payment Speed</div><div><span class="badge badge-paid">' + esc(c.paymentSpeed || 'N/A') + '</span></div></div></div></div>').join(''); }
-function renderProposals() { const won = state.proposals.filter(p => p.status === 'won').length, decided = state.proposals.filter(p => p.status !== 'pending').length, avg = state.proposals.length ? Math.round(state.proposals.reduce((s,p)=>s+(p.amount||0),0)/state.proposals.length) : 0; const statsEl = document.getElementById('proposal-stats'); if (statsEl) statsEl.innerHTML = '<div class="stat-box"><div class="stat-box-value">' + state.proposals.length + '</div><div class="stat-box-label">Total Sent</div></div><div class="stat-box"><div class="stat-box-value" style="color:var(--color-success)">' + (decided ? Math.round(won/decided*100) : 0) + '%</div><div class="stat-box-label">Win Rate</div></div><div class="stat-box"><div class="stat-box-value" style="color:var(--accent-cyan)">' + fmt.currency(avg) + '</div><div class="stat-box-label">Avg Value</div></div><div class="stat-box"><div class="stat-box-value" style="color:var(--accent-purple-light)">' + won + '</div><div class="stat-box-label">Won</div></div>'; const tbody = document.getElementById('proposals-tbody'); if (!tbody) return; if (!state.proposals.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No proposals yet</div></td></tr>'; return; } const sm = { won:'<span class="badge badge-won">&#127942; Won</span>', lost:'<span class="badge badge-overdue">&#10005; Lost</span>', pending:'<span class="badge badge-pending">&#8987; Pending</span>'}; tbody.innerHTML = state.proposals.map(p => '<tr><td style="font-weight:600;color:var(--text-primary)">' + esc(p.title) + '</td><td>' + esc(p.client) + '</td><td>' + esc(p.platform) + '</td><td style="font-weight:600;color:var(--accent-cyan)">' + fmt.currency(p.amount) + '</td><td>' + (sm[p.status] || esc(p.status)) + '</td><td>' + fmt.dateShort(p.sentDate) + '</td><td><span class="score-pill ' + (p.score >= 9 ? 'high' : p.score >= 7 ? 'mid' : 'low') + '">' + (p.score || 0) + '/10</span></td></tr>').join(''); }
-function renderReputation() { const grid = document.getElementById('reputation-grid'); if (!grid) return; if (!state.reputation.length) { grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;padding:48px 16px"><div class="empty-state-title">No credentials minted yet</div><div class="empty-state-desc">Credentials mint after payment confirmation</div></div>'; return; } grid.innerHTML = state.reputation.map(r => '<div class="reputation-card" role="article"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><span style="font-size:24px">&#127885;</span>' + (r.clientVerified ? '<span class="badge badge-paid">&#10003; Verified</span>' : '<span class="badge badge-draft">Unverified</span>') + '</div><div style="font-size:16px;font-weight:700;margin-bottom:4px">' + esc(r.jobType) + '</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">' + esc(r.client || '') + '</div><div style="font-size:22px;font-weight:800;color:var(--accent-gold);margin-bottom:8px">' + fmt.currency(r.amount) + '</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">' + fmt.date(r.date) + ' &middot; ' + esc(r.paymentRail || 'stripe') + '</div><div style="background:var(--bg-card);border-radius:6px;padding:8px;border:1px solid var(--border-default)"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">TX Hash</div><div style="display:flex;align-items:center;justify-content:space-between"><span class="mono" style="color:var(--accent-cyan);font-size:11px">' + esc(fmt.hash(r.txHash)) + '</span><span class="copy-btn" onclick="copyText(\'' + jsArg(r.txHash || '') + '\')" style="cursor:pointer">&#128203;</span></div>' + (r.mock ? '<div style="font-size:10px;color:var(--text-muted);margin-top:4px">mock mint</div>' : '') + '</div></div>').join(''); }
-function renderPayments() { const tbody = document.getElementById('payments-tbody'); if (!tbody) return; if (!state.payments.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">No payments yet</div></td></tr>'; return; } tbody.innerHTML = state.payments.map(p => '<tr><td>' + fmt.date(p.date) + '</td><td>' + esc(p.client) + '</td><td style="font-weight:700;color:var(--color-success)">' + fmt.currency(p.amount) + '</td><td>' + (p.rail === 'x402' ? '<span class="badge badge-x402">&#9889; USDC</span>' : '<span class="badge badge-stripe">&#128179; Stripe</span>') + '</td><td><span class="mono" style="color:var(--text-muted);font-size:11px">' + esc(fmt.hash(p.txHash || p.stripeId || 'N/A')) + '</span></td></tr>').join(''); }
-function renderAnalyticsStats() { const el = document.getElementById('analytics-stats'); if (!el) return; el.innerHTML = '<div class="stat-box"><div class="stat-box-value" style="color:var(--color-success)">' + fmt.currency(state.kpis.totalRevenue) + '</div><div class="stat-box-label">Total Revenue</div></div><div class="stat-box"><div class="stat-box-value gradient-text">' + (state.kpis.mrrGrowth || 0) + '%</div><div class="stat-box-label">MoM Growth</div></div><div class="stat-box"><div class="stat-box-value" style="color:var(--accent-cyan)">' + (state.clients.length ? esc(state.clients[0].company) : 'None') + '</div><div class="stat-box-label">Top Client</div></div><div class="stat-box"><div class="stat-box-value" style="color:var(--accent-gold)">' + state.reputation.length + '</div><div class="stat-box-label">Credentials</div></div>'; }
-function renderHypotheses() { const tbody = document.getElementById('hypothesis-tbody'); if (!tbody) return; const list = state.analytics.hypotheses || []; if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-muted)">No targets — run demo seed</td></tr>'; return; } tbody.innerHTML = list.map(h => '<tr class="hypothesis-row ' + (h.hit ? 'hit' : 'miss') + '"><td style="color:var(--text-primary);font-weight:500">' + esc(h.metric) + '</td><td style="color:var(--text-muted)">' + esc((h.prefix||'') + h.baseline + h.unit) + '</td><td style="color:var(--text-muted)">' + esc((h.prefix||'') + h.target + h.unit) + '</td><td style="font-weight:700">' + esc((h.prefix||'') + h.current + h.unit) + '</td><td style="font-size:16px">' + (h.hit ? '&#9989;' : '&#10005;') + '</td></tr>').join(''); }
-function initCharts(force = false) { if (typeof Chart === 'undefined') return; const months = state.analytics.months || ['Jan','Feb','Mar','Apr','May','Jun']; const baseOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{backgroundColor:'rgba(15,23,42,0.95)', titleColor:'#94A3B8', bodyColor:'#fff', padding:10}}, scales:{x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#64748B'}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#64748B'}}} }; if (force) ['revenue','winrate','days','credentials'].forEach(k => { if (state.charts[k]) { try { state.charts[k].destroy(); } catch(e){} state.charts[k] = null; } }); const makeChart = (key,id,type,data,opts)=>{ const ctx=document.getElementById(id); if(!ctx||state.charts[key])return; state.charts[key]=new Chart(ctx,{type,data,options:{...baseOpts,...opts}});}; makeChart('revenue','chart-revenue','line',{labels:months,datasets:[{data:state.analytics.revenueOverTime||[],borderColor:'#4F46E5',backgroundColor:'rgba(79,70,229,0.04)',fill:true,tension:0.4,pointBackgroundColor:'#4F46E5',pointRadius:4,borderWidth:2}]},{}); makeChart('winrate','chart-winrate','line',{labels:months,datasets:[{data:state.analytics.winRateTrend||[],borderColor:'#0D9488',backgroundColor:'rgba(13,148,136,0.04)',fill:true,tension:0.4,pointBackgroundColor:'#0D9488',pointRadius:4,borderWidth:2}]},{}); makeChart('days','chart-days','bar',{labels:months,datasets:[{data:state.analytics.daysToPayment||[],backgroundColor:'rgba(13,148,136,0.65)',borderRadius:4}]},{}); makeChart('credentials','chart-credentials','bar',{labels:months,datasets:[{data:state.analytics.credentialsPerMonth||[],backgroundColor:'rgba(217,119,6,0.4)',borderColor:'#D97706',borderWidth:1,borderRadius:4}]},{}); }
-function renderSettings() { const cronEl = document.getElementById('cron-list'); if (cronEl) cronEl.innerHTML = !state.scheduledTasks.length ? '<div style="text-align:center;padding:16px;color:var(--text-muted)">No tasks running — backend offline?</div>' : state.scheduledTasks.map(t => '<div class="cron-item"><div class="cron-status"></div><div style="flex:1"><div class="cron-name">' + esc(t.name) + '</div><div class="cron-schedule">' + esc(t.schedule) + '</div></div><div style="text-align:right"><div class="cron-last-run">Last: ' + esc(t.lastRun) + '</div><div style="margin-top:4px"><span class="badge badge-paid">Active</span></div></div></div>').join(''); }
+function renderProposals() {
+  const stats = $('proposal-stats');
+  const won = state.proposals.filter(p => p.status === 'won').length;
+  const decided = state.proposals.filter(p => ['won','lost'].includes(p.status)).length;
+  if (stats) stats.innerHTML = `<div class="stat-box"><div class="stat-box-value">${state.proposals.length}</div><div class="stat-box-label">Sent</div></div><div class="stat-box"><div class="stat-box-value">${decided ? Math.round(won / decided * 100) : 0}%</div><div class="stat-box-label">Win rate</div></div><div class="stat-box"><div class="stat-box-value">${won}</div><div class="stat-box-label">Won</div></div><div class="stat-box"><div class="stat-box-value">${state.proposals.filter(p => p.status === 'pending').length}</div><div class="stat-box-label">Pending</div></div>`;
+  const tbody = $('proposals-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = state.proposals.length ? state.proposals.map(p => `<tr><td>${esc(p.title)}</td><td>${esc(p.client)}</td><td>${esc(p.platform)}</td><td>${money(p.amount)}</td><td>${badge(p.status)}</td><td>${date(p.sentDate)}</td><td><span class="score-pill ${(p.score || 0) >= 8 ? 'high' : 'mid'}">${p.score || 0}/10</span></td></tr>`).join('') : '<tr><td colspan="7"><div class="empty-state">No proposals yet.</div></td></tr>';
+}
 
-function showToast(msg, type = 'success') { const existing = document.querySelector('.toast'); if (existing) existing.remove(); const toast = document.createElement('div'); toast.className = 'toast' + (type === 'error' ? ' error' : ''); const icon = document.createElement('span'); icon.textContent = type === 'error' ? '✕' : '✓'; const text = document.createElement('span'); text.textContent = String(msg); toast.appendChild(icon); toast.appendChild(document.createTextNode(' ')); toast.appendChild(text); document.body.appendChild(toast); setTimeout(() => { toast.style.transition = 'opacity 0.3s,transform 0.3s'; toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; setTimeout(() => toast.remove(), 300); }, 3500); }
-function copyText(textArg) { const text = fromArg(textArg); navigator.clipboard.writeText(String(text)).then(() => showToast('Copied to clipboard')).catch(() => showToast(String(text))); }
-function sortTable(table, key) { if (table === 'invoices') { state.invoices.sort((a,b)=>typeof a[key]==='number'?b[key]-a[key]:String(a[key]).localeCompare(String(b[key]))); renderInvoices(); } }
-async function testBackend() { const urlEl = document.getElementById('backend-url'); const url = urlEl ? urlEl.value.trim() : API_BASE; if (urlEl) localStorage.setItem('HERMESWORK_BACKEND_URL', url); try { const res = await fetch(url + '/health', { signal: AbortSignal.timeout(5000) }); const data = await res.json(); if (res.ok) showToast('Connected v' + data.version + ' | API key: ' + data.apiKey); else showToast('Backend responded ' + res.status, 'error'); } catch(e) { showToast('Cannot reach backend. Is it running?', 'error'); } }
-function refreshData() { showToast('Refreshing data...'); loadAllData(); }
-async function seedDemoData() { try { const data = await apiFetch('/demo/seed', { method:'POST' }); showToast(data.message || 'Demo seeded'); setTimeout(loadAllData, 500); } catch(e) { showToast(e.message + ' — set API key and ENABLE_DEMO_SEED if production', 'error'); } }
-async function markPaid(idArg) { const inv = findInvoice(idArg); if (!inv) return; const txHash = prompt('Paste x402 tx hash (0x + 64 hex), or leave blank to use API key manual confirm:'); if (txHash === null) return; try { await apiFetch('/pay/' + encodeURIComponent(inv.id) + '/confirm', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ txHash }) }); showToast(inv.id + ' marked paid; credential minting'); setTimeout(loadAllData, 1000); } catch(e) { showToast(e.message, 'error'); } }
-function deleteInvoice(invoiceId) { showToast('Delete is disabled in UI until a backend delete route exists', 'error'); }
-function saveApiKey() { const value = prompt('Paste HERMESWORK_API_KEY for this browser only:'); if (value) { localStorage.setItem('HERMESWORK_API_KEY', value.trim()); showToast('API key saved locally'); } }
-function saveApiKeyFromField() { const el = document.getElementById('hermes-api-key'); const val = el ? el.value.trim() : ''; if (val) { localStorage.setItem('HERMESWORK_API_KEY', val); showToast('API key saved for this browser'); } else { localStorage.removeItem('HERMESWORK_API_KEY'); showToast('API key cleared', 'error'); } }
-function prefillSettings() { const keyEl = document.getElementById('hermes-api-key'); if (keyEl) keyEl.value = getApiKey(); const urlEl = document.getElementById('backend-url'); const savedUrl = localStorage.getItem('HERMESWORK_BACKEND_URL'); if (urlEl && savedUrl) urlEl.value = savedUrl; }
+function renderReputation() {
+  const grid = $('reputation-grid');
+  if (!grid) return;
+  grid.innerHTML = state.reputation.length ? state.reputation.map(r => `
+    <div class="reputation-card"><div style="display:flex;justify-content:space-between;margin-bottom:14px"><strong>${esc(r.jobType)}</strong>${badge(r.clientVerified ? 'paid' : 'draft')}</div><div style="font-size:26px;font-weight:800;color:var(--accent-gold)">${money(r.amount)}</div><div style="font-size:12px;color:var(--text-muted);margin:8px 0">${esc(r.client)} · ${date(r.date)} · ${esc(r.paymentRail || 'stripe')}</div><div class="mono">${esc(hash(r.txHash))}</div></div>
+  `).join('') : '<div class="card" style="grid-column:1/-1"><div class="empty-state-title">No credentials yet</div><div class="empty-state-desc">Paid invoices create reputation records.</div></div>';
+}
 
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInvoiceModal(); if (e.key === 'n' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); openInvoiceModal(); } });
-const overlay = document.getElementById('invoice-modal'); if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeInvoiceModal(); });
-function init() { initDate(); prefillSettings(); loadAllData(); setInterval(loadAllData, 60000); }
+function renderPayments() {
+  const tbody = $('payments-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = state.payments.length ? state.payments.map(p => `<tr><td>${date(p.date)}</td><td>${esc(p.client)}</td><td>${money(p.amount)}</td><td>${esc(p.rail || 'stripe')}</td><td class="mono">${esc(hash(p.txHash || p.stripeId))}</td></tr>`).join('') : '<tr><td colspan="5"><div class="empty-state">No payments yet.</div></td></tr>';
+  setText('stripe-volume', money((state.payments || []).filter(p => p.rail !== 'x402').reduce((s,p)=>s+Number(p.amount||0),0)));
+  setText('x402-volume', money((state.payments || []).filter(p => p.rail === 'x402').reduce((s,p)=>s+Number(p.amount||0),0)));
+}
+
+function renderAnalytics() {
+  const stats = $('analytics-stats');
+  if (!stats) return;
+  stats.innerHTML = `<div class="stat-box"><div class="stat-box-value">${money(state.kpis.totalRevenue)}</div><div class="stat-box-label">Total revenue</div></div><div class="stat-box"><div class="stat-box-value">${state.kpis.mrrGrowth || 0}%</div><div class="stat-box-label">Growth</div></div><div class="stat-box"><div class="stat-box-value">${state.reputation.length}</div><div class="stat-box-label">Credentials</div></div><div class="stat-box"><div class="stat-box-value">${state.clients.length}</div><div class="stat-box-label">Clients</div></div>`;
+  const tbody = $('hypothesis-tbody');
+  if (tbody) tbody.innerHTML = (state.analytics.hypotheses || []).map(h => `<tr><td>${esc(h.metric)}</td><td>${esc((h.prefix||'') + h.baseline + h.unit)}</td><td>${esc((h.prefix||'') + h.target + h.unit)}</td><td>${esc((h.prefix||'') + h.current + h.unit)}</td><td>${h.hit ? '✓' : '×'}</td></tr>`).join('') || '<tr><td colspan="5">No targets loaded.</td></tr>';
+}
+
+function drawCharts() {
+  if (typeof Chart === 'undefined') return;
+  const months = state.analytics.monthLabels || state.analytics.months || ['Jan','Feb','Mar','Apr','May','Jun'];
+  const charts = [
+    ['chart-revenue', 'line', state.analytics.revenueOverTime || []],
+    ['chart-winrate', 'line', state.analytics.winRateTrend || []],
+    ['chart-days', 'bar', state.analytics.daysToPayment || []],
+    ['chart-credentials', 'bar', state.analytics.credentialsPerMonth || []]
+  ];
+  charts.forEach(([id, type, data]) => {
+    const canvas = $(id);
+    if (!canvas) return;
+    if (canvas._chart) canvas._chart.destroy();
+    canvas._chart = new Chart(canvas, { type, data: { labels: months, datasets: [{ data, borderColor: '#4F46E5', backgroundColor: 'rgba(79,70,229,.18)', borderWidth: 2, tension: .35, borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+  });
+}
+
+function renderSettings() {
+  const cron = $('cron-list');
+  if (cron) cron.innerHTML = state.scheduledTasks.map(t => `<div class="cron-item"><div class="cron-status"></div><div><div class="cron-name">${esc(t.name)}</div><div class="cron-schedule">${esc(t.schedule)}</div></div><div class="cron-last-run">${esc(t.status || 'active')}</div></div>`).join('') || '<div class="empty-state-desc">No tasks loaded.</div>';
+  const key = $('hermes-api-key');
+  if (key && document.activeElement !== key) key.value = getApiKey();
+  const url = $('backend-url');
+  if (url && document.activeElement !== url) url.value = localStorage.getItem('HERMESWORK_BACKEND_URL') || API_BASE;
+}
+
+function openInvoiceModal() { $('invoice-modal')?.classList.add('open'); const due = $('inv-due'); if (due && !due.value) { const d = new Date(); d.setDate(d.getDate()+30); due.value = d.toISOString().slice(0,10); } }
+function closeInvoiceModal() { $('invoice-modal')?.classList.remove('open'); $('invoice-form')?.reset(); }
+
+async function submitInvoice(e) {
+  e.preventDefault();
+  const payload = { client: $('inv-client')?.value.trim(), amount: Number($('inv-amount')?.value || 0), dueDate: $('inv-due')?.value, description: $('inv-desc')?.value.trim(), paymentMethod: $('inv-rail')?.value || 'stripe' };
+  if (!payload.client || !payload.amount || !payload.dueDate) return toast('Client, amount, and due date are required.', 'error');
+  try {
+    await apiFetch('/invoice/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    toast('Invoice created.'); closeInvoiceModal(); await loadAllData();
+  } catch (e) { toast(e.message + ' — check API key in Settings.', 'error'); }
+}
+
+function copyPayLink(id) {
+  const url = `${API_BASE}/pay/${id}`;
+  navigator.clipboard?.writeText(url).then(() => toast('Payment link copied.')).catch(() => prompt('Copy payment link:', url));
+}
+
+async function markPaid(id) {
+  try {
+    await apiFetch(`/pay/${encodeURIComponent(id)}/confirm`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ txHash: '' }) });
+    toast('Payment confirmed and credential record created.');
+    await loadAllData();
+  } catch (e) { toast(e.message + ' — check API key in Settings.', 'error'); }
+}
+
+function saveApiKeyFromField() {
+  const v = $('hermes-api-key')?.value.trim() || '';
+  if (!v) { localStorage.removeItem('HERMESWORK_API_KEY'); toast('API key cleared.', 'error'); return; }
+  localStorage.setItem('HERMESWORK_API_KEY', v);
+  toast('API key saved in this browser.');
+}
+
+async function testBackend() {
+  const url = ($('backend-url')?.value || '').replace(/\/$/, '');
+  if (url) localStorage.setItem('HERMESWORK_BACKEND_URL', url);
+  try {
+    const res = await fetch((url || API_BASE) + '/health');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Backend error');
+    toast(`Backend connected · v${data.version}`);
+  } catch (e) { toast('Cannot reach backend: ' + e.message, 'error'); }
+}
+
+async function seedDemoData() {
+  try {
+    await apiFetch('/demo/seed', { method:'POST' });
+    toast('Sample data seeded.');
+    await loadAllData();
+  } catch (e) { toast(e.message + ' — save API key and enable sample seed.', 'error'); }
+}
+
+function refreshData() { toast('Refreshing…'); loadAllData(); }
+function showToast(m, t='success') { toast(m, t); }
+function copyText(v) { navigator.clipboard?.writeText(String(v || '')).then(() => toast('Copied.')); }
+function sendReminder() { toast('Reminder route is connected; select an invoice row action when enabled.'); }
+function viewInvoice(id) { toast('Invoice ' + id); }
+function deleteInvoice() { toast('Delete is disabled until backend delete route is added.', 'error'); }
+function saveApiKey() { const v = prompt('Paste HERMESWORK_API_KEY'); if (v) { localStorage.setItem('HERMESWORK_API_KEY', v.trim()); toast('API key saved.'); } }
+
+function init() {
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  setText('topbar-date', today); setText('page-date', 'Today, ' + today);
+  renderSettings();
+  loadAllData();
+  setInterval(loadAllData, 60000);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInvoiceModal(); });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
