@@ -14,13 +14,13 @@ try { morgan = require('morgan'); } catch(e) {}
 
 let stripe = null;
 try {
-  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('your_key')) {
+  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('your_key') && process.env.STRIPE_SECRET_KEY !== 'sk_test_mock') {
     stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     console.log('[OK] Stripe initialized');
   } else {
     console.log('[MOCK] Stripe mock mode - set STRIPE_SECRET_KEY for real invoices');
   }
-} catch(e) { console.log('[WARN] stripe package missing. Run npm install.'); }
+} catch(e) { console.log('[WARN] stripe package missing or invalid key. Running mock mode.'); }
 
 let ethers = null;
 try { ethers = require('ethers'); console.log('[OK] ethers.js loaded'); }
@@ -131,7 +131,7 @@ function validate(schema) {
 function asyncWrap(fn) { return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next); }
 
 async function mintERC8004(jobData) {
-  if (!ethers || !process.env.PRIVATE_KEY || process.env.PRIVATE_KEY.startsWith('0x_')) {
+  if (!ethers || !process.env.PRIVATE_KEY || process.env.PRIVATE_KEY.startsWith('0x_') || process.env.PRIVATE_KEY === '0x_mock') {
     const mockHash = '0x' + crypto.randomBytes(20).toString('hex');
     return { txHash: mockHash, mock: true };
   }
@@ -141,7 +141,7 @@ async function mintERC8004(jobData) {
     const balance = await provider.getBalance(wallet.address);
     if (balance === 0n) return { txHash: '0x' + crypto.randomBytes(20).toString('hex'), mock: true };
     const registry = process.env.ERC8004_REGISTRY;
-    if (!registry || registry.startsWith('0x_') || !ethers.isAddress(registry)) return { txHash: '0x' + crypto.randomBytes(20).toString('hex'), mock: true };
+    if (!registry || registry.startsWith('0x_') || registry === '0x_mock' || !ethers.isAddress(registry)) return { txHash: '0x' + crypto.randomBytes(20).toString('hex'), mock: true };
     const abi = ['function mintCredential(string jobCategory,uint256 valueUSD,string paymentProof) external returns (uint256)'];
     const contract = new ethers.Contract(registry, abi, wallet);
     const tx = await contract.mintCredential(safeString(jobData.type || 'Freelance', 80), Math.round(Number(jobData.amount || 0)), safeString(jobData.paymentId || 'payment', 120));
@@ -195,8 +195,27 @@ app.use((req, _res, next) => {
   next();
 });
 
+app.get('/', (req, res) => {
+  res.json({
+    name: 'HermesWork API',
+    status: 'ok',
+    version: '2.1.1',
+    message: 'Backend is live. Use /health for status and /api/kpis for dashboard data.',
+    routes: {
+      health: '/health',
+      kpis: '/api/kpis',
+      invoices: '/api/invoices',
+      clients: '/api/clients',
+      proposals: '/api/proposals',
+      reputation: '/api/reputation'
+    },
+    frontend: process.env.FRONTEND_URL || null,
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '2.1.0', env: NODE_ENV, uptime: Math.round(process.uptime()), memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB', data: { invoices: db.invoices.length, clients: db.clients.length, proposals: db.proposals.length, credentials: db.reputation.length }, stripe: stripe ? 'connected' : 'mock', erc8004: process.env.PRIVATE_KEY && !process.env.PRIVATE_KEY.startsWith('0x_') ? 'configured' : 'mock', apiKey: API_KEY ? 'configured' : 'not_configured', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', version: '2.1.1', env: NODE_ENV, uptime: Math.round(process.uptime()), memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB', data: { invoices: db.invoices.length, clients: db.clients.length, proposals: db.proposals.length, credentials: db.reputation.length }, stripe: stripe ? 'connected' : 'mock', erc8004: process.env.PRIVATE_KEY && !process.env.PRIVATE_KEY.startsWith('0x_') && process.env.PRIVATE_KEY !== '0x_mock' ? 'configured' : 'mock', apiKey: API_KEY ? 'configured' : 'not_configured', timestamp: new Date().toISOString() });
 });
 
 app.get('/api/kpis', (req, res) => {
@@ -423,7 +442,7 @@ app.post('/webhooks/stripe', asyncWrap(async (req, res) => {
   let event;
   const sig = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (stripe && secret && !secret.includes('your_secret')) {
+  if (stripe && secret && !secret.includes('your_secret') && secret !== 'whsec_mock') {
     try { event = stripe.webhooks.constructEvent(req.body, sig, secret); }
     catch(err) { console.error('[Stripe Webhook] invalid signature:', err.message); return res.status(400).json({ error: 'Webhook signature invalid' }); }
   } else {
@@ -457,13 +476,13 @@ app.use((req, res) => res.status(404).json({ error: 'Route not found: ' + req.me
 function startServer() {
   app.listen(PORT, () => {
     console.log('\n==========================================');
-    console.log('  HermesWork Backend v2.1 RUNNING');
+    console.log('  HermesWork Backend v2.1.1 RUNNING');
     console.log('  Port:     ' + PORT);
     console.log('  Public:   ' + PUBLIC_BASE_URL);
     console.log('  Env:      ' + NODE_ENV);
     console.log('  Security: helmet + rate-limit + API-key writes');
     console.log('  Stripe:   ' + (stripe ? 'REAL' : 'MOCK'));
-    console.log('  ERC-8004: ' + (process.env.PRIVATE_KEY && !process.env.PRIVATE_KEY.startsWith('0x_') ? 'CONFIGURED' : 'MOCK'));
+    console.log('  ERC-8004: ' + (process.env.PRIVATE_KEY && !process.env.PRIVATE_KEY.startsWith('0x_') && process.env.PRIVATE_KEY !== '0x_mock' ? 'CONFIGURED' : 'MOCK'));
     console.log('  API key:  ' + (API_KEY ? 'CONFIGURED' : 'NOT CONFIGURED'));
     console.log('==========================================\n');
   });
