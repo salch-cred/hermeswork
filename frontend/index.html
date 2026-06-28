@@ -4,11 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HermesWork — Live Operations Dashboard</title>
-  <meta name="description" content="HermesWork live operations dashboard for real invoices, Stripe test payments, clients, payment rails, and payment-backed reputation records.">
+  <meta name="description" content="HermesWork live operations dashboard — real invoices, Stripe, client verification, and payment-backed reputation.">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    /* ── Command palette ── */
     #cmd-palette{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;z-index:9999}
     #cmd-palette.active{display:flex}
     .cmd-box{background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.22);width:min(560px,94vw);overflow:hidden}
@@ -20,7 +19,6 @@
     .cmd-item:hover,.cmd-item.selected{background:#f5f3ff}
     .cmd-icon{width:24px;text-align:center;flex-shrink:0;font-size:16px}
     .cmd-empty{padding:24px;text-align:center;color:#94a3b8;font-size:14px}
-    /* ── Invoice drawer ── */
     #drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;display:none}
     #drawer-backdrop.active{display:block}
     #invoice-drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,100vw);background:#fff;box-shadow:-8px 0 40px rgba(0,0,0,.16);z-index:901;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);display:flex;flex-direction:column}
@@ -35,7 +33,6 @@
     .drawer-link{color:#5046e4;text-decoration:none;font-size:14px}
     .drawer-link:hover{text-decoration:underline}
     .drawer-actions{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px}
-    /* ── Shortcuts overlay ── */
     #shortcuts-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:9998}
     #shortcuts-overlay.active{display:flex}
     .shortcuts-box{background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.2);width:min(480px,94vw);padding:28px 32px}
@@ -43,7 +40,6 @@
     .shortcut-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
     .shortcut-row:last-child{border-bottom:none}
     .key{background:#f1f5f9;border-radius:5px;padding:2px 8px;font-family:monospace;font-size:12px;font-weight:600;color:#475569}
-    /* ── Dark mode ── */
     body.dark{--bg:#0f1117;--surface:#1a1d27;--border:#2d3142;--text:#e2e8f0;--text-muted:#94a3b8;--accent:#7c6bf5}
     body.dark .cmd-box,body.dark .shortcuts-box,body.dark #invoice-drawer{background:#1a1d27;color:#e2e8f0}
     body.dark #cmd-input{color:#e2e8f0}
@@ -51,7 +47,6 @@
     body.dark .drawer-header,body.dark .cmd-search{border-color:#2d3142}
     body.dark .shortcut-row{border-color:#2d3142}
     body.dark .key{background:#2d3142;color:#a5b4fc}
-    /* ── Misc ── */
     .score-pill{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
     .score-pill.high{background:#d1fae5;color:#065f46}
     .score-pill.mid{background:#fef9c3;color:#854d0e}
@@ -63,10 +58,15 @@
     .topbar-btn:hover{background:#f1f5f9}
     body.dark .topbar-btn{border-color:#2d3142;color:#a5b4fc}
     body.dark .topbar-btn:hover{background:#2d3142}
-    /* ── Health rows ── */
     .health-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
     .health-row:last-child{border-bottom:0}
     .health-row span{color:var(--muted)}
+    /* Forecast badge */
+    .forecast-card{background:linear-gradient(135deg,#5046e4,#818cf8);border-radius:14px;padding:20px;color:#fff;position:relative;overflow:hidden}
+    .forecast-card::after{content:'';position:absolute;right:-20px;top:-20px;width:100px;height:100px;background:rgba(255,255,255,.08);border-radius:50%}
+    .forecast-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:6px}
+    .forecast-value{font-size:36px;font-weight:900}
+    .forecast-sub{font-size:12px;opacity:.75;margin-top:4px}
   </style>
 </head>
 <body>
@@ -74,7 +74,7 @@
   <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
   <symbol id="i-card" viewBox="0 0 24 24"><path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 10h18M7 15h4"/></symbol>
-  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-8"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 19a4 4 0 0 0-8 0"/><circle cx="12" cy="8" r="4"/><path d="M20 19a3 3 0 0 0-3-3M4 19a3 3 0 0 1 3-3"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m9 12 2 2 4-5"/></symbol>
@@ -88,72 +88,45 @@
   <symbol id="i-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
 </svg>
 
-<!-- Command palette -->
 <div id="cmd-palette" role="dialog" aria-label="Command palette">
-  <div class="cmd-box">
-    <div class="cmd-search">
-      <svg width="18" height="18"><use href="#i-search"/></svg>
-      <input id="cmd-input" placeholder="Search commands, invoices, clients…" autocomplete="off" spellcheck="false">
-    </div>
-    <div id="cmd-results"></div>
-  </div>
+  <div class="cmd-box"><div class="cmd-search"><svg width="18" height="18"><use href="#i-search"/></svg><input id="cmd-input" placeholder="Search commands, invoices, clients…" autocomplete="off" spellcheck="false"></div><div id="cmd-results"></div></div>
 </div>
-
-<!-- Invoice drawer -->
 <div id="drawer-backdrop"></div>
 <div id="invoice-drawer">
-  <div class="drawer-header">
-    <span class="drawer-title" id="drawer-title">Invoice</span>
-    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">×</button>
-  </div>
+  <div class="drawer-header"><span class="drawer-title" id="drawer-title">Invoice</span><button class="drawer-close" onclick="closeDrawer()" aria-label="Close">×</button></div>
   <div id="drawer-body"></div>
 </div>
-
-<!-- Shortcuts overlay -->
 <div id="shortcuts-overlay" onclick="closeShortcuts()">
   <div class="shortcuts-box" onclick="event.stopPropagation()">
     <div class="shortcuts-title">Keyboard shortcuts</div>
-    <div class="shortcut-row"><span>Open command palette</span><span class="key">⌘K</span></div>
+    <div class="shortcut-row"><span>Command palette</span><span class="key">⌘K</span></div>
     <div class="shortcut-row"><span>New invoice</span><span class="key">n</span></div>
     <div class="shortcut-row"><span>New proposal</span><span class="key">p</span></div>
     <div class="shortcut-row"><span>Sync data</span><span class="key">r</span></div>
     <div class="shortcut-row"><span>Toggle dark mode</span><span class="key">d</span></div>
     <div class="shortcut-row"><span>Navigate</span><span class="key">g</span> + <span class="key">d/i/c/p/r/a/s/x</span></div>
     <div class="shortcut-row"><span>Close / dismiss</span><span class="key">Esc</span></div>
-    <div class="shortcut-row"><span>This overlay</span><span class="key">?</span></div>
   </div>
 </div>
 
-<!-- Proposal modal -->
 <div class="modal-overlay" id="proposal-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Proposal</div><button class="modal-close" type="button" onclick="closeProposalModal()">×</button></div>
     <form id="proposal-form" onsubmit="submitProposal(event)">
       <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="prop-title" required placeholder="Proposal title"></div>
       <div class="form-group"><label class="form-label">Client</label><input class="form-input" id="prop-client" required placeholder="Client name"></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Platform</label><input class="form-input" id="prop-platform" placeholder="Upwork, Direct…"></div>
-        <div class="form-group"><label class="form-label">Amount</label><input type="number" class="form-input" id="prop-amount" min="0" placeholder="0"></div>
-      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Platform</label><input class="form-input" id="prop-platform" placeholder="Upwork, Direct…"></div><div class="form-group"><label class="form-label">Amount</label><input type="number" class="form-input" id="prop-amount" min="0" placeholder="0"></div></div>
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prop-status"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option></select></div>
       <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeProposalModal()">Cancel</button><button class="btn btn-primary" type="submit">Add proposal</button></div>
     </form>
   </div>
 </div>
-
-<!-- Client modal -->
 <div class="modal-overlay" id="client-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Client</div><button class="modal-close" type="button" onclick="closeClientModal()">×</button></div>
     <form id="client-form" onsubmit="submitClient(event)">
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="cli-name" required placeholder="Full name"></div>
-        <div class="form-group"><label class="form-label">Company</label><input class="form-input" id="cli-company" placeholder="Company name"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Industry</label><input class="form-input" id="cli-industry" placeholder="SaaS, E-commerce…"></div>
-        <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="cli-email" placeholder="client@email.com"></div>
-      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Name</label><input class="form-input" id="cli-name" required placeholder="Full name"></div><div class="form-group"><label class="form-label">Company</label><input class="form-input" id="cli-company" placeholder="Company name"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Industry</label><input class="form-input" id="cli-industry" placeholder="SaaS, E-commerce…"></div><div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="cli-email" placeholder="client@email.com"></div></div>
       <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeClientModal()">Cancel</button><button class="btn btn-primary" type="submit">Add client</button></div>
     </form>
   </div>
@@ -161,10 +134,7 @@
 
 <div class="app-shell">
   <aside class="sidebar" aria-label="Main navigation">
-    <div class="sidebar-logo">
-      <div class="logo-icon">H</div>
-      <div><div class="logo-text">Hermes<span>Work</span></div><div class="logo-sub">Live Operations</div></div>
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">H</div><div><div class="logo-text">Hermes<span>Work</span></div><div class="logo-sub">Live Operations</div></div></div>
     <div class="sidebar-nav">
       <div class="nav-section-label">Overview</div>
       <button class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')"><svg><use href="#i-grid"/></svg><span>Dashboard</span></button>
@@ -181,10 +151,7 @@
       <button class="nav-item" id="nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button>
     </div>
     <div class="sidebar-footer">
-      <div class="agent-status">
-        <div class="status-dot"></div>
-        <div class="status-info"><div class="status-label">Checking backend…</div><div class="status-sub">Render connection</div></div>
-      </div>
+      <div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label">Checking backend…</div><div class="status-sub">Render connection</div></div></div>
     </div>
   </aside>
 
@@ -207,10 +174,11 @@
         <div>
           <p class="overline">Real-time mode</p>
           <h1>Real invoices, live backend, Stripe test payments only.</h1>
-          <p>No demo dataset. The dashboard fills from real records — invoices, webhook events, and confirmed payments.</p>
+          <p>No demo dataset. Fills from real records — invoices, webhook events, confirmed payments.</p>
           <div class="live-pills">
             <span id="realtime-state">Connecting…</span>
             <span id="stripe-state">Checking Stripe…</span>
+            <span id="slack-state">Checking Slack…</span>
             <span id="storage-state">Checking storage…</span>
             <span id="last-sync">Waiting for first sync</span>
           </div>
@@ -225,9 +193,17 @@
         <div class="kpi-card"><div class="kpi-head"><span>Days to Payment</span><svg><use href="#i-card"/></svg></div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-trend neutral">collection time</div></div>
         <div class="kpi-card"><div class="kpi-head"><span>Active Projects</span><svg><use href="#i-bolt"/></svg></div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">open work</div></div>
       </div>
+      <!-- Forecast card -->
+      <div style="margin-bottom:24px">
+        <div class="forecast-card">
+          <div class="forecast-label">📈 Revenue Forecast — Next Month</div>
+          <div class="forecast-value" id="kpi-forecast">$0</div>
+          <div class="forecast-sub">Calculated from pipeline win rate × pending proposals + trailing avg. <a href="javascript:navigate('analytics')" style="color:#c7d2fe;text-decoration:underline">View breakdown →</a></div>
+        </div>
+      </div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> Live workflows</div><div class="card-subtitle">Backend tasks and payment processing</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-activity"/></svg> Real activity</div><div class="card-subtitle">Invoice creation, Stripe webhooks, confirmations</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> Live workflows</div><div class="card-subtitle">Backend tasks</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-activity"/></svg> Real activity</div><div class="card-subtitle">Invoice creation, Stripe webhooks</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
       </div>
     </main>
 
@@ -235,10 +211,7 @@
     <main class="page-content fade-in" id="page-invoices">
       <div class="section-header">
         <div><p class="overline">Finance</p><div class="section-title">Invoices</div><div class="section-subtitle">Create real backend records and Stripe test invoices</div></div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button>
-          <button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create Invoice</button>
-        </div>
+        <div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button><button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create Invoice</button></div>
       </div>
       <div class="toolbar">
         <div class="filter-tabs" id="invoice-filters">
@@ -250,141 +223,61 @@
         <div class="search-input"><input id="invoice-search" placeholder="Search invoices" oninput="searchInvoices(this.value)"></div>
       </div>
       <div class="card table-card">
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th onclick="sortTable('invoices','id')" style="cursor:pointer">Invoice ↕</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th>Rail</th><th>Actions</th></tr></thead>
-            <tbody id="invoices-tbody"></tbody>
-          </table>
-        </div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th onclick="sortTable('invoices','id')" style="cursor:pointer">Invoice ↕</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th>Rail</th><th>Actions</th></tr></thead><tbody id="invoices-tbody"></tbody></table></div>
         <div class="summary-bar" id="invoice-summary"><span>Outstanding: <strong>$0</strong></span><span><span id="invoice-count">0</span> invoices</span></div>
       </div>
     </main>
 
     <!-- Clients -->
     <main class="page-content fade-in" id="page-clients">
-      <div class="section-header">
-        <div><p class="overline">CRM</p><div class="section-title">Clients</div><div class="section-subtitle">Real clients from invoices and API records</div></div>
-        <button class="btn btn-primary" onclick="openClientModal()"><svg><use href="#i-plus"/></svg> Add Client</button>
-      </div>
+      <div class="section-header"><div><p class="overline">CRM</p><div class="section-title">Clients</div></div><button class="btn btn-primary" onclick="openClientModal()"><svg><use href="#i-plus"/></svg> Add Client</button></div>
       <div class="grid-auto" id="clients-grid"></div>
     </main>
 
     <!-- Proposals -->
     <main class="page-content fade-in" id="page-proposals">
-      <div class="section-header">
-        <div><p class="overline">Pipeline</p><div class="section-title">Proposals</div><div class="section-subtitle">Real proposal records only</div></div>
-        <button class="btn btn-primary" onclick="openProposalModal()"><svg><use href="#i-plus"/></svg> Add Proposal</button>
-      </div>
+      <div class="section-header"><div><p class="overline">Pipeline</p><div class="section-title">Proposals</div></div><button class="btn btn-primary" onclick="openProposalModal()"><svg><use href="#i-plus"/></svg> Add Proposal</button></div>
       <div class="stats-row" id="proposal-stats"></div>
-      <div class="card table-card">
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Title</th><th>Client</th><th>Platform</th><th>Amount</th><th>Status</th><th>Sent</th><th>Score</th><th>Actions</th></tr></thead>
-            <tbody id="proposals-tbody"></tbody>
-          </table>
-        </div>
-      </div>
+      <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Title</th><th>Client</th><th>Platform</th><th>Amount</th><th>Status</th><th>Sent</th><th>Score</th><th>Actions</th></tr></thead><tbody id="proposals-tbody"></tbody></table></div></div>
     </main>
 
     <!-- Reputation -->
     <main class="page-content fade-in" id="page-reputation">
-      <div class="section-header"><div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed work records — no seeded data</div></div></div>
-      <div class="stats-row">
-        <div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Records</div></div>
-        <div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Client verified</div></div>
-        <div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">Confirmed value</div></div>
+      <div class="section-header">
+        <div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed records — copy verification link and send to client</div></div>
+        <a id="profile-link" href="#" target="_blank" class="btn btn-secondary">🌐 Public Profile ↗</a>
       </div>
+      <div class="stats-row"><div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Records</div></div><div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Client verified</div></div><div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">Confirmed value</div></div></div>
       <div class="grid-auto" id="reputation-grid"></div>
     </main>
 
     <!-- Payments -->
     <main class="page-content fade-in" id="page-payments">
-      <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div><div class="section-subtitle">Stripe test mode and x402 proof routes</div></div></div>
+      <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div></div></div>
       <div class="payment-rails">
-        <div class="rail-card"><div class="rail-logo"><svg><use href="#i-card"/></svg></div><div class="rail-name">Stripe test mode</div><div class="rail-subtitle">Safe real integration using test keys</div><div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div><div class="rail-status">● Test connected</div></div>
-        <div class="rail-card"><div class="rail-logo cyan"><svg><use href="#i-bolt"/></svg></div><div class="rail-name">x402</div><div class="rail-subtitle">Payment proof route for crypto-native flow</div><div class="rail-stat"><span>Volume</span><strong id="x402-volume">$0</strong></div><div class="rail-status">● Proof route ready</div></div>
+        <div class="rail-card"><div class="rail-logo"><svg><use href="#i-card"/></svg></div><div class="rail-name">Stripe test mode</div><div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div><div class="rail-status">◉ Test connected</div></div>
+        <div class="rail-card"><div class="rail-logo cyan"><svg><use href="#i-bolt"/></svg></div><div class="rail-name">x402</div><div class="rail-stat"><span>Volume</span><strong id="x402-volume">$0</strong></div><div class="rail-status">◉ Proof route ready</div></div>
       </div>
-      <div class="card table-card">
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead>
-            <tbody id="payments-tbody"></tbody>
-          </table>
-        </div>
-      </div>
+      <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead><tbody id="payments-tbody"></tbody></table></div></div>
     </main>
 
     <!-- Analytics -->
     <main class="page-content fade-in" id="page-analytics">
-      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Generated from real records only</div></div></div>
+      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Revenue forecast, win rate, collection speed — all from real data</div></div></div>
       <div class="stats-row" id="analytics-stats"></div>
       <div class="two-col">
-        <div class="card"><div class="card-title">Revenue</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div>
+        <div class="card"><div class="card-title">Revenue + Forecast</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div>
         <div class="card"><div class="card-title">Win rate</div><div class="chart-container"><canvas id="chart-winrate"></canvas></div></div>
         <div class="card"><div class="card-title">Days to payment</div><div class="chart-container"><canvas id="chart-days"></canvas></div></div>
-        <div class="card"><div class="card-title">ERC-8004 records</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
+        <div class="card"><div class="card-title">ERC-8004 records / month</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
       </div>
-      <div class="card table-card" style="margin-top:20px">
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead><tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Current</th><th>Status</th></tr></thead>
-            <tbody id="hypothesis-tbody"></tbody>
-          </table>
-        </div>
-      </div>
+      <div class="card table-card" style="margin-top:20px"><div class="table-wrap"><table class="data-table"><thead><tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Current</th><th>Status</th></tr></thead><tbody id="hypothesis-tbody"></tbody></table></div></div>
     </main>
 
     <!-- Settings -->
     <main class="page-content fade-in" id="page-settings">
-      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div><div class="section-subtitle">Live backend config and browser-only API key</div></div></div>
+      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div></div></div>
       <div class="two-col">
+        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-key"/></svg> Access</div></div><div class="form-group"><label class="form-label">HermesWork API Key</label><div class="input-row"><input type="password" class="form-input" id="hermes-api-key" placeholder="Paste HERMESWORK_API_KEY"><button class="btn btn-primary" onclick="saveApiKeyFromField()">Save</button></div><div class="help-text">Stored only in this browser. Required for all write actions.</div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-link"/></svg> Backend</div></div><div class="form-group"><label class="form-label">Backend URL</label><div class="input-row"><input type="text" class="form-input" id="backend-url" value="https://hermeswork.onrender.com"><button class="btn btn-primary" onclick="testBackend()">Test & Save</button></div></div><button class="btn btn-secondary" style="margin-top:8px" onclick="refreshData()">Sync Live Data</button></div>
         <div class="card">
-          <div class="card-header"><div class="card-title"><svg><use href="#i-key"/></svg> Access</div></div>
-          <div class="form-group"><label class="form-label">HermesWork API Key</label><div class="input-row"><input type="password" class="form-input" id="hermes-api-key" placeholder="Paste HERMESWORK_API_KEY"><button class="btn btn-primary" onclick="saveApiKeyFromField()">Save</button></div><div class="help-text">Stored only in this browser. Required for all write actions (create invoice, add client, etc).</div></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title"><svg><use href="#i-link"/></svg> Backend</div></div>
-          <div class="form-group"><label class="form-label">Backend URL</label><div class="input-row"><input type="text" class="form-input" id="backend-url" value="https://hermeswork.onrender.com"><button class="btn btn-primary" onclick="testBackend()">Test & Save</button></div></div>
-          <button class="btn btn-secondary" style="margin-top:8px" onclick="refreshData()">Sync Live Data</button>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title"><svg><use href="#i-activity"/></svg> Backend Health</div></div>
-          <div id="backend-health"><div style="color:var(--muted);font-size:13px;padding:8px 0">Syncing…</div></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title"><svg><use href="#i-bolt"/></svg> Scheduled tasks</div><span class="badge badge-paid">Active</span></div>
-          <div id="cron-list"></div>
-        </div>
-      </div>
-    </main>
-  </div>
-</div>
-
-<nav class="mobile-nav">
-  <button class="mobile-nav-item active" id="mob-nav-dashboard" onclick="navigate('dashboard')"><svg><use href="#i-grid"/></svg><span>Home</span></button>
-  <button class="mobile-nav-item" id="mob-nav-invoices" onclick="navigate('invoices')"><svg><use href="#i-file"/></svg><span>Invoices</span></button>
-  <button class="mobile-nav-item" id="mob-nav-clients" onclick="navigate('clients')"><svg><use href="#i-users"/></svg><span>Clients</span></button>
-  <button class="mobile-nav-item" id="mob-nav-reputation" onclick="navigate('reputation')"><svg><use href="#i-shield"/></svg><span>Trust</span></button>
-  <button class="mobile-nav-item" id="mob-nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button>
-</nav>
-
-<!-- Invoice create modal -->
-<div class="modal-overlay" id="invoice-modal">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">Create Invoice</div><button class="modal-close" type="button" onclick="closeInvoiceModal()">×</button></div>
-    <form id="invoice-form" onsubmit="submitInvoice(event)">
-      <div class="form-group"><label class="form-label">Client</label><input class="form-input" id="inv-client" required placeholder="Client or company name"></div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Amount (USD)</label><input type="number" class="form-input" id="inv-amount" required min="1" placeholder="e.g. 2500"></div>
-        <div class="form-group"><label class="form-label">Due date</label><input type="date" class="form-input" id="inv-due" required></div>
-      </div>
-      <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="inv-desc" placeholder="Work delivered"></div>
-      <div class="form-group"><label class="form-label">Payment rail</label><select class="form-select" id="inv-rail"><option value="stripe">Stripe test mode</option><option value="x402">x402 proof route</option><option value="both">Both</option></select></div>
-      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create invoice</button></div>
-    </form>
-  </div>
-</div>
-
-<script src="app.js"></script>
-</body>
-</html>
