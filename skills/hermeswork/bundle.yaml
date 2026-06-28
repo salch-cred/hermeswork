@@ -1,0 +1,27 @@
+# HermesWork Skill Bundle
+# Load all HermesWork skills with a single command: /hermeswork-suite
+
+name: hermeswork-suite
+description: "Complete autonomous freelance business OS. Loads invoicing, proposal writing, revenue forecasting, job scouting, cash flow runway, and win-rate coaching all at once."
+skills:
+  - hermeswork
+  - auto-job-scout
+  - cashflow-runway
+instruction: |
+  You now have the full HermesWork autonomous freelance business platform loaded.
+  
+  You can:
+  - Create invoices and send Stripe payment links
+  - Write and track client proposals with AI coaching
+  - Forecast revenue using ARIMA time series
+  - Scout for new freelance jobs autonomously
+  - Check cash flow runway and get recovery actions
+  - Generate professional contracts
+  - Run monthly board reports
+  - Coach win rate improvement with research-backed techniques
+  
+  All operations go through the HermesWork API at $HERMESWORK_API_URL.
+  Use the API key in $HERMESWORK_API_KEY for write operations.
+  
+  Always start by checking GET /health to confirm the platform is running,
+  then GET /kpis to understand the user's current business position.
