@@ -1,78 +1,65 @@
-# HermesWork — Hermes Agent Accelerated Business Hackathon Submission
+# HermesWork v3.0 — Hermes Agent Accelerated Business Hackathon
 
 **Team:** Salman  
-**Track:** Main Track ($15k pool) + Stripe Skills  
-**Submitted:** June 2026  
-**Demo URL:** https://hermeswork-frontend.onrender.com  
+**Track:** Main ($15k) + Stripe Skills  
+**Demo:** https://hermeswork.onrender.com/demo  
+**Dashboard:** https://hermeswork-frontend.onrender.com  
 **Backend:** https://hermeswork.onrender.com  
 **MCP Manifest:** https://hermeswork.onrender.com/mcp/manifest  
 **Public Profile:** https://hermeswork.onrender.com/profile/salman  
-**Typeform:** https://form.typeform.com/to/hpEifIK4  
+**Submit form:** https://form.typeform.com/to/hpEifIK4  
 
 ---
 
 ## What is HermesWork?
 
-**HermesWork gives Hermes Agent a complete freelance business to run autonomously.**
+**HermesWork makes Hermes Agent capable of running a complete freelance business — autonomously.**
 
-Hermes Agent can now:
-- 📄 **Create real invoices** with Stripe test payments — clients get an actual Stripe hosted payment page
-- 💰 **Track payments** across two rails: Stripe and x402 (HTTP 402 / Base Sepolia)
-- 🤝 **Manage clients and proposals** with win-rate tracking and pipeline forecasting
-- 🛡 **Build a payment-backed reputation** — each confirmed payment generates an ERC-8004 credential
-- ✅ **Send client verification links** — clients confirm payment on a branded page
-- 🌐 **Share a public reputation profile** — verifiable, shareable, live
-- 📊 **Forecast revenue** from pipeline × win rate + trailing average
-- 🔔 **Send Slack alerts** on every payment event
-- 📄 **Generate PDF invoices** clients can save
+Connect HermesWork as an MCP server and Hermes Agent can:
+
+### ✨ AI-Powered (Hermes 3 via NVIDIA NIM)
+- **Generate proposals** — Hermes 3 writes winning client proposals from job details
+- **Analyze clients** — AI health analysis + payment risk + strategy advice  
+- **Suggest rates** — AI rate optimization from win history + market data
+- **Draft follow-ups** — AI writes overdue invoice / unanswered proposal messages
+- **Daily briefing** — Hermes 3 reads all data + returns what to do today
+- **Run daily operations** — fully autonomous: check overdue → send reminders → generate action plan
+
+### ⚡ Operations (Stripe + x402 + ERC-8004)
+- Create real Stripe invoices with hosted payment pages
+- x402 HTTP 402 payment route (Base Sepolia USDC)
+- Mint ERC-8004 on-chain reputation credentials on every payment
+- Client payment verification links
+- Public shareable reputation profile
+- Revenue forecast: trailing avg + pipeline × win rate
+- PDF invoice generation
+- Slack payment alerts
+- Real-time SSE dashboard sync
 
 ---
 
-## MCP Integration — How Hermes Agent Connects
-
-HermesWork is a full **MCP (Model Context Protocol) server**. Add it to Hermes Agent in one step:
+## MCP Connection
 
 ```
-MCP Server URL: https://hermeswork.onrender.com/mcp
-Manifest:       https://hermeswork.onrender.com/mcp/manifest
-Auth header:    x-api-key: <HERMESWORK_API_KEY>
+Server URL:  https://hermeswork.onrender.com/mcp
+Manifest:    https://hermeswork.onrender.com/mcp/manifest
+Auth:        x-api-key: <HERMESWORK_API_KEY>
 ```
 
-### Available Tools (15 total)
+## Tools (21 total)
 
+### AI Tools (Hermes 3 via NVIDIA NIM)
 | Tool | Description |
 |------|-------------|
-| `create_invoice` | Create invoice + Stripe hosted payment link |
-| `list_invoices` | List invoices, filter by status |
-| `get_invoice` | Get single invoice details |
-| `mark_invoice_paid` | Mark invoice paid |
-| `delete_invoice` | Delete invoice |
-| `send_invoice_reminder` | Resend Stripe reminder |
-| `add_client` | Add client to CRM |
-| `list_clients` | List all clients |
-| `add_proposal` | Track a proposal/bid |
-| `update_proposal_status` | Mark won/lost |
-| `get_kpis` | MRR, win rate, reputation score, forecast |
-| `get_analytics` | Revenue over time, days to payment, trends |
-| `get_reputation` | ERC-8004 credential records |
-| `get_payments` | All confirmed payments by rail |
-| `get_public_profile` | Shareable profile URL + summary |
+| `generate_proposal` | AI writes a winning proposal from job details |
+| `analyze_client` | AI payment health + risk + strategy |
+| `suggest_rate` | AI rate optimization advice |
+| `draft_followup` | AI writes follow-up for overdue invoice or proposal |
+| `ai_briefing` | Full daily business briefing from Hermes 3 |
+| `run_daily_operations` | 🤖 Autonomous: check overdue → remind → action plan |
 
-### Example Hermes Agent session
-
-```
-User: Create an invoice for Acme Corp for $3,500 due in 14 days for API integration work
-Hermes: [calls create_invoice] → INV-001 created, Stripe payment link: https://invoice.stripe.com/...
-
-User: What’s our current MRR and forecast?
-Hermes: [calls get_kpis] → MRR: $0 (fresh start), Forecast next month: $1,750 based on pipeline
-
-User: Mark INV-001 as paid
-Hermes: [calls mark_invoice_paid] → Paid. Slack notified. Reputation record created.
-
-User: Share my reputation profile with the client
-Hermes: [calls get_public_profile] → https://hermeswork.onrender.com/profile/salman
-```
+### Operations Tools
+`create_invoice` · `list_invoices` · `get_invoice` · `mark_invoice_paid` · `delete_invoice` · `send_invoice_reminder` · `add_client` · `list_clients` · `add_proposal` · `update_proposal_status` · `get_kpis` · `get_analytics` · `get_reputation` · `get_payments` · `get_public_profile`
 
 ---
 
@@ -80,44 +67,45 @@ Hermes: [calls get_public_profile] → https://hermeswork.onrender.com/profile/s
 
 | Layer | Tech |
 |-------|------|
-| Agent interface | MCP JSON-RPC 2.0 over HTTP |
+| AI Brain | Hermes 3 via NVIDIA NIM (free tier) |
+| Agent Interface | MCP JSON-RPC 2.0 HTTP server |
+| Payments | Real Stripe test mode + x402 Base Sepolia |
+| On-chain | ERC-8004 credential minting |
 | Backend | Node.js + Express on Render |
-| Payments (Stripe) | Real Stripe test mode — creates + sends hosted invoices |
-| Payments (crypto) | x402 HTTP 402 proof route on Base Sepolia |
-| On-chain reputation | ERC-8004 credential minting |
-| Real-time | Server-Sent Events (SSE) |
-| Frontend | Vanilla JS SPA — zero framework |
-| Security | Helmet, rate limiting, XSS sanitize, timing-safe key compare |
+| Real-time | Server-Sent Events |
+| Frontend | Vanilla JS SPA |
 
 ---
 
-## Stripe Integration
+## Demo Scenario (for video)
 
-HermesWork uses **real Stripe test mode** — not mocked:
-- Creates Stripe customers per client
-- Creates + finalizes + sends Stripe hosted invoices
-- Listens for `invoice.paid` webhooks
-- Generates payment-backed reputation credentials on payment
+```
+User: “Give me a daily briefing”
+Hermes: [ai_briefing] → Hermes 3 reads all data, returns: 0 overdue, 3 pending proposals ($12k), win rate 40%, forecast $4,800 next month. Priority: follow up with Acme Corp.
 
-This is exactly what the **Stripe Skills for Hermes** track is designed for: Hermes Agent can now autonomously invoice clients and collect real payments.
+User: “Write a proposal for Acme Corp for a $5k React dashboard”  
+Hermes: [generate_proposal] → Hermes 3 generates a 250-word professional proposal with Acme-specific hooks
+
+User: “Now create the invoice when they say yes”
+Hermes: [create_invoice] → INV-001 created, Stripe hosted invoice link generated
+
+User: “They paid — mark it paid”
+Hermes: [mark_invoice_paid] → Paid. ERC-8004 credential minted. Slack notified.
+
+User: “Share my profile”
+Hermes: [get_public_profile] → https://hermeswork.onrender.com/profile/salman
+```
+
+**Hermes Agent just autonomously ran a complete freelance sale cycle.**
 
 ---
 
-## Judging Criteria Alignment
+## Required Env Vars
 
-| Criterion | Evidence |
-|-----------|----------|
-| **Usefulness** | Hermes Agent can run a complete freelance business: invoice → collect → reputation |
-| **Viability** | Live on Render now. Real Stripe test mode. Real x402 route. Real ERC-8004 minting. |
-| **Presentation** | Live dashboard at hermeswork-frontend.onrender.com. Public profile. PDF invoices. |
-
----
-
-## Live Demo Checklist
-
-- [ ] Open https://hermeswork-frontend.onrender.com
-- [ ] Create an invoice (n key or button)
-- [ ] Open https://hermeswork.onrender.com/mcp/manifest (MCP tool list)
-- [ ] Call `create_invoice` via MCP
-- [ ] View https://hermeswork.onrender.com/profile/salman
-- [ ] Submit at https://form.typeform.com/to/hpEifIK4
+```env
+HERMESWORK_API_KEY=your_key
+STRIPE_SECRET_KEY=sk_test_...
+NVIDIA_NIM_API_KEY=nvapi-...   ← FREE at build.nvidia.com
+PUBLIC_BASE_URL=https://hermeswork.onrender.com
+FRONTEND_URL=https://hermeswork-frontend.onrender.com
+```
