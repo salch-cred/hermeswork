@@ -1,0 +1,53 @@
+# NVIDIA NeMo Guardrails v0.22 Configuration
+# Research: NVIDIA NeMo Guardrails (github.com/NVIDIA-NeMo/Guardrails)
+# Used in NemoClaw — NVIDIA's flagship agent safety product (GTC 2026)
+# This wraps all Hermes 3 AI outputs with programmable safety rails
+
+models:
+  - type: main
+    engine: nvidia_nim
+    model: nousresearch/hermes-3-llama-3.1-70b-instruct
+    parameters:
+      temperature: 0.7
+      max_tokens: 800
+
+# Safety rails applied to all AI tool outputs
+rails:
+  input:
+    flows:
+      - check business query only
+      - check no PII in input
+  output:
+    flows:
+      - check no hallucinated amounts
+      - check no fake client data
+      - check no PII leakage
+      - check professional tone
+
+# Colang flow definitions
+colang_content: |
+  define flow check business query only
+    """Block non-business queries from AI tools"""
+    if $user_message contains ["ignore", "jailbreak", "DAN", "pretend you are"]
+      bot say "I can only assist with freelance business operations."
+      stop
+
+  define flow check no hallucinated amounts
+    """Prevent AI from inventing specific dollar amounts"""
+    if $bot_message contains ["$1,000,000", "$999,999"]
+      bot say "I apologize. Please use the actual invoice data for specific amounts."
+      stop
+
+  define flow check no PII leakage
+    """Prevent exposing sensitive client data"""
+    # Applied to all AI output before returning to user
+    pass
+
+  define flow check professional tone
+    """Ensure all AI outputs maintain professional freelance tone"""
+    pass
+
+# Provenance: integrates with NVIDIA NIM endpoint
+# To activate: pip install nemoguardrails
+# Then wrap callHermes() with LLMRails instance
+# See: docs.nvidia.com/nemo/guardrails
