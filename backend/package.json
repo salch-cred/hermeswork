@@ -1,7 +1,7 @@
 {
   "name": "hermeswork-backend",
-  "version": "2.3.0",
-  "description": "HermesWork — Autonomous Freelance Operations Agent Backend",
+  "version": "4.0.0",
+  "description": "HermesWork — AI Freelance Operations Agent v4.0 | Reflexion + Thompson Sampling + W3C VC + MPP + A2A",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -20,7 +20,8 @@
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
     "xss": "^1.0.14",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "@upstash/redis": "^1.28.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
