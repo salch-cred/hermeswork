@@ -1,283 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HermesWork — Live Operations Dashboard</title>
-  <meta name="description" content="HermesWork live operations dashboard — real invoices, Stripe, client verification, and payment-backed reputation.">
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HermesWork v11 — Revenue Swarm Scientist</title>
+  <meta name="description" content="HermesWork v11 live demo dashboard — autonomous revenue scientist for freelancers." />
   <style>
-    #cmd-palette{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:15vh;z-index:9999}
-    #cmd-palette.active{display:flex}
-    .cmd-box{background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.22);width:min(560px,94vw);overflow:hidden}
-    .cmd-search{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #f0f0f0}
-    .cmd-search svg{opacity:.4;flex-shrink:0}
-    #cmd-input{border:none;outline:none;font-size:16px;width:100%;background:transparent;color:#0a0a0a}
-    #cmd-results{max-height:340px;overflow-y:auto}
-    .cmd-item{display:flex;align-items:center;gap:12px;padding:11px 20px;cursor:pointer;font-size:14px;transition:background .1s}
-    .cmd-item:hover,.cmd-item.selected{background:#f5f3ff}
-    .cmd-icon{width:24px;text-align:center;flex-shrink:0;font-size:16px}
-    .cmd-empty{padding:24px;text-align:center;color:#94a3b8;font-size:14px}
-    #drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:900;display:none}
-    #drawer-backdrop.active{display:block}
-    #invoice-drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,100vw);background:#fff;box-shadow:-8px 0 40px rgba(0,0,0,.16);z-index:901;transform:translateX(100%);transition:transform .3s cubic-bezier(.25,.46,.45,.94);display:flex;flex-direction:column}
-    #invoice-drawer.open{transform:translateX(0)}
-    .drawer-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid #f1f5f9}
-    .drawer-title{font-size:18px;font-weight:700;color:#0a0a0a}
-    .drawer-close{background:none;border:none;cursor:pointer;font-size:22px;color:#94a3b8;line-height:1;padding:0}
-    #drawer-body{padding:24px;overflow-y:auto;flex:1}
-    .drawer-field{margin-bottom:16px}
-    .drawer-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:4px}
-    .drawer-value{font-size:15px;color:#0a0a0a}
-    .drawer-link{color:#5046e4;text-decoration:none;font-size:14px}
-    .drawer-link:hover{text-decoration:underline}
-    .drawer-actions{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px}
-    #shortcuts-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:9998}
-    #shortcuts-overlay.active{display:flex}
-    .shortcuts-box{background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.2);width:min(480px,94vw);padding:28px 32px}
-    .shortcuts-title{font-size:17px;font-weight:700;margin-bottom:20px;color:#0a0a0a}
-    .shortcut-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
-    .shortcut-row:last-child{border-bottom:none}
-    .key{background:#f1f5f9;border-radius:5px;padding:2px 8px;font-family:monospace;font-size:12px;font-weight:600;color:#475569}
-    body.dark{--bg:#0f1117;--surface:#1a1d27;--border:#2d3142;--text:#e2e8f0;--text-muted:#94a3b8;--accent:#7c6bf5}
-    body.dark .cmd-box,body.dark .shortcuts-box,body.dark #invoice-drawer{background:#1a1d27;color:#e2e8f0}
-    body.dark #cmd-input{color:#e2e8f0}
-    body.dark .cmd-item:hover,body.dark .cmd-item.selected{background:#2d3142}
-    body.dark .drawer-header,body.dark .cmd-search{border-color:#2d3142}
-    body.dark .shortcut-row{border-color:#2d3142}
-    body.dark .key{background:#2d3142;color:#a5b4fc}
-    .score-pill{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
-    .score-pill.high{background:#d1fae5;color:#065f46}
-    .score-pill.mid{background:#fef9c3;color:#854d0e}
-    .clickable-row{cursor:pointer;transition:background .12s}
-    .clickable-row:hover{background:#f8f7ff}
-    body.dark .clickable-row:hover{background:#2d3142}
-    .btn-xs{font-size:11px;padding:3px 8px;border-radius:5px}
-    .topbar-btn{background:none;border:1px solid #e2e8f0;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:16px;color:#64748b;transition:background .15s}
-    .topbar-btn:hover{background:#f1f5f9}
-    body.dark .topbar-btn{border-color:#2d3142;color:#a5b4fc}
-    body.dark .topbar-btn:hover{background:#2d3142}
-    .health-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
-    .health-row:last-child{border-bottom:0}
-    .health-row span{color:var(--muted)}
-    /* Forecast badge */
-    .forecast-card{background:linear-gradient(135deg,#5046e4,#818cf8);border-radius:14px;padding:20px;color:#fff;position:relative;overflow:hidden}
-    .forecast-card::after{content:'';position:absolute;right:-20px;top:-20px;width:100px;height:100px;background:rgba(255,255,255,.08);border-radius:50%}
-    .forecast-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:6px}
-    .forecast-value{font-size:36px;font-weight:900}
-    .forecast-sub{font-size:12px;opacity:.75;margin-top:4px}
+    :root{--bg:#080b14;--card:#10172a;--card2:#0f1f33;--text:#eef4ff;--muted:#91a4c3;--brand:#5046e4;--green:#22c55e;--cyan:#22d3ee;--yellow:#f59e0b;--red:#fb7185;--line:rgba(255,255,255,.11)}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:radial-gradient(circle at 20% 0%,rgba(80,70,228,.35),transparent 30%),radial-gradient(circle at 80% 20%,rgba(34,211,238,.16),transparent 30%),var(--bg);color:var(--text)}
+    a{color:inherit}.wrap{max-width:1180px;margin:0 auto;padding:28px 18px 60px}.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:44px}.logo{display:flex;align-items:center;gap:12px;font-weight:900;font-size:20px}.logoMark{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),#8b5cf6);display:grid;place-items:center;box-shadow:0 15px 45px rgba(80,70,228,.35)}.pill{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:999px;padding:8px 12px;color:var(--muted);font-size:13px}.btns{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:12px;padding:10px 14px;text-decoration:none;font-weight:700;font-size:14px}.btn.primary{background:linear-gradient(135deg,var(--brand),#7c3aed);border-color:transparent;box-shadow:0 18px 55px rgba(80,70,228,.32)}
+    .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:stretch}.card{background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:0 22px 70px rgba(0,0,0,.25);backdrop-filter:blur(10px)}.hero h1{font-size:clamp(38px,7vw,78px);line-height:.95;margin:10px 0 18px;letter-spacing:-.06em}.grad{background:linear-gradient(90deg,#fff,#a5b4fc,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent}.lead{font-size:18px;line-height:1.65;color:#cbd5e1;max-width:760px}.status{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.dot{width:9px;height:9px;border-radius:999px;background:var(--yellow);display:inline-block;margin-right:8px}.dot.ok{background:var(--green)}.dot.bad{background:var(--red)}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}.metric{background:rgba(15,23,42,.78);border:1px solid var(--line);border-radius:18px;padding:18px}.metric .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.metric .value{font-size:32px;font-weight:950;margin-top:8px}.metric .sub{font-size:12px;color:var(--muted);margin-top:4px}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}.step{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.045)}.step b{display:block;margin-bottom:6px}.step span{font-size:12px;color:var(--muted);line-height:1.4}.section{margin-top:26px}.section h2{font-size:28px;margin:0 0 14px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.list{display:grid;gap:10px}.row{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);color:#dbeafe}.row:last-child{border-bottom:0}.row span{color:var(--muted)}pre{white-space:pre-wrap;background:#050816;border:1px solid var(--line);border-radius:18px;padding:16px;color:#dbeafe;overflow:auto}.agentList{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.agent{padding:14px;border-radius:16px;border:1px solid var(--line);background:rgba(34,211,238,.055)}.agent b{font-size:13px}.agent span{display:block;color:var(--muted);font-size:12px;margin-top:6px;line-height:1.35}.warn{padding:14px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.09);border-radius:16px;color:#fde68a}.footer{margin-top:36px;color:var(--muted);font-size:13px;text-align:center}.loading{opacity:.75;animation:pulse 1.4s infinite}@keyframes pulse{50%{opacity:.35}}
+    @media(max-width:900px){.hero,.two{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.flow,.agentList{grid-template-columns:1fr}.nav{align-items:flex-start;flex-direction:column}.hero h1{font-size:46px}}
   </style>
 </head>
 <body>
-<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
-  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
-  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
-  <symbol id="i-card" viewBox="0 0 24 24"><path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 10h18M7 15h4"/></symbol>
-  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-8"/></symbol>
-  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 19a4 4 0 0 0-8 0"/><circle cx="12" cy="8" r="4"/><path d="M20 19a3 3 0 0 0-3-3M4 19a3 3 0 0 1 3-3"/></symbol>
-  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/></symbol>
-  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m9 12 2 2 4-5"/></symbol>
-  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a8 8 0 0 0 .1-2l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.7-1L15 5.5h-4L10.6 8a8 8 0 0 0-1.7 1l-2.4-1-2 3.5L6.5 13a8 8 0 0 0 .1 2l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.7 1l.3 2.5h4l.4-2.5a8 8 0 0 0 1.7-1l2.4 1 2-3.5z"/></symbol>
-  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M19 11a7 7 0 0 0-12-4M5 13a7 7 0 0 0 12 4"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l2 2M14 9l2 2"/></symbol>
-  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
-  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></symbol>
-  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></symbol>
-  <symbol id="i-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
-</svg>
-
-<div id="cmd-palette" role="dialog" aria-label="Command palette">
-  <div class="cmd-box"><div class="cmd-search"><svg width="18" height="18"><use href="#i-search"/></svg><input id="cmd-input" placeholder="Search commands, invoices, clients…" autocomplete="off" spellcheck="false"></div><div id="cmd-results"></div></div>
-</div>
-<div id="drawer-backdrop"></div>
-<div id="invoice-drawer">
-  <div class="drawer-header"><span class="drawer-title" id="drawer-title">Invoice</span><button class="drawer-close" onclick="closeDrawer()" aria-label="Close">×</button></div>
-  <div id="drawer-body"></div>
-</div>
-<div id="shortcuts-overlay" onclick="closeShortcuts()">
-  <div class="shortcuts-box" onclick="event.stopPropagation()">
-    <div class="shortcuts-title">Keyboard shortcuts</div>
-    <div class="shortcut-row"><span>Command palette</span><span class="key">⌘K</span></div>
-    <div class="shortcut-row"><span>New invoice</span><span class="key">n</span></div>
-    <div class="shortcut-row"><span>New proposal</span><span class="key">p</span></div>
-    <div class="shortcut-row"><span>Sync data</span><span class="key">r</span></div>
-    <div class="shortcut-row"><span>Toggle dark mode</span><span class="key">d</span></div>
-    <div class="shortcut-row"><span>Navigate</span><span class="key">g</span> + <span class="key">d/i/c/p/r/a/s/x</span></div>
-    <div class="shortcut-row"><span>Close / dismiss</span><span class="key">Esc</span></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="proposal-modal">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add Proposal</div><button class="modal-close" type="button" onclick="closeProposalModal()">×</button></div>
-    <form id="proposal-form" onsubmit="submitProposal(event)">
-      <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="prop-title" required placeholder="Proposal title"></div>
-      <div class="form-group"><label class="form-label">Client</label><input class="form-input" id="prop-client" required placeholder="Client name"></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Platform</label><input class="form-input" id="prop-platform" placeholder="Upwork, Direct…"></div><div class="form-group"><label class="form-label">Amount</label><input type="number" class="form-input" id="prop-amount" min="0" placeholder="0"></div></div>
-      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prop-status"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option></select></div>
-      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeProposalModal()">Cancel</button><button class="btn btn-primary" type="submit">Add proposal</button></div>
-    </form>
-  </div>
-</div>
-<div class="modal-overlay" id="client-modal">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">Add Client</div><button class="modal-close" type="button" onclick="closeClientModal()">×</button></div>
-    <form id="client-form" onsubmit="submitClient(event)">
-      <div class="form-row"><div class="form-group"><label class="form-label">Name</label><input class="form-input" id="cli-name" required placeholder="Full name"></div><div class="form-group"><label class="form-label">Company</label><input class="form-input" id="cli-company" placeholder="Company name"></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Industry</label><input class="form-input" id="cli-industry" placeholder="SaaS, E-commerce…"></div><div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="cli-email" placeholder="client@email.com"></div></div>
-      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeClientModal()">Cancel</button><button class="btn btn-primary" type="submit">Add client</button></div>
-    </form>
-  </div>
-</div>
-
-<div class="app-shell">
-  <aside class="sidebar" aria-label="Main navigation">
-    <div class="sidebar-logo"><div class="logo-icon">H</div><div><div class="logo-text">Hermes<span>Work</span></div><div class="logo-sub">Live Operations</div></div></div>
-    <div class="sidebar-nav">
-      <div class="nav-section-label">Overview</div>
-      <button class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')"><svg><use href="#i-grid"/></svg><span>Dashboard</span></button>
-      <div class="nav-section-label">Finance</div>
-      <button class="nav-item" id="nav-invoices" onclick="navigate('invoices')"><svg><use href="#i-file"/></svg><span>Invoices</span><span class="nav-badge" id="badge-overdue" style="display:none">0</span></button>
-      <button class="nav-item" id="nav-payments" onclick="navigate('payments')"><svg><use href="#i-card"/></svg><span>Payments</span></button>
-      <button class="nav-item" id="nav-analytics" onclick="navigate('analytics')"><svg><use href="#i-chart"/></svg><span>Analytics</span></button>
-      <div class="nav-section-label">CRM</div>
-      <button class="nav-item" id="nav-clients" onclick="navigate('clients')"><svg><use href="#i-users"/></svg><span>Clients</span></button>
-      <button class="nav-item" id="nav-proposals" onclick="navigate('proposals')"><svg><use href="#i-send"/></svg><span>Proposals</span></button>
-      <div class="nav-section-label">Trust</div>
-      <button class="nav-item" id="nav-reputation" onclick="navigate('reputation')"><svg><use href="#i-shield"/></svg><span>Reputation</span><span class="nav-badge green" id="badge-rep"></span></button>
-      <div class="nav-section-label">System</div>
-      <button class="nav-item" id="nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button>
-    </div>
-    <div class="sidebar-footer">
-      <div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label">Checking backend…</div><div class="status-sub">Render connection</div></div></div>
-    </div>
-  </aside>
-
-  <div class="main-content">
-    <header class="topbar">
-      <div><div class="page-title" id="page-title">Dashboard</div><div class="page-subtitle" id="page-date"></div></div>
-      <div class="topbar-right">
-        <div class="topbar-date" id="topbar-date"></div>
-        <button class="topbar-btn" onclick="openCmdPalette()" title="Command palette (⌘K)">⌘K</button>
-        <button class="topbar-btn" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">◑</button>
-        <button class="topbar-btn" onclick="refreshData()" title="Refresh data"><svg><use href="#i-refresh"/></svg></button>
-        <button class="topbar-btn" onclick="openShortcuts()" title="Keyboard shortcuts">?</button>
-        <div class="user-avatar">S</div>
+  <div class="wrap">
+    <nav class="nav">
+      <div class="logo"><div class="logoMark">🦅</div><div>HermesWork <span style="color:#a5b4fc">v11</span><div style="font-size:12px;color:var(--muted);font-weight:600">Revenue Swarm Scientist</div></div></div>
+      <div class="btns">
+        <a class="btn" target="_blank" href="https://hermeswork.onrender.com/health">Health</a>
+        <a class="btn" target="_blank" href="https://hermeswork.onrender.com/v11/agents">v11 Agents</a>
+        <a class="btn" target="_blank" href="https://github.com/salch-cred/hermeswork">GitHub</a>
+        <a class="btn primary" target="_blank" href="https://hermeswork.onrender.com/dashboard/live">Live JSON</a>
       </div>
-    </header>
+    </nav>
 
-    <!-- Dashboard -->
-    <main class="page-content active fade-in" id="page-dashboard">
-      <section class="hero-strip">
-        <div>
-          <p class="overline">Real-time mode</p>
-          <h1>Real invoices, live backend, Stripe test payments only.</h1>
-          <p>No demo dataset. Fills from real records — invoices, webhook events, confirmed payments.</p>
-          <div class="live-pills">
-            <span id="realtime-state">Connecting…</span>
-            <span id="stripe-state">Checking Stripe…</span>
-            <span id="slack-state">Checking Slack…</span>
-            <span id="storage-state">Checking storage…</span>
-            <span id="last-sync">Waiting for first sync</span>
-          </div>
+    <section class="hero">
+      <div class="card">
+        <div class="pill"><span class="dot loading" id="liveDot"></span><span id="liveStatus">Connecting to live backend…</span></div>
+        <h1><span class="grad">Autonomous Revenue Scientist</span> for freelancers</h1>
+        <p class="lead">HermesWork v11 turns Hermes Agent into a real revenue operating system: it senses markets, invents offers, designs 24–72h experiments, prepares launch plans, asks for human approval, and learns from outcomes.</p>
+        <div class="status">
+          <span class="pill">Model: Hermes 3 via NVIDIA NIM</span>
+          <span class="pill">Stripe invoices/payments</span>
+          <span class="pill">Telegram approval gate</span>
+          <span class="pill">SkillEvolution + SkillDistill</span>
         </div>
-        <button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create invoice</button>
-      </section>
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-head"><span>Monthly Revenue</span><svg><use href="#i-chart"/></svg></div><div class="kpi-value" id="kpi-mrr">$0</div><div class="kpi-trend up">live backend</div><div class="mini-chart" id="sparkline-mrr"></div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Active Invoices</span><svg><use href="#i-file"/></svg></div><div class="kpi-value" id="kpi-invoices">0</div><div class="kpi-trend neutral">unpaid records</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Win Rate</span><svg><use href="#i-send"/></svg></div><div class="kpi-value" id="kpi-winrate">0%</div><div class="kpi-trend up">real proposals</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Reputation Score</span><svg><use href="#i-shield"/></svg></div><div class="kpi-value" id="kpi-rep">0</div><div class="kpi-trend up">payment-backed</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Days to Payment</span><svg><use href="#i-card"/></svg></div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-trend neutral">collection time</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Active Projects</span><svg><use href="#i-bolt"/></svg></div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">open work</div></div>
-      </div>
-      <!-- Forecast card -->
-      <div style="margin-bottom:24px">
-        <div class="forecast-card">
-          <div class="forecast-label">📈 Revenue Forecast — Next Month</div>
-          <div class="forecast-value" id="kpi-forecast">$0</div>
-          <div class="forecast-sub">Calculated from pipeline win rate × pending proposals + trailing avg. <a href="javascript:navigate('analytics')" style="color:#c7d2fe;text-decoration:underline">View breakdown →</a></div>
+        <div class="flow">
+          <div class="step"><b>1. Market</b><span>Detect buyer pain, urgency, budget, trigger events.</span></div>
+          <div class="step"><b>2. Offer</b><span>Design high-margin productized offers.</span></div>
+          <div class="step"><b>3. Experiment</b><span>Create falsifiable 24–72h tests.</span></div>
+          <div class="step"><b>4. Launch</b><span>Rank by expected value and request approval.</span></div>
+          <div class="step"><b>5. Learn</b><span>Store outcomes and evolve its own skill.</span></div>
         </div>
       </div>
-      <div class="two-col">
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> Live workflows</div><div class="card-subtitle">Backend tasks</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-activity"/></svg> Real activity</div><div class="card-subtitle">Invoice creation, Stripe webhooks</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
-      </div>
-    </main>
-
-    <!-- Invoices -->
-    <main class="page-content fade-in" id="page-invoices">
-      <div class="section-header">
-        <div><p class="overline">Finance</p><div class="section-title">Invoices</div><div class="section-subtitle">Create real backend records and Stripe test invoices</div></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button><button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create Invoice</button></div>
-      </div>
-      <div class="toolbar">
-        <div class="filter-tabs" id="invoice-filters">
-          <button class="filter-tab active" onclick="filterInvoices('all',this)">All</button>
-          <button class="filter-tab" onclick="filterInvoices('paid',this)">Paid</button>
-          <button class="filter-tab" onclick="filterInvoices('pending',this)">Pending</button>
-          <button class="filter-tab" onclick="filterInvoices('overdue',this)">Overdue</button>
+      <div class="card">
+        <h2 style="margin-top:0">Live proof</h2>
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:0">
+          <div class="metric"><div class="label">Backend</div><div class="value" id="version">—</div><div class="sub">live Render API</div></div>
+          <div class="metric"><div class="label">Agents</div><div class="value" id="agents">—</div><div class="sub">v11 total</div></div>
+          <div class="metric"><div class="label">Tools</div><div class="value" id="tools">—</div><div class="sub">MCP-style endpoints</div></div>
+          <div class="metric"><div class="label">AI</div><div class="value" id="ai">—</div><div class="sub">NVIDIA/Nour portal</div></div>
         </div>
-        <div class="search-input"><input id="invoice-search" placeholder="Search invoices" oninput="searchInvoices(this.value)"></div>
+        <div class="warn">If private invoice tables are empty, that is expected in public mode. This page uses public proof endpoints so judges can verify without your API key.</div>
       </div>
-      <div class="card table-card">
-        <div class="table-wrap"><table class="data-table"><thead><tr><th onclick="sortTable('invoices','id')" style="cursor:pointer">Invoice ↕</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th>Rail</th><th>Actions</th></tr></thead><tbody id="invoices-tbody"></tbody></table></div>
-        <div class="summary-bar" id="invoice-summary"><span>Outstanding: <strong>$0</strong></span><span><span id="invoice-count">0</span> invoices</span></div>
+    </section>
+
+    <section class="section grid">
+      <div class="metric"><div class="label">Revenue</div><div class="value" id="revenue">$0</div><div class="sub">from live backend</div></div>
+      <div class="metric"><div class="label">Active value</div><div class="value" id="activeValue">$0</div><div class="sub">pipeline/invoices</div></div>
+      <div class="metric"><div class="label">Win rate</div><div class="value" id="winRate">0%</div><div class="sub">real proposals</div></div>
+      <div class="metric"><div class="label">Research</div><div class="value" id="papers">36</div><div class="sub">papers/techniques</div></div>
+    </section>
+
+    <section class="section two">
+      <div class="card">
+        <h2>v11 scientist agents</h2>
+        <div class="agentList" id="agentList">
+          <div class="agent"><b>MarketSensingAgent</b><span>Finds urgent markets.</span></div>
+          <div class="agent"><b>OfferLabAgent</b><span>Creates productized offers.</span></div>
+          <div class="agent"><b>ExperimentDesignerAgent</b><span>Builds falsifiable growth tests.</span></div>
+          <div class="agent"><b>LaunchCommanderAgent</b><span>Ranks by expected value.</span></div>
+          <div class="agent"><b>RevenueSwarmChief</b><span>Orchestrates full loop.</span></div>
+        </div>
       </div>
-    </main>
-
-    <!-- Clients -->
-    <main class="page-content fade-in" id="page-clients">
-      <div class="section-header"><div><p class="overline">CRM</p><div class="section-title">Clients</div></div><button class="btn btn-primary" onclick="openClientModal()"><svg><use href="#i-plus"/></svg> Add Client</button></div>
-      <div class="grid-auto" id="clients-grid"></div>
-    </main>
-
-    <!-- Proposals -->
-    <main class="page-content fade-in" id="page-proposals">
-      <div class="section-header"><div><p class="overline">Pipeline</p><div class="section-title">Proposals</div></div><button class="btn btn-primary" onclick="openProposalModal()"><svg><use href="#i-plus"/></svg> Add Proposal</button></div>
-      <div class="stats-row" id="proposal-stats"></div>
-      <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Title</th><th>Client</th><th>Platform</th><th>Amount</th><th>Status</th><th>Sent</th><th>Score</th><th>Actions</th></tr></thead><tbody id="proposals-tbody"></tbody></table></div></div>
-    </main>
-
-    <!-- Reputation -->
-    <main class="page-content fade-in" id="page-reputation">
-      <div class="section-header">
-        <div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed records — copy verification link and send to client</div></div>
-        <a id="profile-link" href="#" target="_blank" class="btn btn-secondary">🌐 Public Profile ↗</a>
+      <div class="card">
+        <h2>Proof cards for demo</h2>
+        <div class="list">
+          <div class="row"><span>v11 endpoint</span><b>/v11/agents</b></div>
+          <div class="row"><span>Revenue swarm</span><b>POST /ai/revenue-swarm</b></div>
+          <div class="row"><span>Dashboard</span><b>/dashboard/live</b></div>
+          <div class="row"><span>Human approval</span><b>Telegram gate</b></div>
+          <div class="row"><span>Payments</span><b>Stripe + x402</b></div>
+        </div>
       </div>
-      <div class="stats-row"><div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Records</div></div><div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Client verified</div></div><div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">Confirmed value</div></div></div>
-      <div class="grid-auto" id="reputation-grid"></div>
-    </main>
+    </section>
 
-    <!-- Payments -->
-    <main class="page-content fade-in" id="page-payments">
-      <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div></div></div>
-      <div class="payment-rails">
-        <div class="rail-card"><div class="rail-logo"><svg><use href="#i-card"/></svg></div><div class="rail-name">Stripe test mode</div><div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div><div class="rail-status">◉ Test connected</div></div>
-        <div class="rail-card"><div class="rail-logo cyan"><svg><use href="#i-bolt"/></svg></div><div class="rail-name">x402</div><div class="rail-stat"><span>Volume</span><strong id="x402-volume">$0</strong></div><div class="rail-status">◉ Proof route ready</div></div>
-      </div>
-      <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead><tbody id="payments-tbody"></tbody></table></div></div>
-    </main>
+    <section class="section card">
+      <h2>Submission explanation</h2>
+      <pre id="pitch">The core idea: an AI agent should not just answer questions — it should discover revenue, design offers, test experiments, request approval, execute safely, and learn from outcomes.</pre>
+    </section>
 
-    <!-- Analytics -->
-    <main class="page-content fade-in" id="page-analytics">
-      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Revenue forecast, win rate, collection speed — all from real data</div></div></div>
-      <div class="stats-row" id="analytics-stats"></div>
-      <div class="two-col">
-        <div class="card"><div class="card-title">Revenue + Forecast</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div>
-        <div class="card"><div class="card-title">Win rate</div><div class="chart-container"><canvas id="chart-winrate"></canvas></div></div>
-        <div class="card"><div class="card-title">Days to payment</div><div class="chart-container"><canvas id="chart-days"></canvas></div></div>
-        <div class="card"><div class="card-title">ERC-8004 records / month</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
-      </div>
-      <div class="card table-card" style="margin-top:20px"><div class="table-wrap"><table class="data-table"><thead><tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Current</th><th>Status</th></tr></thead><tbody id="hypothesis-tbody"></tbody></table></div></div>
-    </main>
+    <div class="footer">Built for Nous × NVIDIA × Stripe Hackathon · Hermes 3 via NVIDIA NIM · Stripe · Telegram · x402 · ERC-8004</div>
+  </div>
 
-    <!-- Settings -->
-    <main class="page-content fade-in" id="page-settings">
-      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div></div></div>
-      <div class="two-col">
-        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-key"/></svg> Access</div></div><div class="form-group"><label class="form-label">HermesWork API Key</label><div class="input-row"><input type="password" class="form-input" id="hermes-api-key" placeholder="Paste HERMESWORK_API_KEY"><button class="btn btn-primary" onclick="saveApiKeyFromField()">Save</button></div><div class="help-text">Stored only in this browser. Required for all write actions.</div></div></div>
-        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-link"/></svg> Backend</div></div><div class="form-group"><label class="form-label">Backend URL</label><div class="input-row"><input type="text" class="form-input" id="backend-url" value="https://hermeswork.onrender.com"><button class="btn btn-primary" onclick="testBackend()">Test & Save</button></div></div><button class="btn btn-secondary" style="margin-top:8px" onclick="refreshData()">Sync Live Data</button></div>
-        <div class="card">
+  <script>
+    const API = 'https://hermeswork.onrender.com';
+    const $ = id => document.getElementById(id);
+    const money = n => '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    async function getJSON(path){ const r = await fetch(API + path, { cache: 'no-store' }); if(!r.ok) throw new Error(path + ' HTTP ' + r.status); return r.json(); }
+    async function boot(){
+      try{
+        const [health, v11, dash] = await Promise.all([getJSON('/health'), getJSON('/v11/agents'), getJSON('/dashboard/live')]);
+        $('liveDot').className = 'dot ok';
+        $('liveStatus').textContent = 'Live backend connected';
+        $('version').textContent = v11.version || health.version || 'v11';
+        $('agents').textContent = v11.totalAgentsWithV11 || health.agents || 36;
+        $('tools').textContent = v11.totalToolsWithV11 || health.mcpTools || 60;
+        $('ai').textContent = (health.ai || 'configured').replace('_',' ');
+        const lm = dash.liveMetrics || {};
+        $('revenue').textContent = money(lm.totalRevenue || 0);
+        $('activeValue').textContent = money(lm.activeValue || 0);
+        $('winRate').textContent = (lm.winRate || 0) + '%';
+        $('papers').textContent = lm.researchPapers || 36;
+        if(Array.isArray(v11.agents)){
+          $('agentList').innerHTML = v11.agents.map(a => '<div class="agent"><b>'+a+'</b><span>v11 Revenue Swarm Scientist layer</span></div>').join('');
+        }
+      }catch(e){
+        $('liveDot').className = 'dot bad';
+        $('liveStatus').textContent = 'Could not connect: ' + e.message;
+      }
+    }
+    boot();
+  </script>
+</body>
+</html>
