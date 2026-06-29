@@ -1,5 +1,6 @@
 /**
  * HermesWork v11.0 — Revenue Swarm Wire
+ * + v12 ClientCloser integration
  * Adds scientist-grade autonomous revenue loop without touching fragile v10 core routes.
  */
 
@@ -20,6 +21,28 @@ module.exports = function registerV11({
     }
     return _swarm;
   }
+
+  // Load v12 ClientCloser wire
+  let _v12 = null;
+  function getV12() {
+    if (!_v12) {
+      try {
+        const registerV12 = require('./serverV12wire');
+        _v12 = registerV12({
+          app, requireApiKey, asyncWrap,
+          callHermes, notifyTelegram, notifyWhatsApp,
+          db, memoryGet, memorySet, today, AI_MODEL, TELEGRAM_CHAT_ID,
+          sendTelegramMessage
+        });
+        console.log('[V12Closer] ClientCloser routes + 6h auto-scheduler registered ✅');
+      } catch(e) {
+        console.warn('[V12Closer] Load failed:', e.message);
+      }
+    }
+    return _v12;
+  }
+
+  // ── Revenue Swarm routes (v11) ──────────────────────────────────────────
 
   app.post('/ai/market-sense', requireApiKey, asyncWrap(async (req, res) => {
     res.json(await getRevenueSwarm().marketSensingAgent(req.body || {}));
@@ -50,16 +73,29 @@ module.exports = function registerV11({
       version: 'v11.0.0',
       addedAgents: 5,
       totalAgentsWithV11: 36,
+      addedAgentsV12: 5,
+      totalAgentsWithV12: 41,
       addedTools: 6,
       totalToolsWithV11: 60,
-      agents: getRevenueSwarm().V11_AGENT_REGISTRY,
-      headline: 'Revenue Swarm Scientist — autonomous research-to-revenue loop'
+      totalToolsWithV12: 66,
+      v11agents: getRevenueSwarm().V11_AGENT_REGISTRY,
+      headline: 'Revenue Swarm Scientist — autonomous research-to-revenue loop',
+      v12headline: 'ClientCloser — autonomous proposal → follow-up → win/loss → learning loop'
     });
   }));
+
+  // ── Telegram handlers ─────────────────────────────────────────────────────
 
   async function handleV11Telegram(message) {
     const chatId = message.chat.id;
     const text = (message.text || '').trim();
+
+    // Route to v12 handler first
+    const v12 = getV12();
+    if (v12) {
+      const handled = await v12.handleV12Telegram(message);
+      if (handled) return true;
+    }
 
     if (text === '/swarm' || text.startsWith('/swarm ')) {
       await sendTelegramMessage(chatId, '🧪 _Revenue Swarm Scientist running: market → offer → experiment → launch..._');
@@ -79,7 +115,6 @@ module.exports = function registerV11({
           `Autonomous Score: *${result.autonomousScore}/100*`, '',
           `Red-team critique:`,
           result.redTeamCritique.slice(0, 500), '',
-          `Launch approval already sent above ⬆️`,
           `_v11 · 5 scientist agents · OODA + Bayesian EV + Red Team_`
         ].join('\n').slice(0, 4000));
       } catch (e) {
@@ -105,10 +140,12 @@ module.exports = function registerV11({
     return false;
   }
 
-  // Attach lightweight webhook middleware before normal fallback by registering another webhook route.
-  // Express will hit the original route first, so this is mainly available for direct use by future server patch.
+  // Pre-load v12 at wire registration time
+  try { getV12(); } catch(e) {}
+
   return {
     getRevenueSwarm,
+    getV12,
     handleV11Telegram,
     V11_MCP_TOOLS: [
       'market_sensing',
