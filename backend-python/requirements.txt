@@ -1,0 +1,13 @@
+# HermesWork v12 — Python Backend Dependencies (FastAPI)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+httpx>=0.25.0
+python-dotenv>=1.0.0
+stripe>=7.0.0
+upstash-redis>=0.15.0
+python-multipart>=0.0.6
+slowapi>=0.1.9
+
+# Dev / test (optional in production)
+pytest>=7.4.0
