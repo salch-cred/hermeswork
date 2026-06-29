@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
 
-// HermesWork v9.0.0 — World-First AI Research Agent Platform
+// HermesWork v10.0.0 — World-First AI Research Agent Platform
 // v5: CAMEL, ReAct, CoT, Multi-Agent, Anomaly Monitor, Reflexion, Thompson, Telegram, Briefing
 // v6: Tree of Thoughts, Self-Discover, Mixture of Agents, LLM-as-Judge
 // v7: Prospect Theory, Causal Inference, MCTS, Constitutional AI,
@@ -17,6 +17,9 @@ const http = require('http');
 //     Autonomous Collection, Client Onboarding, EOD Summary, WhatsApp Agent
 // v9: AutoJobScoutAgent (CoT+Reflexion+EpisodicRAG), CashFlowRunwayAgent (Statistical+Stripe Capital)
 //     Native Hermes Agent SKILL.md — installable as /hermeswork skill
+// v10: SkillEvolutionAgent (DSPy+GEPA), ClientAcquisitionAgent (RLHF+AgenticRAG),
+//      StripeCapitalAgent (Revenue-Based Financing), SkillDistillAgent (Trajectory Distillation),
+//      Live Revenue Dashboard, Skill Version History
 
 let helmet, rateLimit, xss, morgan;
 try { helmet = require('helmet'); } catch(e) {}
@@ -52,7 +55,7 @@ const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
 const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM || process.env.TWILIO_WHATSAPP_NUMBER || '';
 
-console.log('[HermesWork] v9.0.0 — 27 agents, 48 MCP tools, 27 research papers');
+console.log('[HermesWork] v10.0.0 — 31 agents, 54 MCP tools, 31 research papers');
 console.log('[AI] Provider:', NVIDIA_NIM_API_KEY ? 'NVIDIA NIM' : NOUS_API_KEY ? 'Nous Portal' : 'NOT CONFIGURED');
 console.log('[Telegram] Bot:', TELEGRAM_BOT_TOKEN ? 'CONFIGURED ✅' : 'NOT SET');
 console.log('[WhatsApp] Twilio:', TWILIO_ACCOUNT_SID ? 'CONFIGURED ✅' : 'NOT SET');
@@ -143,8 +146,8 @@ function getV9Agents() {
         callHermes, notifyTelegram, notifyWhatsApp,
         db, memoryGet, memorySet, saveData, today, AI_MODEL, TELEGRAM_CHAT_ID
       });
-      console.log('[V9Agents] AutoJobScout + CashFlowRunway loaded ✅');
-    } catch(e) { console.warn('[V9Agents] Load failed:', e.message); }
+      console.log('[V10Agents] All 6 autonomous agents loaded ✅');
+    } catch(e) { console.warn('[V10Agents] Load failed:', e.message); }
   }
   return _v9agents;
 }
@@ -171,6 +174,18 @@ function getAutomations() {
     } catch(e) { console.warn('[Automations] Load failed:', e.message); }
   }
   return _automations;
+}
+
+let _v10wire = null;
+function getV10Wire() {
+  if (!_v10wire) {
+    try {
+      const registerV10 = require('./serverV10wire');
+      _v10wire = registerV10({ app, requireApiKey, asyncWrap, getV9Agents, memoryGet, db, today, notifyTelegram, sendTelegramMessage, TELEGRAM_CHAT_ID });
+      console.log('[V10Wire] Routes, dashboard, MCP tools registered ✅');
+    } catch(e) { console.warn('[V10Wire] Load failed:', e.message); }
+  }
+  return _v10wire;
 }
 
 async function sendTelegramMessage(chatId, text) {
@@ -230,7 +245,7 @@ function buildKpisText() {
   const won=db.proposals.filter(p=>p.status==='won').length, decided=db.proposals.filter(p=>['won','lost'].includes(p.status)).length;
   const winRate=decided?Math.round(won/decided*100):0;
   const score=Math.min(1000,db.reputation.length*180+db.reputation.filter(r=>r.clientVerified).length*40);
-  return `📊 *HermesWork KPIs v9.0*\n\n💰 Revenue: *$${paid.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()}*\n📄 Active: *${pending.length}* ($${pending.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()})\n🔴 Overdue: *${overdue.length}* ($${overdue.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()})\n🎯 Win Rate: *${winRate}%*\n🏆 Reputation: *${score}/1000*\n🤖 Agents: *27 active*\n⚡ Best Rate: *$${getBestRateBucket()}/hr*`;
+  return `📊 *HermesWork KPIs v10.0*\n\n💰 Revenue: *$${paid.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()}*\n📝 Active: *${pending.length}* ($${pending.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()})\n🔴 Overdue: *${overdue.length}* ($${overdue.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()})\n🎯 Win Rate: *${winRate}%*\n🏆 Reputation: *${score}/1000*\n🤖 Agents: *31 active*\n⚡ Best Rate: *$${getBestRateBucket()}/hr*`;
 }
 
 async function handleTelegramCommand(message) {
@@ -239,36 +254,88 @@ async function handleTelegramCommand(message) {
   const firstName = message.from?.first_name || 'Salman';
   try {
     if (text === '/start' || text.startsWith('/start ')) {
-      await sendTelegramMessage(chatId, `🦅 *HermesWork Agent v9.0.0*\n\nHey ${firstName}! World-first 27-agent AI freelance platform.\n\n*Commands:*\n/kpis — Live KPIs\n/invoices — Active invoices\n/overdue — Overdue\n/briefing — AI briefing\n/agents — All 27 agents\n/scan — Anomaly scan\n/collect — Run collection agent\n/board — Monthly board report\n/jobs — 🆕 Find jobs autonomously\n/runway — 🆕 Cash flow runway\n/ask [q] — Chat with Hermes 3\n/help — All commands\n\n_27 agents · 48 tools · 27 papers · Nobel + Turing + DeepMind_`);
+      await sendTelegramMessage(chatId, `🦅 *HermesWork Agent v10.0.0*\n\nHey ${firstName}! World-first 31-agent AI freelance platform.\n\n*Commands:*\n/kpis — Live KPIs\n/invoices — Active invoices\n/overdue — Overdue\n/briefing — AI briefing\n/agents — All 31 agents\n/scan — Anomaly scan\n/collect — Run collection agent\n/board — Monthly board report\n/jobs — 🎯 Find jobs autonomously\n/runway — 💸 Cash flow runway\n/leads — ✨ Find new clients (X/Twitter)\n/evolve — 🧬 Evolve skills from lessons\n/capital — 💳 Stripe Capital draft\n/dashboard — 📊 Live dashboard\n/ask [q] — Chat with Hermes 3\n/help — All commands\n\n_31 agents · 54 tools · 31 papers · Nobel + Turing + DeepMind_`);
       return;
     }
-    if (text === '/help') { await sendTelegramMessage(chatId, `🤖 *HermesWork v9.0 Commands*\n\n📊 /kpis\n📄 /invoices\n🔴 /overdue\n🧠 /briefing\n🤖 /agents\n🔍 /scan\n📈 /board\n💋 /collect\n🎯 /jobs — Find jobs autonomously\n💸 /runway — Cash flow runway\n❓ /ask [q]\n\n_27 agents · 48 MCP tools · 27 papers_`); return; }
+    if (text === '/help') { await sendTelegramMessage(chatId, `🤖 *HermesWork v10.0 Commands*\n\n📊 /kpis\n📝 /invoices\n🔴 /overdue\n🧠 /briefing\n🤖 /agents\n🔍 /scan\n📈 /board\n💋 /collect\n🎯 /jobs — Find jobs autonomously\n💸 /runway — Cash flow runway\n🎣 /leads — Client acquisition\n🧬 /evolve — Skill evolution\n💳 /capital — Stripe Capital draft\n📊 /dashboard — Live dashboard\n❓ /ask [q]\n\n_31 agents · 54 MCP tools · 31 papers_`); return; }
     if (text === '/kpis') { await sendTelegramMessage(chatId, buildKpisText()); return; }
     if (text === '/jobs' || text.startsWith('/jobs ')) {
       await sendTelegramMessage(chatId, '🎯 _AutoJobScout searching for opportunities..._');
       try {
-        const v9 = getV9Agents();
-        if (!v9) { await sendTelegramMessage(chatId, '❌ V9 agents not loaded'); return; }
+        const v9 = getV9Agents(); if (!v9) { await sendTelegramMessage(chatId, '❌ V9 agents not loaded'); return; }
         const result = await v9.autoJobScout({ skills: 'React Node.js TypeScript', count: 5 });
-        await sendTelegramMessage(chatId, `🎯 *Found ${result.jobs.length} jobs!*\n\nTop: *${result.topJob?.title}* — $${result.topJob?.budget} (score ${result.topJob?.matchScore}/10)\n\n${result.proposals.length} proposals drafted · Check Telegram above ⬆️`);
+        await sendTelegramMessage(chatId, `🎯 *Found ${result.jobs.length} jobs!*\n\nTop: *${result.topJob?.title}* — $${result.topJob?.budget} (score ${result.topJob?.matchScore}/10)\n\n${result.proposals.length} proposals drafted · Check above ⬆️`);
       } catch(e) { await sendTelegramMessage(chatId, `❌ Job scout error: ${e.message}`); }
       return;
     }
     if (text === '/runway') {
       await sendTelegramMessage(chatId, '💸 _Analyzing cash flow runway..._');
       try {
-        const v9 = getV9Agents();
-        if (!v9) { await sendTelegramMessage(chatId, '❌ V9 agents not loaded'); return; }
+        const v9 = getV9Agents(); if (!v9) { await sendTelegramMessage(chatId, '❌ V9 agents not loaded'); return; }
         const result = await v9.cashFlowRunway();
-        await sendTelegramMessage(chatId, `${result.alertEmoji} *Cash Flow Runway — ${result.alertLevel}*\n\n🗓 *${result.runwayDays} days* of runway\n💰 Safe inflow: $${result.safeCash.toLocaleString()}\n⚠️ At-risk: $${result.riskCash.toLocaleString()}\n📉 Monthly burn: ~$${result.avgMonthlyBurn.toLocaleString()}\n${result.stripeCapitalAlert ? '\n💳 *Stripe Capital: You may qualify!*' : ''}\n\n*Recovery Actions:*\n${result.recoveryActions.map((a,i)=>`${i+1}. ${a}`).join('\n')}`);
+        await sendTelegramMessage(chatId, `${result.alertEmoji} *Cash Flow Runway — ${result.alertLevel}*\n\n🗓 *${result.runwayDays} days* of runway\n💰 Safe inflow: $${result.safeCash.toLocaleString()}\n⚠️ At-risk: $${result.riskCash.toLocaleString()}\n📉 Monthly burn: ~$${result.avgMonthlyBurn.toLocaleString()}\n${result.stripeCapitalAlert ? '\n💳 *Stripe Capital: You may qualify!*' : ''}${result.capitalDraftReady ? '\n💳 _Capital draft auto-generated — /capital to review_' : ''}\n\n*Recovery Actions:*\n${result.recoveryActions.map((a,i)=>`${i+1}. ${a}`).join('\n')}`);
       } catch(e) { await sendTelegramMessage(chatId, `❌ Runway error: ${e.message}`); }
+      return;
+    }
+    // v10 commands
+    if (text === '/leads' || text.startsWith('/leads ')) {
+      await sendTelegramMessage(chatId, '🎣 _ClientAcquisition searching X/Twitter + LinkedIn for leads..._');
+      try {
+        const v9 = getV9Agents(); if (!v9) { await sendTelegramMessage(chatId, '❌ V10 agents not loaded'); return; }
+        const result = await v9.clientAcquisitionScout({ skills: 'React Node.js TypeScript', maxLeads: 5 });
+        await sendTelegramMessage(chatId, `🎣 *Found ${result.leads.length} leads!*\n\nTop: *${result.topLead?.handle}* (${result.topLead?.platform})\n💰 ~$${result.topLead?.estimatedBudget} · Urgency: ${result.topLead?.urgency}/10\n\nTotal potential: *$${result.totalPotentialValue.toLocaleString()}*\n${result.outreachDrafts.length} outreach drafts ready ⬆️\n\n_Agentic RAG + RLHF Human-in-the-Loop · v10.0_`);
+      } catch(e) { await sendTelegramMessage(chatId, `❌ Lead scout error: ${e.message}`); }
+      return;
+    }
+    if (text === '/evolve') {
+      await sendTelegramMessage(chatId, '🧬 _SkillEvolution analyzing lessons and rewriting playbook..._');
+      try {
+        const v9 = getV9Agents(); if (!v9) { await sendTelegramMessage(chatId, '❌ V10 agents not loaded'); return; }
+        const result = await v9.skillEvolution();
+        if (!result.evolved) {
+          await sendTelegramMessage(chatId, `🧬 *Skill Evolution*\n\n${result.message}\n\nLessons so far: ${result.lessonsCount}\nRun /jobs, /leads, /runway to accumulate lessons.`);
+        } else {
+          await sendTelegramMessage(chatId, `🧬 *Skill Evolved to v${result.version}!*\n\n📚 Lessons processed: ${result.lessonsProcessed}\n📈 Skills improved: ${result.skillsImproved.join(', ')}\n🤖 DSPy + GEPA Evolutionary Optimization\n\n_Agents are now smarter! Check above ⬆️ for playbook_`);
+        }
+      } catch(e) { await sendTelegramMessage(chatId, `❌ Evolve error: ${e.message}`); }
+      return;
+    }
+    if (text === '/capital') {
+      await sendTelegramMessage(chatId, '💳 _StripeCapital analyzing eligibility and drafting application..._');
+      try {
+        const v9 = getV9Agents(); if (!v9) { await sendTelegramMessage(chatId, '❌ V10 agents not loaded'); return; }
+        const result = await v9.stripeCapitalApply({ silent: false });
+        await sendTelegramMessage(chatId, `💳 *Stripe Capital Draft Ready*\n\n${result.eligible ? '✅' : '⚠️'} Eligibility: *${result.eligible ? 'ELIGIBLE' : 'BORDERLINE'}*\n💰 Recommended: *$${result.recommendedAmount.toLocaleString()}*\n📊 Based on: ${result.transactionCount} transactions · $${result.monthlyRevenue.toLocaleString()}/mo\n🗓 Runway: ${result.runwayDays} days\n🔄 Repayment: ${result.repaymentRate}\n\nFull draft sent above ⬆️`);
+      } catch(e) { await sendTelegramMessage(chatId, `❌ Capital error: ${e.message}`); }
+      return;
+    }
+    if (text === '/dashboard') {
+      const paid = db.invoices.filter(i => i.status === 'paid');
+      const pending = db.invoices.filter(i => i.status !== 'paid');
+      const overdue = pending.filter(i => i.dueDate && i.dueDate < today());
+      const won = db.proposals.filter(p => p.status === 'won').length;
+      const decided = db.proposals.filter(p => ['won', 'lost'].includes(p.status)).length;
+      const skillVersions = await memoryGet('skillVersions') || {};
+      const skillLessons = await memoryGet('skillLessons') || [];
+      const reflexHistory = await memoryGet('reflexionHistory') || [];
+      const reflexWinRate = reflexHistory.length > 0 ? Math.round(reflexHistory.filter(r => r.outcome === 'won').length / reflexHistory.length * 100) : 0;
+      await sendTelegramMessage(chatId, [
+        `📊 *HermesWork Live Dashboard v10.0*`, '',
+        `💰 Revenue: *$${paid.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()}*`,
+        `📝 Active: *${pending.length}* | 🔴 Overdue: *${overdue.length}*`,
+        `🎯 Win Rate: *${decided ? Math.round(won/decided*100) : 0}%*`,
+        `🧬 Skill Version: *v${skillVersions['hermeswork'] || 1}* (${skillLessons.length} lessons)`,
+        `🤖 Reflexion Win Rate: *${reflexWinRate}%* (${reflexHistory.length} memories)`,
+        `🤖 Agents: *31 active* | MCP: *54 tools*`,
+        '',
+        `_Live: ${PUBLIC_BASE_URL}/dashboard/live_`
+      ].join('\n'));
       return;
     }
     if (text === '/collect') {
       await sendTelegramMessage(chatId, '💋 _Running autonomous collection agent..._');
       try {
-        const auto = getAutomations();
-        if (!auto) { await sendTelegramMessage(chatId, '❌ Automations not loaded'); return; }
+        const auto = getAutomations(); if (!auto) { await sendTelegramMessage(chatId, '❌ Automations not loaded'); return; }
         const result = await auto.runCollectionAgent();
         await sendTelegramMessage(chatId, `💋 *Collection Agent Result*\n\nOverdue: ${result.overdueCount}\nReminders sent: ${result.reminders}\nAt risk: $${(result.totalAtRisk||0).toLocaleString()}\n\n${result.message || ''}`);
       } catch(e) { await sendTelegramMessage(chatId, `❌ Collection error: ${e.message}`); }
@@ -277,15 +344,14 @@ async function handleTelegramCommand(message) {
     if (text === '/board') {
       await sendTelegramMessage(chatId, '📈 _Generating monthly board report..._');
       try {
-        const v8 = getV8Agents();
-        if (!v8) { await sendTelegramMessage(chatId, '❌ V8 agents not loaded'); return; }
+        const v8 = getV8Agents(); if (!v8) { await sendTelegramMessage(chatId, '❌ V8 agents not loaded'); return; }
         const result = await v8.monthlyBoardReport(db);
         await sendTelegramMessage(chatId, `📈 *${result.period} Board Report*\n\n${result.fullReport.slice(0, 800)}\n\n_Revenue: $${result.summary.revenue.toLocaleString()} | Win: ${result.summary.winRate} | Rep: ${result.summary.reputationScore}/1000_`);
       } catch(e) { await sendTelegramMessage(chatId, `❌ Board report error: ${e.message}`); }
       return;
     }
     if (text === '/agents') {
-      await sendTelegramMessage(chatId, `🤖 *HermesWork AI Agents (27 Active — v9.0)*\n\n*v5 Core (9):*\nReflexion, Thompson, CAMEL, ReAct, CoT, Anomaly, MultiAgent, Telegram, DailyBriefing\n\n*v6 (4):*\nTree of Thoughts, Self-Discover, MoA, LLM-Judge\n\n*v7 Nobel/Turing/DeepMind (8):*\n🏆 Prospect Theory (Kahneman Nobel), Causal (Pearl Turing), MCTS (AlphaGo), Constitutional AI (Anthropic), LinUCB (Google), Survival Analysis (Cox), Nash (Nobel), EpisodicRAG (Facebook)\n\n*v8 NEW (4 agents + 5 automations):*\n🔥 Revenue Forecast, Win Coach, Contract Gen, Monthly Board\n🤖 Collection Agent, Client Onboarding, EOD Summary, Weekly Coach, WhatsApp Bot\n\n*v9 ✨ (2 agents):*\n🎯 AutoJobScout — finds jobs autonomously\n💸 CashFlowRunway — runway prediction + Stripe Capital\n\n_48 MCP tools · 27 papers · ${PUBLIC_BASE_URL}/agents_`);
+      await sendTelegramMessage(chatId, `🤖 *HermesWork AI Agents (31 Active — v10.0)*\n\n*v5 Core (9):*\nReflexion, Thompson, CAMEL, ReAct, CoT, Anomaly, MultiAgent, Telegram, DailyBriefing\n\n*v6 (4):*\nTree of Thoughts, Self-Discover, MoA, LLM-Judge\n\n*v7 Nobel/Turing/DeepMind (8):*\n🏆 Prospect Theory (Kahneman Nobel), Causal (Pearl Turing), MCTS (AlphaGo), Constitutional AI, LinUCB, Survival Analysis (Cox), Nash (Nobel), EpisodicRAG\n\n*v8 🔥 (4 agents + 5 automations):*\nRevenue Forecast, Win Coach, Contract Gen, Monthly Board\n+ Collection Agent, Client Onboarding, EOD, Weekly Coach, WhatsApp\n\n*v9 (2):*\n🎯 AutoJobScout (CoT+Reflexion+EpisodicRAG)\n💸 CashFlowRunway (Statistical + Stripe Capital)\n\n*v10 ✨ (4 NEW):*\n🧬 SkillEvolution (DSPy+GEPA)\n🎣 ClientAcquisition (RLHF+AgenticRAG)\n💳 StripeCapital (Revenue-Based Financing)\n🧬 SkillDistill (Trajectory Distillation)\n\n_54 MCP tools · 31 papers · ${PUBLIC_BASE_URL}/agents_`);
       return;
     }
     if (text === '/scan') {
@@ -297,7 +363,7 @@ async function handleTelegramCommand(message) {
       } catch(e) { await sendTelegramMessage(chatId, `❌ Scan error: ${e.message}`); }
       return;
     }
-    if (text === '/invoices') { const pending = db.invoices.filter(i => i.status !== 'paid').slice(0, 10); if (!pending.length) { await sendTelegramMessage(chatId, '📄 *No active invoices.*'); return; } const lines = pending.map(i => { const isOverdue = i.dueDate && i.dueDate < today(); return `${isOverdue?'🔴':'🟡'} *${i.id}* — ${i.client} — $${i.amount} (due ${i.dueDate})`; }).join('\n'); await sendTelegramMessage(chatId, `📄 *Active (${pending.length})*\n\n${lines}`); return; }
+    if (text === '/invoices') { const pending = db.invoices.filter(i => i.status !== 'paid').slice(0, 10); if (!pending.length) { await sendTelegramMessage(chatId, '📝 *No active invoices.*'); return; } const lines = pending.map(i => { const isOverdue = i.dueDate && i.dueDate < today(); return `${isOverdue?'🔴':'🟡'} *${i.id}* — ${i.client} — $${i.amount} (due ${i.dueDate})`; }).join('\n'); await sendTelegramMessage(chatId, `📝 *Active (${pending.length})*\n\n${lines}`); return; }
     if (text === '/overdue') { const overdue = db.invoices.filter(i => i.status !== 'paid' && i.dueDate && i.dueDate < today()); if (!overdue.length) { await sendTelegramMessage(chatId, '✅ *No overdue!*'); return; } const lines = overdue.map(i => { const days = Math.floor((new Date() - new Date(i.dueDate)) / 86400000); return `🔴 *${i.id}* — ${i.client} — $${i.amount} — *${days}d*`; }).join('\n'); await sendTelegramMessage(chatId, `🔴 *Overdue (${overdue.length})*\n\n${lines}\n\n$${overdue.reduce((s,i)=>s+Number(i.amount||0),0).toLocaleString()} total`); return; }
     if (text === '/briefing') {
       await sendTelegramMessage(chatId, '🤖 _Generating AI briefing..._');
@@ -305,8 +371,9 @@ async function handleTelegramCommand(message) {
         const paid=db.invoices.filter(i=>i.status==='paid'), pending=db.invoices.filter(i=>i.status!=='paid'), overdue=pending.filter(i=>i.dueDate&&i.dueDate<today());
         const won=db.proposals.filter(p=>p.status==='won').length, decided=db.proposals.filter(p=>['won','lost'].includes(p.status)).length;
         const reflexHistory = await memoryGet('reflexionHistory') || [];
-        const briefing = await callHermes('HermesWork AI v9.0. Sharp Telegram briefing. Plain text. Max 230 words.', `Revenue: $${paid.reduce((s,i)=>s+Number(i.amount||0),0)}, Overdue: ${overdue.length}, Win rate: ${decided?Math.round(won/decided*100):0}%, Reflexion: ${reflexHistory.length}, Best rate: $${getBestRateBucket()}/hr\n\nStatus + 3 actions + health score.`, 400);
-        await sendTelegramMessage(chatId, `🦅 *Daily Briefing — ${today()}*\n\n${briefing}\n\n_v9.0 · 27 agents · 48 tools · 27 papers · NVIDIA NIM_`);
+        const skillVersions = await memoryGet('skillVersions') || {};
+        const briefing = await callHermes('HermesWork AI v10.0. Sharp Telegram briefing. Plain text. Max 230 words.', `Revenue: $${paid.reduce((s,i)=>s+Number(i.amount||0),0)}, Overdue: ${overdue.length}, Win rate: ${decided?Math.round(won/decided*100):0}%, Reflexion: ${reflexHistory.length}, Skill v${skillVersions['hermeswork']||1}, Best rate: $${getBestRateBucket()}/hr\n\nStatus + 3 actions + health score.`, 400);
+        await sendTelegramMessage(chatId, `☀️ *Daily Briefing — ${today()}*\n\n${briefing}\n\n_v10.0 · 31 agents · 54 tools · 31 papers · NVIDIA NIM_`);
       } catch(e) { await sendTelegramMessage(chatId, `📊 Quick:\n\n${buildKpisText()}`); }
       return;
     }
@@ -318,12 +385,12 @@ async function handleTelegramCommand(message) {
         const paid=db.invoices.filter(i=>i.status==='paid'), pending=db.invoices.filter(i=>i.status!=='paid');
         const won=db.proposals.filter(p=>p.status==='won').length, decided=db.proposals.filter(p=>['won','lost'].includes(p.status)).length;
         const reflexHistory = await memoryGet('reflexionHistory') || [];
-        const answer = await callHermes('HermesWork v9.0, 27 AI agents. Answer from real data. Plain text. Max 200 words.', `Revenue $${paid.reduce((s,i)=>s+Number(i.amount||0),0)}, Active ${pending.length}, Win rate ${decided?Math.round(won/decided*100):0}%, Reflexion ${reflexHistory.length}\n\nQuestion: ${question}`, 350);
+        const answer = await callHermes('HermesWork v10.0, 31 AI agents. Answer from real data. Plain text. Max 200 words.', `Revenue $${paid.reduce((s,i)=>s+Number(i.amount||0),0)}, Active ${pending.length}, Win rate ${decided?Math.round(won/decided*100):0}%, Reflexion ${reflexHistory.length}\n\nQuestion: ${question}`, 350);
         await sendTelegramMessage(chatId, `💡 *Hermes 3:*\n\n${answer}`);
       } catch(e) { await sendTelegramMessage(chatId, `❌ AI error: ${e.message}`); }
       return;
     }
-    await sendTelegramMessage(chatId, '🤖 Unknown command. Type /help');
+    await sendTelegramMessage(chatId, '🤖 Unknown command. Type /help for all 31-agent commands.');
   } catch(e) { console.error('[Telegram cmd error]', e.message); }
 }
 
@@ -332,28 +399,15 @@ app.get('/bot/setup', requireApiKey, asyncWrap(async (req, res) => { if (!TELEGR
 
 app.post('/webhooks/whatsapp', asyncWrap(async (req, res) => {
   res.type('text/xml').send('<Response></Response>');
-  try {
-    const { From, Body } = req.body || {};
-    if (From && Body) {
-      const wa = getWhatsApp();
-      if (wa) await wa.handleWhatsAppMessage(From, Body);
-    }
-  } catch(e) { console.warn('[WhatsApp webhook]', e.message); }
+  try { const { From, Body } = req.body || {}; if (From && Body) { const wa = getWhatsApp(); if (wa) await wa.handleWhatsAppMessage(From, Body); } } catch(e) { console.warn('[WhatsApp webhook]', e.message); }
 }));
 app.get('/whatsapp/status', (req, res) => {
   const wa = getWhatsApp();
-  res.json({
-    configured: wa ? wa.isConfigured : false,
-    twilio_sid: TWILIO_ACCOUNT_SID ? '✅ set' : '❌ not set',
-    twilio_token: TWILIO_AUTH_TOKEN ? '✅ set' : '❌ not set',
-    whatsapp_from: TWILIO_WHATSAPP_FROM || 'not set',
-    webhookUrl: PUBLIC_BASE_URL + '/webhooks/whatsapp',
-    instructions: 'Set webhook in Twilio Console → Messaging → WhatsApp Sandbox → When a message comes in'
-  });
+  res.json({ configured: wa ? wa.isConfigured : false, twilio_sid: TWILIO_ACCOUNT_SID ? '✅ set' : '❌ not set', twilio_token: TWILIO_AUTH_TOKEN ? '✅ set' : '❌ not set', whatsapp_from: TWILIO_WHATSAPP_FROM || 'not set', webhookUrl: PUBLIC_BASE_URL + '/webhooks/whatsapp' });
 });
 
 // ══════════════════════════════════════════════════════
-// MCP TOOLS — 48 tools (v1-v4: 24, v5: +6, v6: +4, v7: +8, v8: +4, v9: +2)
+// MCP TOOLS — 54 tools (v1-v4:24, v5:+6, v6:+4, v7:+8, v8:+4, v9:+2, v10:+6)
 // ══════════════════════════════════════════════════════
 const MCP_TOOLS = [
   // v1-v4: Core Business Tools (24)
@@ -387,29 +441,36 @@ const MCP_TOOLS = [
   { name:'score_proposal_cot', description:'🤖 Chain-of-Thought: Score proposal 1-100 (Wei et al., NeurIPS 2022).', inputSchema:{type:'object',properties:{proposal:{type:'string'},jobTitle:{type:'string'},clientBudget:{type:'number'}},required:['proposal','jobTitle']} },
   { name:'run_anomaly_scan', description:'🤖 Anomaly Scanner: Detect KPI anomalies + Telegram alert.', inputSchema:{type:'object',properties:{}} },
   { name:'multi_agent_task', description:'🤖 Multi-Agent: 5 sub-agents (Park et al., UIST 2023).', inputSchema:{type:'object',properties:{task:{type:'string'}},required:['task']} },
-  { name:'get_agent_registry', description:'🤖 Full registry of all 27 AI agents with research papers.', inputSchema:{type:'object',properties:{}} },
+  { name:'get_agent_registry', description:'🤖 Full registry of all 31 AI agents with research papers.', inputSchema:{type:'object',properties:{}} },
   // v6 Agent tools (4)
   { name:'tree_of_thoughts', description:'🧠 Tree of Thoughts: BFS strategy branches (Yao et al., 2023 ArXiv 2305.10601).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},requirements:{type:'string'},budget:{type:'number'},context:{type:'string'}},required:['jobTitle','requirements']} },
   { name:'self_discover_plan', description:'🔍 Self-Discover: SELECT→ADAPT→IMPLEMENT (Zhou et al., 2024 ArXiv 2402.03620).', inputSchema:{type:'object',properties:{task:{type:'string'},domain:{type:'string',enum:['proposal','pricing','client','growth','operations']}},required:['task']} },
   { name:'mixture_of_agents', description:'🌊 Mixture of Agents: 3 generators + aggregator (Together AI, 2024 ArXiv 2406.04692).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},requirements:{type:'string'},budget:{type:'number'},mySkills:{type:'string'}},required:['jobTitle','requirements']} },
   { name:'llm_judge', description:'⚖️ LLM-as-Judge: Pairwise evaluation (Zheng et al., 2023 ArXiv 2306.05685).', inputSchema:{type:'object',properties:{proposalA:{type:'string'},proposalB:{type:'string'},jobTitle:{type:'string'},criteria:{type:'string'}},required:['proposalA','proposalB','jobTitle']} },
   // v7 World-First Agent tools (8)
-  { name:'prospect_theory_price', description:'🏆 Prospect Theory: Nobel Prize behavioral economics pricing with loss-aversion framing λ=2.25 (Kahneman & Tversky, 1979).', inputSchema:{type:'object',properties:{projectType:{type:'string'},hoursEstimate:{type:'number'},clientBudget:{type:'number'},winRate:{type:'number'},currentRate:{type:'number'}},required:['projectType']} },
-  { name:'causal_win_analysis', description:'🏆 Causal Inference: Turing Award do-calculus WHY proposals win, not just WHEN (Pearl, 2000 + Schölkopf 2021).', inputSchema:{type:'object',properties:{currentFeatures:{type:'object'}},required:[]} },
-  { name:'mcts_negotiate', description:'🏆 MCTS Negotiation: AlphaGo Monte Carlo Tree Search over negotiation dialogue tree (Silver et al., 2016 Nature).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},clientBudget:{type:'number'},ourAsk:{type:'number'},context:{type:'string'}},required:['jobTitle','ourAsk']} },
-  { name:'constitutional_proposal', description:'🏆 Constitutional AI: Critique-revision loop with personal business constitution (Bai et al., 2022 Anthropic ArXiv 2212.08073).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},client:{type:'string'},requirements:{type:'string'},budget:{type:'number'},constitution:{type:'array',items:{type:'string'}}},required:['jobTitle','client','requirements']} },
-  { name:'linucb_rate', description:'🏆 LinUCB Contextual Bandit: Context-aware rate (industry+platform+reputation) beyond Thompson Sampling (Li et al., 2010 Google WWW).', inputSchema:{type:'object',properties:{projectType:{type:'string'},clientIndustry:{type:'string'},platform:{type:'string'},reputationScore:{type:'number'},hoursEstimate:{type:'number'}},required:['projectType']} },
-  { name:'client_survival_score', description:'🏆 Survival Analysis: Cox Proportional Hazards model predicts client churn at 14/30/60 days (Cox, 1972 JRSS-B).', inputSchema:{type:'object',properties:{clientName:{type:'string'}},required:['clientName']} },
-  { name:'nash_rate_anchor', description:'🏆 Nash Equilibrium: Nobel Prize bargaining solution computes optimal rate + ZOPA + Pareto frontier (Nash, 1950 Econometrica).', inputSchema:{type:'object',properties:{ourMinRate:{type:'number'},ourTargetRate:{type:'number'},clientMaxBudget:{type:'number'},clientMinBudget:{type:'number'},projectType:{type:'string'}},required:['ourMinRate','ourTargetRate','projectType']} },
-  { name:'episodic_memory_propose', description:'🏆 Episodic Memory RAG: TF-IDF retrieves past wins/losses to ground proposals in experience (Lewis et al., 2020 NeurIPS + Tulving 1972).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},requirements:{type:'string'},client:{type:'string'},budget:{type:'number'}},required:['jobTitle','requirements']} },
+  { name:'prospect_theory_price', description:'🏆 Prospect Theory: Nobel Prize behavioral economics pricing λ=2.25 (Kahneman & Tversky, 1979).', inputSchema:{type:'object',properties:{projectType:{type:'string'},hoursEstimate:{type:'number'},clientBudget:{type:'number'},winRate:{type:'number'},currentRate:{type:'number'}},required:['projectType']} },
+  { name:'causal_win_analysis', description:'🏆 Causal Inference: Turing Award do-calculus WHY proposals win (Pearl, 2000 + Schölkopf 2021).', inputSchema:{type:'object',properties:{currentFeatures:{type:'object'}},required:[]} },
+  { name:'mcts_negotiate', description:'🏆 MCTS Negotiation: AlphaGo Monte Carlo Tree Search (Silver et al., 2016 Nature).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},clientBudget:{type:'number'},ourAsk:{type:'number'},context:{type:'string'}},required:['jobTitle','ourAsk']} },
+  { name:'constitutional_proposal', description:'🏆 Constitutional AI: Critique-revision loop (Bai et al., 2022 Anthropic ArXiv 2212.08073).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},client:{type:'string'},requirements:{type:'string'},budget:{type:'number'},constitution:{type:'array',items:{type:'string'}}},required:['jobTitle','client','requirements']} },
+  { name:'linucb_rate', description:'🏆 LinUCB Contextual Bandit: Context-aware rate (Li et al., 2010 Google WWW).', inputSchema:{type:'object',properties:{projectType:{type:'string'},clientIndustry:{type:'string'},platform:{type:'string'},reputationScore:{type:'number'},hoursEstimate:{type:'number'}},required:['projectType']} },
+  { name:'client_survival_score', description:'🏆 Survival Analysis: Cox Proportional Hazards client churn prediction (Cox, 1972 JRSS-B).', inputSchema:{type:'object',properties:{clientName:{type:'string'}},required:['clientName']} },
+  { name:'nash_rate_anchor', description:'🏆 Nash Equilibrium: Nobel Prize bargaining solution (Nash, 1950 Econometrica).', inputSchema:{type:'object',properties:{ourMinRate:{type:'number'},ourTargetRate:{type:'number'},clientMaxBudget:{type:'number'},clientMinBudget:{type:'number'},projectType:{type:'string'}},required:['ourMinRate','ourTargetRate','projectType']} },
+  { name:'episodic_memory_propose', description:'🏆 Episodic Memory RAG: TF-IDF retrieves past wins/losses (Lewis et al., 2020 NeurIPS + Tulving 1972).', inputSchema:{type:'object',properties:{jobTitle:{type:'string'},requirements:{type:'string'},client:{type:'string'},budget:{type:'number'}},required:['jobTitle','requirements']} },
   // v8 NEW tools (4)
-  { name:'revenue_forecast', description:'🔥 Revenue Forecast: ARIMA trend + seasonal decomposition + Thompson CI, 3-month forecast (v8.0).', inputSchema:{type:'object',properties:{}} },
-  { name:'win_rate_coach', description:'🔥 Win Rate Coach: Weekly pattern analysis + Reflexion history, 3 specific improvement actions (v8.0).', inputSchema:{type:'object',properties:{}} },
+  { name:'revenue_forecast', description:'🔥 Revenue Forecast: ARIMA trend + seasonal decomposition + Thompson CI (v8.0).', inputSchema:{type:'object',properties:{}} },
+  { name:'win_rate_coach', description:'🔥 Win Rate Coach: Weekly pattern analysis + Reflexion history (v8.0).', inputSchema:{type:'object',properties:{}} },
   { name:'generate_contract', description:'🔥 Contract Generator: AI-drafted 10-clause professional freelance contract (v8.0).', inputSchema:{type:'object',properties:{projectTitle:{type:'string'},clientName:{type:'string'},projectDescription:{type:'string'},amount:{type:'number'},startDate:{type:'string'},deliveryDate:{type:'string'},paymentTerms:{type:'string'}},required:['projectTitle','clientName','amount']} },
-  { name:'monthly_board_report', description:'🔥 Monthly Board Report: Full business intelligence report: financials, sales, clients, KPIs (v8.0).', inputSchema:{type:'object',properties:{month:{type:'number'},year:{type:'number'}}} },
+  { name:'monthly_board_report', description:'🔥 Monthly Board Report: Full business intelligence report (v8.0).', inputSchema:{type:'object',properties:{month:{type:'number'},year:{type:'number'}}} },
   // v9 NEW tools (2)
-  { name:'auto_job_scout', description:'✨ v9 AutoJobScout: Autonomous job discovery — web search → CoT scoring → Reflexion proposals → Telegram 1-tap approval. (Shinn 2023 + Wei 2022 + Lewis 2020)', inputSchema:{type:'object',properties:{skills:{type:'string'},minBudget:{type:'number'},count:{type:'number'}}} },
-  { name:'cash_flow_runway', description:'✨ v9 CashFlowRunway: Predicts days of cash runway. RED/YELLOW/GREEN alerts. Stripe Capital eligibility flag. Statistical projection + Hermes 3 narrative.', inputSchema:{type:'object',properties:{}} }
+  { name:'auto_job_scout', description:'✨ v9 AutoJobScout: Autonomous job discovery — CoT scoring → Reflexion proposals → Telegram 1-tap. (Shinn 2023 + Wei 2022 + Lewis 2020)', inputSchema:{type:'object',properties:{skills:{type:'string'},minBudget:{type:'number'},count:{type:'number'}}} },
+  { name:'cash_flow_runway', description:'✨ v9 CashFlowRunway: Predicts cash runway days. RED/YELLOW/GREEN alerts. Stripe Capital flag. Auto-triggers StripeCapital when RED.', inputSchema:{type:'object',properties:{}} },
+  // v10 NEW tools (6)
+  { name:'skill_evolution', description:'🧬 v10 SkillEvolution: Reads lesson memory, rewrites operational playbook with versioning. DSPy (Khattab 2023 ArXiv 2310.03714) + GEPA. Gets smarter from real revenue outcomes.', inputSchema:{type:'object',properties:{forceRewrite:{type:'boolean'}}} },
+  { name:'client_acquisition', description:'🎣 v10 ClientAcquisition: X/Twitter + LinkedIn lead search → personalized outreach → Telegram 1-tap human approval. Agentic RAG (Lewis 2020) + RLHF (Christiano 2017).', inputSchema:{type:'object',properties:{skills:{type:'string'},maxLeads:{type:'number'}}} },
+  { name:'stripe_capital_apply', description:'💳 v10 StripeCapital: Auto-drafts Stripe Capital application when runway < 30 days. MRR×2.5 advance estimate. Telegram approval gate.', inputSchema:{type:'object',properties:{runwayDays:{type:'number'},avgMonthlyRevenue:{type:'number'}}} },
+  { name:'skill_distill_export', description:'🧬 v10 SkillDistill: Exports live SKILL.md from real usage trajectories. Trajectory Distillation — makes HermesWork installable by any Hermes user.', inputSchema:{type:'object',properties:{}} },
+  { name:'get_live_dashboard', description:'📊 v10 Live Dashboard: Real-time agents, revenue meter, activity feed, skill evolution status. Cinematic demo view.', inputSchema:{type:'object',properties:{}} },
+  { name:'get_skill_history', description:'📚 v10 Skill History: Full versioned history of evolved playbooks, lesson counts, and win rate over time.', inputSchema:{type:'object',properties:{}} }
 ];
 
 async function executeMcpTool(toolName, args, apiKeyOk) {
@@ -443,7 +504,7 @@ async function executeMcpTool(toolName, args, apiKeyOk) {
     const invoice={id:invId,client,amount,status:'pending',dueDate,paymentMethod,description,createdAt:today(),stripeUrl:null,stripeId:null,x402Url:PUBLIC_BASE_URL+'/pay/'+invId};
     if(stripe&&(paymentMethod==='stripe'||paymentMethod==='both')){try{const safeEmail=client.toLowerCase().replace(/[^a-z0-9]+/g,'.').replace(/^\.|\.$/, '').slice(0,50)+'@hermeswork.client';let customerId;const existing=await stripe.customers.list({limit:1,email:safeEmail});if(existing.data.length)customerId=existing.data[0].id;else customerId=(await stripe.customers.create({name:client,email:safeEmail,metadata:{source:'hermeswork'}})).id;const stripeInv=await stripe.invoices.create({customer:customerId,collection_method:'send_invoice',days_until_due:Math.max(1,Math.round((new Date(dueDate)-new Date())/86400000)),metadata:{invoiceId:invId,hermeswork:'1'}});await stripe.invoiceItems.create({customer:customerId,amount:Math.round(amount*100),currency:'usd',invoice:stripeInv.id,description:description||client});const finalized=await stripe.invoices.finalizeInvoice(stripeInv.id);await stripe.invoices.sendInvoice(stripeInv.id);invoice.stripeUrl=finalized.hosted_invoice_url||null;invoice.stripeId=finalized.id;}catch(e){invoice.stripeError=e.message;}}
     db.invoices.unshift(invoice);logActivity(`Invoice ${invId} created for ${client} — $${amount}`,'invoice');saveData();broadcastSSE('invoice:created',{id:invId,client,amount});
-    await notify(`📄 *${invId}* created\n${client} — $${amount}\nDue: ${dueDate}${invoice.stripeUrl?'\n💳 '+invoice.stripeUrl:''}`);
+    await notify(`📝 *${invId}* created\n${client} — $${amount}\nDue: ${dueDate}${invoice.stripeUrl?'\n💳 '+invoice.stripeUrl:''}`);
     return {success:true,invoice,paymentUrl:invoice.stripeUrl||invoice.x402Url};
   }
   if (toolName==='mark_invoice_paid') { if(!writeable) throw new Error('API key required'); const invoice=db.invoices.find(i=>i.id===args.id); if(!invoice) throw new Error('Not found: '+args.id); invoice.status='paid';invoice.paidAt=new Date().toISOString();logActivity(`${invoice.id} paid`,'invoice');saveData();broadcastSSE('invoice:updated',{id:invoice.id,status:'paid'});await notify(`💰 *${invoice.id}* PAID — $${invoice.amount} from *${invoice.client}*`);return {success:true,invoice}; }
@@ -456,10 +517,7 @@ async function executeMcpTool(toolName, args, apiKeyOk) {
     const p=db.proposals.find(p=>p.id===args.id);if(!p) throw new Error('Not found: '+args.id);
     if(!['won','lost','pending'].includes(args.status)) throw new Error('Invalid status');
     p.status=args.status;logActivity(`Proposal ${p.title} ${args.status}`,'proposal');saveData();broadcastSSE('proposal:updated',{id:p.id,status:p.status});
-    if(args.status==='won') {
-      await notify(`🏆 WON: ${p.title} — $${p.amount}`);
-      try { const auto = getAutomations(); if(auto) { auto.runClientOnboarding(p).catch(e => console.warn('[Onboarding]', e.message)); } } catch(e) {}
-    }
+    if(args.status==='won') { await notify(`🏆 WON: ${p.title} — $${p.amount}`); try { const auto = getAutomations(); if(auto) { auto.runClientOnboarding(p).catch(e => console.warn('[Onboarding]', e.message)); } } catch(e) {} }
     return {success:true,proposal:p};
   }
   if (toolName==='generate_proposal') {
@@ -496,9 +554,10 @@ async function executeMcpTool(toolName, args, apiKeyOk) {
     const kpis=buildKpis();
     const overdue=db.invoices.filter(i=>i.status!=='paid'&&i.dueDate&&i.dueDate<today());
     const reflexHistory=await memoryGet('reflexionHistory')||[];
-    const briefing=await callHermes('HermesWork AI v9.0. Concise briefing. Bullets. Max 350 words.',`Date: ${today()}\nMRR: $${kpis.mrr}, Revenue: $${kpis.totalRevenue}, Overdue: ${overdue.length} ($${kpis.overdueValue}), Win: ${kpis.winRate}%, Rep: ${kpis.reputationScore}/1000, Forecast: $${kpis.forecastNextMonth}\nReflexion: ${reflexHistory.length}, Best rate: $${getBestRateBucket()}/hr\n${args.focus?'Focus: '+args.focus:''}\n\nStatus / Actions TODAY / Opportunities / Health (1-10)`,700);
+    const skillVersions=await memoryGet('skillVersions')||{};
+    const briefing=await callHermes('HermesWork AI v10.0. Concise briefing. Bullets. Max 350 words.',`Date: ${today()}\nMRR: $${kpis.mrr}, Revenue: $${kpis.totalRevenue}, Overdue: ${overdue.length} ($${kpis.overdueValue}), Win: ${kpis.winRate}%, Rep: ${kpis.reputationScore}/1000, Forecast: $${kpis.forecastNextMonth}\nReflexion: ${reflexHistory.length}, Skill v${skillVersions['hermeswork']||1}, Best rate: $${getBestRateBucket()}/hr\n${args.focus?'Focus: '+args.focus:''}\n\nStatus / Actions TODAY / Opportunities / Health (1-10)`,700);
     logActivity('[AI] Briefing','ai');
-    return {briefing,date:today(),kpisSnapshot:kpis,model:AI_MODEL,agentsActive:27};
+    return {briefing,date:today(),kpisSnapshot:kpis,model:AI_MODEL,agentsActive:31};
   }
   if (toolName==='run_daily_operations') {
     const kpis=buildKpis();
@@ -507,9 +566,9 @@ async function executeMcpTool(toolName, args, apiKeyOk) {
     const actions=[];
     if(args.autoRemind&&overdue.length&&stripe){for(const inv of overdue.slice(0,5)){if(inv.stripeId){try{await stripe.invoices.sendInvoice(inv.stripeId);actions.push({type:'reminder_sent',invoiceId:inv.id});}catch(e){actions.push({type:'failed',invoiceId:inv.id,error:e.message});}}}}
     const reflexHistory=await memoryGet('reflexionHistory')||[];
-    const plan=await callHermes('Autonomous agent v9.0, 27 agents. Precise ops plan. Max 400 words.',`MRR: $${kpis.mrr}, Revenue: $${kpis.totalRevenue}\nOverdue: ${overdue.map(i=>`${i.id}/${i.client}/$${i.amount}`).join(', ')||'none'}\nProposals: ${pendingProposals.length}, Win: ${kpis.winRate}%, Forecast: $${kpis.forecastNextMonth}\nReflexion: ${reflexHistory.length}, Rate: $${getBestRateBucket()}/hr\n\nNumbered action plan:`,700);
+    const plan=await callHermes('Autonomous agent v10.0, 31 agents. Precise ops plan. Max 400 words.',`MRR: $${kpis.mrr}, Revenue: $${kpis.totalRevenue}\nOverdue: ${overdue.map(i=>`${i.id}/${i.client}/$${i.amount}`).join(', ')||'none'}\nProposals: ${pendingProposals.length}, Win: ${kpis.winRate}%, Forecast: $${kpis.forecastNextMonth}\nReflexion: ${reflexHistory.length}, Rate: $${getBestRateBucket()}/hr\n\nNumbered action plan:`,700);
     logActivity('[AI] Daily ops','ai');
-    await notify(`🤖 *Daily Ops v9.0* — ${overdue.length} overdue, ${pendingProposals.length} proposals`);
+    await notify(`🤖 *Daily Ops v10.0* — ${overdue.length} overdue, ${pendingProposals.length} proposals`);
     return {plan,actionsExecuted:actions,kpisSnapshot:kpis,model:AI_MODEL,timestamp:new Date().toISOString()};
   }
   if (toolName==='record_proposal_outcome') {
@@ -543,7 +602,7 @@ async function executeMcpTool(toolName, args, apiKeyOk) {
     const totalRevenue=verified.reduce((s,r)=>s+Number(r.amount||0),0);
     const onChainCreds=db.reputation.filter(r=>r.minted&&r.txHash);
     const paymentProofHash=crypto.createHash('sha256').update(JSON.stringify(verified.map(r=>({id:r.id,amount:r.amount,date:r.date})))).digest('hex');
-    const vc={'@context':['https://www.w3.org/ns/credentials/v2','https://hermeswork.onrender.com/contexts/reputation/v1'],type:['VerifiableCredential','FreelanceReputationCredential'],id:`${PUBLIC_BASE_URL}/reputation/vc/${PROFILE_HANDLE}`,issuer:{id:PUBLIC_BASE_URL,name:'HermesWork v9.0'},validFrom:new Date().toISOString(),credentialSubject:{id:`${PUBLIC_BASE_URL}/profile/${PROFILE_HANDLE}`,type:'FreelanceProfile',handle:PROFILE_HANDLE,reputationScore:score,reputationLevel:score>=700?'Elite':score>=400?'Established':'Emerging',verifiedJobCount:verified.length,totalEarningsUSD:totalRevenue,onChainCredentials:onChainCreds.length,paymentProofHash,erc8004Registry:process.env.ERC8004_REGISTRY||null,transactions:onChainCreds.map(r=>r.txHash).filter(Boolean).slice(0,10)}};
+    const vc={'@context':['https://www.w3.org/ns/credentials/v2','https://hermeswork.onrender.com/contexts/reputation/v1'],type:['VerifiableCredential','FreelanceReputationCredential'],id:`${PUBLIC_BASE_URL}/reputation/vc/${PROFILE_HANDLE}`,issuer:{id:PUBLIC_BASE_URL,name:'HermesWork v10.0'},validFrom:new Date().toISOString(),credentialSubject:{id:`${PUBLIC_BASE_URL}/profile/${PROFILE_HANDLE}`,type:'FreelanceProfile',handle:PROFILE_HANDLE,reputationScore:score,reputationLevel:score>=700?'Elite':score>=400?'Established':'Emerging',verifiedJobCount:verified.length,totalEarningsUSD:totalRevenue,onChainCredentials:onChainCreds.length,paymentProofHash,erc8004Registry:process.env.ERC8004_REGISTRY||null,transactions:onChainCreds.map(r=>r.txHash).filter(Boolean).slice(0,10)}};
     return {credential:vc,score,verifiedJobs:verified.length,totalRevenue,onChainCredentials:onChainCreds.length,vcUrl:PUBLIC_BASE_URL+'/reputation/vc',standard:'W3C VC v2.1'};
   }
   // v5 Agent tools
@@ -553,17 +612,14 @@ async function executeMcpTool(toolName, args, apiKeyOk) {
   if (toolName==='run_anomaly_scan') { const fx=getAgentFx(); if(!fx) throw new Error('Agent framework unavailable'); return await fx.runAnomalyScan(db,today,notifyTelegram); }
   if (toolName==='multi_agent_task') { const fx=getAgentFx(); if(!fx) throw new Error('Agent framework unavailable'); const kpis=buildKpis(); const snap=`Revenue: $${kpis.totalRevenue}, Win: ${kpis.winRate}%, Active: ${kpis.activeInvoices}, Pipeline: $${kpis.pipelineValue}, Rate: $${getBestRateBucket()}/hr`; return await fx.multiAgentTask(args.task,snap); }
   if (toolName==='get_agent_registry') {
-    const v6ext=getV6Ext();
-    const v7agents=getV7Agents();
-    const v8agents=getV8Agents();
-    const v9agents=getV9Agents();
-    const baseAgents=[{id:1,name:'ReflexionAgent',paper:'Shinn et al. 2023',arxiv:'2303.11366',capability:'Verbal RL proposal generation',mcpTool:'generate_proposal',status:'active'},{id:2,name:'ThompsonBandit',paper:'Chapelle & Li, NeurIPS 2011',capability:'Statistical rate optimization',mcpTool:'suggest_rate',status:'active'},{id:3,name:'CAMELDebateAgent',paper:'Li et al., NeurIPS 2023',arxiv:'2303.17760',capability:'3-round Client vs Freelancer debate',mcpTool:'debate_proposal',status:'active'},{id:4,name:'ReActAgent',paper:'Yao et al., ICLR 2023',arxiv:'2210.03629',capability:'Autonomous Reason-Act-Observe loop',mcpTool:'react_goal_agent',status:'active'},{id:5,name:'CoTScoringAgent',paper:'Wei et al., NeurIPS 2022',arxiv:'2201.11903',capability:'5-dimension chain-of-thought scoring',mcpTool:'score_proposal_cot',status:'active'},{id:6,name:'AnomalyMonitor',paper:'Statistical Process Control',capability:'30-min KPI anomaly detection',mcpTool:'run_anomaly_scan',status:'active'},{id:7,name:'MultiAgentOrchestrator',paper:'Park et al., UIST 2023',arxiv:'2304.03442',capability:'Manager→5 specialists→Synthesis',mcpTool:'multi_agent_task',status:'active'},{id:8,name:'TelegramAgent',paper:'N/A',capability:'Real-time bot: /kpis /scan /briefing /ask /agents /collect /board /jobs /runway',mcpTool:'N/A',status:'active'},{id:9,name:'DailyBriefingAgent',paper:'N/A',capability:'9AM IST autonomous briefing',mcpTool:'ai_briefing',status:'active'}];
+    const v6ext=getV6Ext(); const v7agents=getV7Agents(); const v8agents=getV8Agents(); const v9agents=getV9Agents();
+    const baseAgents=[{id:1,name:'ReflexionAgent',paper:'Shinn et al. 2023',arxiv:'2303.11366',capability:'Verbal RL proposal generation',mcpTool:'generate_proposal',status:'active'},{id:2,name:'ThompsonBandit',paper:'Chapelle & Li, NeurIPS 2011',capability:'Statistical rate optimization',mcpTool:'suggest_rate',status:'active'},{id:3,name:'CAMELDebateAgent',paper:'Li et al., NeurIPS 2023',arxiv:'2303.17760',capability:'3-round Client vs Freelancer debate',mcpTool:'debate_proposal',status:'active'},{id:4,name:'ReActAgent',paper:'Yao et al., ICLR 2023',arxiv:'2210.03629',capability:'Autonomous Reason-Act-Observe loop',mcpTool:'react_goal_agent',status:'active'},{id:5,name:'CoTScoringAgent',paper:'Wei et al., NeurIPS 2022',arxiv:'2201.11903',capability:'5-dimension chain-of-thought scoring',mcpTool:'score_proposal_cot',status:'active'},{id:6,name:'AnomalyMonitor',paper:'Statistical Process Control',capability:'30-min KPI anomaly detection',mcpTool:'run_anomaly_scan',status:'active'},{id:7,name:'MultiAgentOrchestrator',paper:'Park et al., UIST 2023',arxiv:'2304.03442',capability:'Manager→5 specialists→Synthesis',mcpTool:'multi_agent_task',status:'active'},{id:8,name:'TelegramAgent',paper:'N/A',capability:'Real-time bot: /kpis /scan /briefing /ask /agents /collect /board /jobs /runway /leads /evolve /capital /dashboard',mcpTool:'N/A',status:'active'},{id:9,name:'DailyBriefingAgent',paper:'N/A',capability:'9AM IST autonomous briefing',mcpTool:'ai_briefing',status:'active'}];
     const v6Agents=v6ext?v6ext.V6_AGENT_REGISTRY:[];
     const v7Agents=v7agents?v7agents.V7_AGENT_REGISTRY:[];
     const v8Agents=v8agents?v8agents.V8_AGENT_REGISTRY:[];
     const v9Agents=v9agents?v9agents.V9_AGENT_REGISTRY:[];
-    const automationAgents=[{id:26,name:'AutonomousCollectionAgent',paper:'Escalating tone + Stripe API',capability:'Zero-touch invoice collection every 6h (Friendly→Firm→Final)',mcpTool:'collection_run',status:'active'},{id:27,name:'ClientOnboardingAgent',paper:'Workflow automation',capability:'Proposal won → deposit invoice + welcome + timeline',mcpTool:'onboarding_run',status:'active'},{id:28,name:'EODSummaryAgent',paper:'N/A',capability:'7PM IST end-of-day summary to Telegram + WhatsApp',mcpTool:'N/A',status:'active'},{id:29,name:'WhatsAppAgent',paper:'Twilio API',capability:'WhatsApp bot: /kpis /briefing /ask /agents /scan + notifications',mcpTool:'N/A',status:TWILIO_ACCOUNT_SID?'active':'requires_twilio'}];
-    return {version:'v9.0.0',totalAgents:27,mcpTools:MCP_TOOLS.length,model:AI_MODEL,agents:[...baseAgents,...v6Agents,...v7Agents,...v8Agents,...automationAgents,...v9Agents],researchPapers:27};
+    const automationAgents=[{id:22,name:'AutonomousCollectionAgent',paper:'Escalating tone + Stripe API',capability:'Zero-touch invoice collection every 6h',mcpTool:'collection_run',status:'active'},{id:23,name:'ClientOnboardingAgent',paper:'Workflow automation',capability:'Proposal won → deposit invoice + welcome',mcpTool:'onboarding_run',status:'active'},{id:24,name:'EODSummaryAgent',paper:'N/A',capability:'7PM IST end-of-day summary',mcpTool:'N/A',status:'active'},{id:25,name:'WhatsAppAgent',paper:'Twilio API',capability:'WhatsApp bot: /kpis /briefing /ask',mcpTool:'N/A',status:TWILIO_ACCOUNT_SID?'active':'requires_twilio'}];
+    return {version:'v10.0.0',totalAgents:31,mcpTools:MCP_TOOLS.length,model:AI_MODEL,agents:[...baseAgents,...v6Agents,...v7Agents,...v8Agents,...automationAgents,...v9Agents],researchPapers:31};
   }
   // v6 Agent tools
   if (toolName==='tree_of_thoughts') { const fx=getAgentFx(); if(!fx) throw new Error('Agent framework unavailable'); return await fx.treeOfThoughts(args.jobTitle,args.requirements,args.budget,args.context); }
@@ -584,18 +640,27 @@ async function executeMcpTool(toolName, args, apiKeyOk) {
   if (toolName==='win_rate_coach') { const v8=getV8Agents(); if(!v8) throw new Error('V8 agents unavailable'); const reflexHistory=await memoryGet('reflexionHistory')||[]; const bandits=await memoryGet('bandits')||{}; return await v8.winRateCoach(db.proposals,reflexHistory,bandits); }
   if (toolName==='generate_contract') { const v8=getV8Agents(); if(!v8) throw new Error('V8 agents unavailable'); return await v8.generateContract(args.projectTitle,args.clientName,args.projectDescription||'',args.amount,args.startDate,args.deliveryDate,args.paymentTerms,'Salman'); }
   if (toolName==='monthly_board_report') { const v8=getV8Agents(); if(!v8) throw new Error('V8 agents unavailable'); return await v8.monthlyBoardReport(db,args.month,args.year); }
-  // v9 NEW tools
+  // v9 tools
   if (toolName==='auto_job_scout') { const v9=getV9Agents(); if(!v9) throw new Error('V9 agents unavailable'); return await v9.autoJobScout(args); }
   if (toolName==='cash_flow_runway') { const v9=getV9Agents(); if(!v9) throw new Error('V9 agents unavailable'); return await v9.cashFlowRunway(); }
+  // v10 NEW tools
+  if (toolName==='skill_evolution') { const v9=getV9Agents(); if(!v9) throw new Error('V10 agents unavailable'); return await v9.skillEvolution(args); }
+  if (toolName==='client_acquisition') { const v9=getV9Agents(); if(!v9) throw new Error('V10 agents unavailable'); return await v9.clientAcquisitionScout(args); }
+  if (toolName==='stripe_capital_apply') { const v9=getV9Agents(); if(!v9) throw new Error('V10 agents unavailable'); return await v9.stripeCapitalApply(args); }
+  if (toolName==='skill_distill_export') { const v9=getV9Agents(); if(!v9) throw new Error('V10 agents unavailable'); return await v9.skillDistillExport(); }
+  if (toolName==='get_live_dashboard' || toolName==='get_skill_history') {
+    const wire = getV10Wire(); if(!wire) throw new Error('V10 wire unavailable');
+    return await wire.executeV10Tool(toolName, args);
+  }
 
   throw new Error(`Unknown MCP tool: ${toolName}`);
 }
 
 // REST API
-app.get('/health', (req, res) => { res.json({ status: 'ok', version: 'v9.0.0', timestamp: new Date().toISOString(), agents: 27, automationAgents: 5, mcpTools: MCP_TOOLS.length, researchPapers: 27, uptime: Math.round(process.uptime()), ai: AI_API_KEY ? 'configured' : 'not_configured', redis: redis ? 'connected' : 'not_configured', stripe: stripe ? 'connected' : 'not_configured', telegram: TELEGRAM_BOT_TOKEN ? 'configured' : 'not_configured', whatsapp: TWILIO_ACCOUNT_SID ? 'configured' : 'not_configured', skillInstall: 'mkdir -p ~/.hermes/skills/business/hermeswork && curl -o ~/.hermes/skills/business/hermeswork/SKILL.md https://raw.githubusercontent.com/salch-cred/hermeswork/main/skills/hermeswork/SKILL.md' }); });
+app.get('/health', (req, res) => { res.json({ status: 'ok', version: 'v10.0.0', timestamp: new Date().toISOString(), agents: 31, automationAgents: 5, mcpTools: MCP_TOOLS.length, researchPapers: 31, uptime: Math.round(process.uptime()), ai: AI_API_KEY ? 'configured' : 'not_configured', redis: redis ? 'connected' : 'not_configured', stripe: stripe ? 'connected' : 'not_configured', telegram: TELEGRAM_BOT_TOKEN ? 'configured' : 'not_configured', whatsapp: TWILIO_ACCOUNT_SID ? 'configured' : 'not_configured', v10features: ['SkillEvolution','ClientAcquisition','StripeCapital','SkillDistill','LiveDashboard'], skillInstall: 'mkdir -p ~/.hermes/skills/business/hermeswork && curl -o ~/.hermes/skills/business/hermeswork/SKILL.md https://raw.githubusercontent.com/salch-cred/hermeswork/main/skills/hermeswork/SKILL.md' }); });
 
 app.get('/agents', asyncWrap(async (req, res) => { const result = await executeMcpTool('get_agent_registry', {}, true); res.json(result); }));
-app.post('/agents/run', requireApiKey, asyncWrap(async (req, res) => { const { agent, args: agentArgs = {} } = req.body || {}; if (!agent) return res.status(400).json({ error: 'agent name required' }); const toolMap = { ReflexionAgent:'generate_proposal',ThompsonBandit:'suggest_rate',CAMELDebateAgent:'debate_proposal',ReActAgent:'react_goal_agent',CoTScoringAgent:'score_proposal_cot',AnomalyMonitor:'run_anomaly_scan',MultiAgentOrchestrator:'multi_agent_task',TreeOfThoughtsAgent:'tree_of_thoughts',SelfDiscoverAgent:'self_discover_plan',MixtureOfAgentsAggregator:'mixture_of_agents',LLMJudgeAgent:'llm_judge',DailyBriefingAgent:'ai_briefing',ProspectTheoryPricer:'prospect_theory_price',CausalWinRateAgent:'causal_win_analysis',MCTSNegotiator:'mcts_negotiate',ConstitutionalAIAgent:'constitutional_proposal',LinUCBContextualBandit:'linucb_rate',SurvivalAnalysisAgent:'client_survival_score',NashEquilibriumAgent:'nash_rate_anchor',EpisodicMemoryRAG:'episodic_memory_propose',RevenueForecastAgent:'revenue_forecast',WinRateCoachAgent:'win_rate_coach',ContractGeneratorAgent:'generate_contract',MonthlyBoardAgent:'monthly_board_report',AutoJobScoutAgent:'auto_job_scout',CashFlowRunwayAgent:'cash_flow_runway' }; const toolName = toolMap[agent] || agent; try { const result = await executeMcpTool(toolName, agentArgs, true); res.json({ agent, tool: toolName, result }); } catch(e) { res.status(400).json({ error: e.message }); } }));
+app.post('/agents/run', requireApiKey, asyncWrap(async (req, res) => { const { agent, args: agentArgs = {} } = req.body || {}; if (!agent) return res.status(400).json({ error: 'agent name required' }); const toolMap = { ReflexionAgent:'generate_proposal',ThompsonBandit:'suggest_rate',CAMELDebateAgent:'debate_proposal',ReActAgent:'react_goal_agent',CoTScoringAgent:'score_proposal_cot',AnomalyMonitor:'run_anomaly_scan',MultiAgentOrchestrator:'multi_agent_task',TreeOfThoughtsAgent:'tree_of_thoughts',SelfDiscoverAgent:'self_discover_plan',MixtureOfAgentsAggregator:'mixture_of_agents',LLMJudgeAgent:'llm_judge',DailyBriefingAgent:'ai_briefing',ProspectTheoryPricer:'prospect_theory_price',CausalWinRateAgent:'causal_win_analysis',MCTSNegotiator:'mcts_negotiate',ConstitutionalAIAgent:'constitutional_proposal',LinUCBContextualBandit:'linucb_rate',SurvivalAnalysisAgent:'client_survival_score',NashEquilibriumAgent:'nash_rate_anchor',EpisodicMemoryRAG:'episodic_memory_propose',RevenueForecastAgent:'revenue_forecast',WinRateCoachAgent:'win_rate_coach',ContractGeneratorAgent:'generate_contract',MonthlyBoardAgent:'monthly_board_report',AutoJobScoutAgent:'auto_job_scout',CashFlowRunwayAgent:'cash_flow_runway',SkillEvolutionAgent:'skill_evolution',ClientAcquisitionAgent:'client_acquisition',StripeCapitalAgent:'stripe_capital_apply',SkillDistillAgent:'skill_distill_export' }; const toolName = toolMap[agent] || agent; try { const result = await executeMcpTool(toolName, agentArgs, true); res.json({ agent, tool: toolName, result }); } catch(e) { res.status(400).json({ error: e.message }); } }));
 
 app.get('/invoices', requireApiKey, asyncWrap(async (req, res) => { const { status } = req.query; res.json(await executeMcpTool('list_invoices', { status: status || 'all' }, true)); }));
 app.get('/invoices/:id', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('get_invoice', { id: req.params.id }, true)); }));
@@ -628,12 +693,12 @@ app.get('/profile/:handle', asyncWrap(async (req, res) => {
   const paid = db.invoices.filter(i => i.status === 'paid');
   const won = db.proposals.filter(p => p.status === 'won').length;
   const decided = db.proposals.filter(p => ['won', 'lost'].includes(p.status)).length;
-  res.json({ handle, name: 'Salman', score, level: score >= 700 ? 'Elite' : score >= 400 ? 'Established' : 'Emerging', verifiedJobs: verified.length, totalEarnings: verified.reduce((s, r) => s + Number(r.amount || 0), 0), totalRevenue: paid.reduce((s, i) => s + Number(i.amount || 0), 0), winRate: decided ? Math.round(won / decided * 100) : 0, credentials: db.reputation.slice(0, 10), profileUrl: PUBLIC_BASE_URL + '/profile/' + handle, vcUrl: PUBLIC_BASE_URL + '/reputation/vc', agentUrl: PUBLIC_BASE_URL + '/.well-known/agent.json', mcpUrl: PUBLIC_BASE_URL + '/mcp/manifest' });
+  res.json({ handle, name: 'Salman', score, level: score >= 700 ? 'Elite' : score >= 400 ? 'Established' : 'Emerging', verifiedJobs: verified.length, totalEarnings: verified.reduce((s, r) => s + Number(r.amount || 0), 0), totalRevenue: paid.reduce((s, i) => s + Number(i.amount || 0), 0), winRate: decided ? Math.round(won / decided * 100) : 0, credentials: db.reputation.slice(0, 10), profileUrl: PUBLIC_BASE_URL + '/profile/' + handle, vcUrl: PUBLIC_BASE_URL + '/reputation/vc', agentUrl: PUBLIC_BASE_URL + '/.well-known/agent.json', mcpUrl: PUBLIC_BASE_URL + '/mcp/manifest', dashboardUrl: PUBLIC_BASE_URL + '/dashboard/live' });
 }));
 app.get('/kpis', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('get_kpis', {}, true)); }));
 app.get('/analytics', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('get_analytics', {}, true)); }));
 app.get('/activities', requireApiKey, (req, res) => { res.json({ activities: db.activities.slice(0, 50), total: db.activities.length }); });
-app.get('/events', requireApiKey, (req, res) => { const id = uuidv4(); res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive'); res.flushHeaders(); sseClients.set(id, res); res.write(`event: connected\ndata: ${JSON.stringify({ id, version: 'v9.0.0', agents: 27, mcpTools: MCP_TOOLS.length })}\n\n`); req.on('close', () => sseClients.delete(id)); });
+app.get('/events', requireApiKey, (req, res) => { const id = uuidv4(); res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive'); res.flushHeaders(); sseClients.set(id, res); res.write(`event: connected\ndata: ${JSON.stringify({ id, version: 'v10.0.0', agents: 31, mcpTools: MCP_TOOLS.length })}\n\n`); req.on('close', () => sseClients.delete(id)); });
 app.get('/pay/:invId', asyncWrap(async (req, res) => { const inv = db.invoices.find(i => i.id === req.params.invId); if (!inv) return res.status(404).send('Invoice not found'); if (inv.stripeUrl) return res.redirect(302, inv.stripeUrl); const amount = Math.round(Number(inv.amount || 0) * 100); const paymentAddress = process.env.PAYMENT_ADDRESS || '0x0000000000000000000000000000000000000000'; res.setHeader('X-Payment-Required', JSON.stringify({ version: '1', accepts: [{ scheme: 'exact', network: 'base-sepolia', currency: 'USDC', amount: String(amount), address: paymentAddress }] })); res.status(402).json({ error: 'Payment Required', invoice: inv.id, amount: inv.amount, client: inv.client, paymentAddress, currency: 'USDC' }); }));
 
 // v8 AI Endpoints
@@ -644,14 +709,35 @@ app.post('/ai/board-report', requireApiKey, asyncWrap(async (req, res) => { res.
 // v9 AI Endpoints
 app.post('/ai/job-scout', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('auto_job_scout', req.body || {}, true)); }));
 app.post('/ai/runway', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('cash_flow_runway', {}, true)); }));
+// v10 AI Endpoints
+app.post('/ai/acquire-leads', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('client_acquisition', req.body || {}, true)); }));
+app.post('/ai/evolve', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('skill_evolution', req.body || {}, true)); }));
+app.post('/ai/stripe-capital', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('stripe_capital_apply', req.body || {}, true)); }));
+app.get('/skills/export', asyncWrap(async (req, res) => { const result = await executeMcpTool('skill_distill_export', {}, true); if (req.query.format === 'md') { res.setHeader('Content-Type', 'text/markdown'); return res.send(result.skillMd); } res.json(result); }));
+app.get('/skills/history', requireApiKey, asyncWrap(async (req, res) => { res.json(await executeMcpTool('get_skill_history', {}, true)); }));
+app.get('/dashboard/live', asyncWrap(async (req, res) => {
+  const paid = db.invoices.filter(i => i.status === 'paid');
+  const pending = db.invoices.filter(i => i.status !== 'paid');
+  const overdue = pending.filter(i => i.dueDate && i.dueDate < today());
+  const won = db.proposals.filter(p => p.status === 'won').length;
+  const decided = db.proposals.filter(p => ['won', 'lost'].includes(p.status)).length;
+  const sparkline = [];
+  for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(d.getMonth() - i); const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); sparkline.push({ month: d.toLocaleString('en-US', { month: 'short' }), revenue: paid.filter(inv => String(inv.createdAt || '').startsWith(key)).reduce((s, inv) => s + Number(inv.amount || 0), 0) }); }
+  const skillVersions = await memoryGet('skillVersions') || {};
+  const skillLessons = await memoryGet('skillLessons') || [];
+  const reflexHistory = await memoryGet('reflexionHistory') || [];
+  const pipelineValue = db.proposals.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount || 0), 0);
+  const winRate = decided ? Math.round(won / decided * 100) : 0;
+  res.json({ version: 'v10.0.0', timestamp: new Date().toISOString(), liveMetrics: { totalRevenue: paid.reduce((s,i)=>s+Number(i.amount||0),0), activeValue: pending.reduce((s,i)=>s+Number(i.amount||0),0), overdueValue: overdue.reduce((s,i)=>s+Number(i.amount||0),0), winRate, agentsActive: 31, mcpTools: 54, researchPapers: 31 }, revenueMeter: { pipelineValue, forecastConversion: Math.round(pipelineValue * (winRate / 100)), sparkline, trend: sparkline[5]?.revenue > sparkline[4]?.revenue ? 'up' : 'flat' }, skillEvolution: { currentVersion: skillVersions['hermeswork'] || 1, lessonsAccumulated: skillLessons.length, reflexionMemories: reflexHistory.length, winRate: reflexHistory.length > 0 ? Math.round(reflexHistory.filter(r=>r.outcome==='won').length / reflexHistory.length * 100) : 0 }, invoiceSummary: { total: db.invoices.length, paid: paid.length, pending: pending.length, overdue: overdue.length }, recentActivity: (db.activities || []).slice(0, 10).map(a => ({ action: a.action, type: a.type, time: a.time })) });
+}));
 
 app.post('/automations/collect', requireApiKey, asyncWrap(async (req, res) => { const auto = getAutomations(); if (!auto) return res.status(503).json({ error: 'Automations module not loaded' }); res.json(await auto.runCollectionAgent()); }));
 app.post('/automations/onboard', requireApiKey, asyncWrap(async (req, res) => { const auto = getAutomations(); if (!auto) return res.status(503).json({ error: 'Automations module not loaded' }); const proposal = req.body; if (!proposal || !proposal.client) return res.status(422).json({ error: 'proposal with client required' }); res.json(await auto.runClientOnboarding(proposal)); }));
 app.get('/automations/status', requireApiKey, (req, res) => { const auto = getAutomations(); res.json({ loaded: !!auto, agents: ['AutonomousCollectionAgent (6h)', 'ClientOnboardingAgent (on-win)', 'EndOfDaySummary (7PM IST)', 'WeeklyWinCoach (Sun 6PM IST)', 'MonthlyBoardReport (1st of month 8AM IST)'], whatsapp: TWILIO_ACCOUNT_SID ? 'configured' : 'needs TWILIO env vars' }); });
 
-app.get('/mcp/manifest', (req, res) => { res.json({ schema_version: '1.0', name: 'HermesWork AI Agent v9.0', description: `World-first autonomous freelance platform: 27 AI research agents, 48 MCP tools, 27 research papers. Nobel Prize economics (Kahneman, Nash), Turing Award causal inference (Pearl), AlphaGo MCTS (DeepMind), Constitutional AI (Anthropic), LinUCB (Google), Survival Analysis (Cox), EpisodicRAG (Facebook AI) + v8: Revenue Forecast, Win Coach, Contract Generator, Monthly Board + v9: AutoJobScout (autonomous job discovery), CashFlowRunway (runway prediction + Stripe Capital). Native Hermes Agent SKILL.md installable.`, auth: { type: 'api_key', header: 'x-api-key' }, base_url: PUBLIC_BASE_URL, skillInstall: 'curl -o ~/.hermes/skills/business/hermeswork/SKILL.md https://raw.githubusercontent.com/salch-cred/hermeswork/main/skills/hermeswork/SKILL.md', tools: MCP_TOOLS }); });
+app.get('/mcp/manifest', (req, res) => { res.json({ schema_version: '1.0', name: 'HermesWork AI Agent v10.0', description: `World-first autonomous freelance platform: 31 AI research agents, 54 MCP tools, 31 research papers. Nobel Prize economics (Kahneman, Nash), Turing Award causal inference (Pearl), AlphaGo MCTS (DeepMind), Constitutional AI (Anthropic), LinUCB (Google), Survival Analysis (Cox), EpisodicRAG (Facebook AI) + v8: Revenue Forecast, Win Coach, Contract Generator, Monthly Board + v9: AutoJobScout, CashFlowRunway + v10: SkillEvolution (DSPy+GEPA), ClientAcquisition (RLHF), StripeCapital, SkillDistill, Live Dashboard. Native Hermes Agent SKILL.md installable.`, auth: { type: 'api_key', header: 'x-api-key' }, base_url: PUBLIC_BASE_URL, skillInstall: 'curl -o ~/.hermes/skills/business/hermeswork/SKILL.md https://raw.githubusercontent.com/salch-cred/hermeswork/main/skills/hermeswork/SKILL.md', dashboardUrl: PUBLIC_BASE_URL + '/dashboard/live', skillExportUrl: PUBLIC_BASE_URL + '/skills/export?format=md', tools: MCP_TOOLS }); });
 app.post('/mcp/execute', asyncWrap(async (req, res) => { const apiKeyOk = API_KEY ? timingSafeEqualString(req.headers['x-api-key'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, ''), API_KEY) : true; const { tool, arguments: toolArgs = {} } = req.body || {}; if (!tool) return res.status(400).json({ error: 'tool name required' }); const toolDef = MCP_TOOLS.find(t => t.name === tool); if (!toolDef) return res.status(404).json({ error: `Unknown tool: ${tool}` }); try { const result = await executeMcpTool(tool, toolArgs, apiKeyOk); res.json({ tool, result }); } catch(e) { res.status(400).json({ error: e.message }); } }));
-app.get('/.well-known/agent.json', (req, res) => { res.json({ name: 'HermesWork AI Agent v9.0', description: '27 research-backed AI agents, 48 MCP tools, 27 papers. Nobel + Turing + AlphaGo + Constitutional AI + EpisodicRAG + Revenue Forecast + Win Coach + Contract Gen + Monthly Board + AutoJobScout + CashFlowRunway. Native Hermes SKILL.md.', url: PUBLIC_BASE_URL, version: '9.0.0', capabilities: { streaming: false, pushNotifications: true, stateTransitionHistory: true }, skills: MCP_TOOLS.map(t => ({ id: t.name, name: t.name, description: t.description })) }); });
+app.get('/.well-known/agent.json', (req, res) => { res.json({ name: 'HermesWork AI Agent v10.0', description: '31 research-backed AI agents, 54 MCP tools, 31 papers. Nobel + Turing + AlphaGo + Constitutional AI + EpisodicRAG + v10: SkillEvolution (DSPy+GEPA) + ClientAcquisition (RLHF) + StripeCapital + SkillDistill + Live Dashboard. Native Hermes SKILL.md.', url: PUBLIC_BASE_URL, version: '10.0.0', capabilities: { streaming: false, pushNotifications: true, stateTransitionHistory: true, selfImproving: true }, skills: MCP_TOOLS.map(t => ({ id: t.name, name: t.name, description: t.description })) }); });
 app.get('/.well-known/mpp.json', (req, res) => { res.json({ version: '1.0', handle: PROFILE_HANDLE, paymentMethods: [{ type: 'stripe', enabled: !!stripe }, { type: 'x402', enabled: true, network: 'base-sepolia', currency: 'USDC', address: process.env.PAYMENT_ADDRESS || null }], invoiceUrl: PUBLIC_BASE_URL + '/invoices', profileUrl: PUBLIC_BASE_URL + '/profile/' + PROFILE_HANDLE }); });
 app.post('/webhooks/stripe', asyncWrap(async (req, res) => { res.json({ received: true }); if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) return; let event; try { event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET); } catch(e) { return; } if (event.type === 'invoice.paid') { const stripeInv = event.data.object; const inv = db.invoices.find(i => i.stripeId === stripeInv.id); if (inv && inv.status !== 'paid') { inv.status = 'paid'; inv.paidAt = new Date().toISOString(); logActivity(`Stripe: ${inv.id} paid`, 'invoice'); saveData(); broadcastSSE('invoice:updated', { id: inv.id, status: 'paid' }); await notify(`💰 *${inv.id}* PAID via Stripe — $${inv.amount} from *${inv.client}*`); } } }));
 
@@ -663,8 +749,9 @@ function scheduleDailyBriefing() {
       const paid=db.invoices.filter(i=>i.status==='paid'), pending=db.invoices.filter(i=>i.status!=='paid'), overdue=pending.filter(i=>i.dueDate&&i.dueDate<today());
       const won=db.proposals.filter(p=>p.status==='won').length, decided=db.proposals.filter(p=>['won','lost'].includes(p.status)).length;
       const reflexHistory=await memoryGet('reflexionHistory')||[];
-      const briefing=await callHermes('HermesWork AI v9.0, 27 agents. Morning briefing. Plain text. Max 250 words.',`${today()}\nRevenue: $${paid.reduce((s,i)=>s+Number(i.amount||0),0)}, Overdue: ${overdue.length}, Win: ${decided?Math.round(won/decided*100):0}%, Reflexion: ${reflexHistory.length}\n\nMorning briefing + 3 priority actions:`,400);
-      await sendTelegramMessage(TELEGRAM_CHAT_ID, `☀️ *Morning Briefing — ${today()}*\n\n${briefing}\n\n_v9.0 · 27 agents · 48 tools · 27 papers · NVIDIA NIM_`);
+      const skillVersions=await memoryGet('skillVersions')||{};
+      const briefing=await callHermes('HermesWork AI v10.0, 31 agents. Morning briefing. Plain text. Max 250 words.',`${today()}\nRevenue: $${paid.reduce((s,i)=>s+Number(i.amount||0),0)}, Overdue: ${overdue.length}, Win: ${decided?Math.round(won/decided*100):0}%, Reflexion: ${reflexHistory.length}, Skill v${skillVersions['hermeswork']||1}\n\nMorning briefing + 3 priority actions:`,400);
+      await sendTelegramMessage(TELEGRAM_CHAT_ID, `☀️ *Morning Briefing — ${today()}*\n\n${briefing}\n\n_v10.0 · 31 agents · 54 tools · 31 papers · NVIDIA NIM_`);
     } catch(e) { console.warn('[Briefing]', e.message); }
     scheduleDailyBriefing();
   }, target - now);
@@ -675,8 +762,8 @@ setInterval(async () => { try { const fx = getAgentFx(); if (!fx || !AI_API_KEY)
 app.use((err, req, res, _next) => { console.error('[Error]', err.message); const status = err.status || (err.message?.includes('required') ? 422 : 500); res.status(status).json({ error: err.message || 'Internal server error' }); });
 
 app.listen(PORT, () => {
-  console.log(`\n🦅 HermesWork v9.0.0 on port ${PORT}`);
-  console.log(`   🤖 Agents: 27 | MCP: ${MCP_TOOLS.length} tools | Papers: 27`);
+  console.log(`\n🦅 HermesWork v10.0.0 on port ${PORT}`);
+  console.log(`   🤖 Agents: 31 | MCP: ${MCP_TOOLS.length} tools | Papers: 31`);
   console.log(`   🏆 Nobel: Prospect Theory (Kahneman), Nash Equilibrium`);
   console.log(`   🏆 Turing: Causal Inference (Pearl)`);
   console.log(`   🏆 DeepMind: MCTS Negotiator (AlphaGo)`);
@@ -684,9 +771,13 @@ app.listen(PORT, () => {
   console.log(`   🏆 Facebook AI: EpisodicRAG | NeurIPS 2020`);
   console.log(`   🔥 v8 NEW: Revenue Forecast, Win Coach, Contract Gen, Monthly Board`);
   console.log(`   ✨ v9 NEW: AutoJobScout (CoT+Reflexion+EpisodicRAG), CashFlowRunway (Stripe Capital)`);
+  console.log(`   🧬 v10 NEW: SkillEvolution (DSPy+GEPA), ClientAcquisition (RLHF+AgenticRAG)`);
+  console.log(`   💳 v10 NEW: StripeCapital, SkillDistill (Trajectory Distillation), Live Dashboard`);
   console.log(`   🔌 Hermes Native SKILL: skills/hermeswork/SKILL.md installable`);
   console.log(`   🤖 Automations: Collection(6h), Onboarding(on-win), EOD(7PM), Coach(Sun), Board(1st)`);
   console.log(`   📲 WhatsApp: ${TWILIO_ACCOUNT_SID ? 'ACTIVE ✅' : 'needs TWILIO env vars'}`);
+  console.log(`   📊 Dashboard: ${PUBLIC_BASE_URL}/dashboard/live`);
+  console.log(`   📄 Skill Export: ${PUBLIC_BASE_URL}/skills/export?format=md`);
   console.log(`   📊 Health: ${PUBLIC_BASE_URL}/health\n`);
   scheduleDailyBriefing();
   try {
@@ -696,6 +787,8 @@ app.listen(PORT, () => {
     else console.warn('[Automations] Could not start — check automations.js or agentFrameworkV8.js');
   } catch(e) { console.warn('[Automations] Startup error:', e.message); }
   try { const wa = getWhatsApp(); if (wa) console.log('[WhatsApp] Module loaded:', wa.isConfigured ? 'active ✅' : 'waiting for Twilio env vars'); } catch(e) {}
-  // Pre-load V9 agents
+  // Pre-load all agents
   try { getV9Agents(); } catch(e) {}
+  // Register v10 wire routes (dashboard/live + skills/export + skills/history are also registered inline above)
+  try { getV10Wire(); } catch(e) { console.warn('[V10Wire]', e.message); }
 });
