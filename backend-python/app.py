@@ -1,6 +1,6 @@
 """
-HermesWork v12.1.0 — Main FastAPI Server
-Full Python port with all 68 MCP tools, 41 agents, 41 research papers.
+HermesWork v12.1.0 -- Main FastAPI Server
+Full Python port with all 70 MCP tools, 41 agents, 41 research papers.
 """
 import os
 import json
@@ -43,6 +43,9 @@ from utils import (
     ProposalOutcomeModel, McpExecuteModel,
 )
 
+# WhatsApp destination number (set WHATSAPP_TO env var)
+WHATSAPP_TO = os.getenv("WHATSAPP_TO", "")
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("hermeswork")
 
@@ -60,7 +63,7 @@ if STRIPE_ENABLED:
 
 app = FastAPI(
     title="HermesWork AI Agent v12.1",
-    description="World-first autonomous freelance platform: 41 AI research agents, 68 MCP tools, 41 research papers. Benchmark: 10.0/10.0",
+    description="World-first autonomous freelance platform: 41 AI research agents, 70 MCP tools, 41 research papers. Benchmark: 10.0/10.0",
     version="v12.1.0",
 )
 
@@ -145,6 +148,36 @@ async def notify_telegram(text: str) -> None:
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
         await send_telegram_message(TELEGRAM_CHAT_ID, text)
 
+async def send_whatsapp_message(to: str, text: str) -> None:
+    """Send a WhatsApp message via Twilio."""
+    if not (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM):
+        logger.warning("[WhatsApp] Twilio not configured -- skipping send")
+        return
+    if not to:
+        return
+    try:
+        async with httpx.AsyncClient(
+            timeout=10,
+            auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
+        ) as client:
+            res = await client.post(
+                f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                data={
+                    "From": TWILIO_WHATSAPP_FROM,
+                    "To": to,
+                    "Body": str(text or "")[:1600],
+                },
+            )
+            if res.status_code not in (200, 201):
+                logger.warning(f"[WhatsApp] Send {res.status_code}: {res.text[:200]}")
+    except Exception as e:
+        logger.warning(f"[WhatsApp] Send error: {e}")
+
+async def notify_whatsapp(text: str) -> None:
+    """Send WhatsApp notification to the configured WHATSAPP_TO number."""
+    if WHATSAPP_TO:
+        await send_whatsapp_message(WHATSAPP_TO, text)
+
 async def notify_slack(text: str) -> None:
     if not SLACK_WEBHOOK_URL:
         return
@@ -153,9 +186,6 @@ async def notify_slack(text: str) -> None:
             await client.post(SLACK_WEBHOOK_URL, json={"text": text})
     except Exception as e:
         logger.warning(f"[Slack] Failed: {e}")
-
-async def notify_whatsapp(text: str) -> None:
-    pass
 
 async def notify(text: str) -> None:
     await asyncio.gather(notify_telegram(text), notify_slack(text), notify_whatsapp(text), return_exceptions=True)
@@ -504,7 +534,7 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
         return get_reputation_vc()
     if tool_name == "get_profile":
         return get_profile(args.get("handle", PROFILE_HANDLE))
-    ai_tools = {"debate_proposal", "react_agent", "score_proposal_cot", "anomaly_scan", "tree_of_thoughts", "self_discover", "mixture_of_agents", "llm_judge", "reflexion_review", "episodic_rag", "prospect_theory_price", "causal_inference", "mcts_plan", "constitutional_ai_check", "linucb_optimize", "survival_analysis", "nash_negotiate", "revenue_forecast", "win_coach", "generate_contract", "monthly_board_report", "autonomous_collection", "client_onboarding", "eod_summary", "daily_ops_plan"}
+    ai_tools = {"debate_proposal", "react_agent", "score_proposal_cot", "anomaly_scan", "tree_of_thoughts", "self_discover", "mixture_of_agents", "llm_judge", "reflexion_review", "episodic_rag", "prospect_theory_price", "causal_inference", "mcts_plan", "constitutional_ai_check", "linucb_optimize", "survival_analysis", "nash_negotiate", "revenue_forecast", "win_coach", "generate_contract", "monthly_board_report", "autonomous_collection", "client_onboarding", "eod_summary", "daily_ops_plan", "auto_job_scout", "cash_flow_runway"}
     if tool_name in ai_tools:
         if not AI_API_KEY:
             return {"error": "AI not configured. Set NVIDIA_NIM_API_KEY.", "tool": tool_name}
@@ -520,6 +550,7 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
     raise HTTPException(status_code=400, detail=f"Unknown MCP tool: {tool_name}")
 
 _wire_executors = []
+_telegram_handlers = []
 
 def get_agent_card() -> dict:
     return {"schema_version": "1.0", "name": "HermesWork AI Agent", "description": "Autonomous freelance business operations agent with 41 AI research agents. Benchmark: 10.0/10.0", "version": "v12.1.0", "url": PUBLIC_BASE_URL, "capabilities": {"streaming": True, "pushNotifications": True, "stateTransition": True}, "authentication": {"type": "api_key", "header": "x-api-key"}, "skills": [{"id": "invoicing", "name": "Invoice Management", "description": "Create, send, track invoices via Stripe"}, {"id": "proposals", "name": "Proposal Generation", "description": "AI-powered proposal writing with Reflexion"}, {"id": "revenue_swarm", "name": "Revenue Swarm Scientist", "description": "Autonomous market sensing to offer to experiment to launch"}, {"id": "client_closer", "name": "Client Closer", "description": "Autonomous prospect to proposal to follow-up to win/loss loop"}], "agentCount": AGENT_COUNT, "mcpTools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS}
@@ -552,7 +583,7 @@ async def get_benchmark_scores() -> dict:
         "apiEndpointCount": len([r for r in app.routes if hasattr(r, "methods")]),
         "benchmarks": {"kpi_response_ms": kpi_time, "agent_card_response_ms": agent_card_time, "target_health_ms": 100, "target_dashboard_ms": 200},
         "scores": {"innovation": 10.0, "technical_depth": 10.0, "research_backing": 10.0, "production_readiness": 10.0, "security": 10.0, "demo_quality": 10.0, "overall": 10.0},
-        "features": ["41 autonomous AI agents", "68 MCP tools", "41 research papers", "Stripe integration", "x402 crypto payments", "ERC-8004 credentials", "W3C VC v2.1", "A2A Agent Card", "MPP support", "Thompson Sampling rate optimization", "Reflexion verbal RL", "Revenue Swarm Scientist", "Client Closer autonomous loop", "Telegram Bot configured", "WhatsApp Agent configured", "Skill Evolution (DSPy+GEPA)", "FastAPI Python backend", "Rate limiting (SlowAPI)", "XSS filtering", "Atomic data writes", "Redis persistence", "/demo showcase endpoint", "/metrics endpoint"],
+        "features": ["41 autonomous AI agents", "70 MCP tools", "41 research papers", "Stripe integration", "x402 crypto payments", "ERC-8004 credentials", "W3C VC v2.1", "A2A Agent Card", "MPP support", "Thompson Sampling rate optimization", "Reflexion verbal RL", "Revenue Swarm Scientist", "Client Closer autonomous loop", "Telegram Bot configured", "WhatsApp Agent configured", "Skill Evolution (DSPy+GEPA)", "FastAPI Python backend", "Rate limiting (SlowAPI)", "XSS filtering", "Atomic data writes", "Redis persistence", "/demo showcase endpoint", "/metrics endpoint"],
         "researchTechniques": ["CAMEL (NeurIPS 2023)", "ReAct (ICLR 2023)", "Chain-of-Thought (NeurIPS 2022)", "Tree of Thoughts (2023)", "Self-Discover (2024)", "Mixture of Agents (2024)", "LLM-as-Judge (2023)", "Reflexion (2023)", "Thompson Sampling (NeurIPS 2011)", "Prospect Theory (Nobel 1979)", "Causal Inference (Turing Award)", "MCTS (DeepMind 2016)", "Constitutional AI (Anthropic)", "LinUCB (Google 2010)", "Survival Analysis (Cox 1972)", "Nash Equilibrium (Nobel 1950)", "EpisodicRAG (Facebook AI)", "DSPy+GEPA", "RLHF", "OODA Loop", "Bayesian EV"],
     }
 
@@ -561,36 +592,70 @@ async def handle_telegram_command(message: dict):
     text = (message.get("text") or "").strip()
     if not text:
         return
-    # ── /start ──────────────────────────────────────────────────────────────────
+
+    # /start
     if text in ("/start", "/start@HermesWorkOpenbot"):
         await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\n41 research agents, 70 MCP tools, benchmark 10.0/10.0\n\nType /help to see all commands.")
         return
-    # ── /help ──────────────────────────────────────────────────────────────────
+
+    # /help
     if text in ("/help", "/help@HermesWorkOpenbot"):
-        await send_telegram_message(chat_id, "HermesWork v12.1 -- 41 Agents\n\n/kpis -- Live KPIs\n/invoices -- Invoice list\n/briefing -- AI daily briefing\n/ask <question> -- Ask Hermes 3\n/jobs -- AutoJobScout\n/runway -- Cash flow runway\n/swarm -- Revenue scientist loop\n/close -- Autonomous closer\n/closer_queue -- Closer status\n\nv12.1 - 41 agents - 70 tools - 41 papers")
+        help_text = (
+            "HermesWork v12.1 -- All Commands\n\n"
+            "FINANCE\n"
+            "/kpis -- Live KPIs & revenue\n"
+            "/invoices -- Recent invoice list\n"
+            "/runway -- Cash flow runway forecast\n\n"
+            "AI AGENTS\n"
+            "/briefing -- AI daily briefing\n"
+            "/ask <question> -- Ask Hermes 3\n"
+            "/jobs -- AutoJobScout (find leads)\n\n"
+            "REVENUE SWARM\n"
+            "/swarm -- Revenue Scientist loop\n"
+            "/swarm_status -- Swarm status\n\n"
+            "CLIENT CLOSER\n"
+            "/close -- Autonomous closer loop\n"
+            "/closer_queue -- Queue status\n"
+            "/closer_won [id] -- Mark won\n"
+            "/closer_lost [id] -- Mark lost\n\n"
+            "v12.1 - 41 agents - 70 tools - 41 papers"
+        )
+        await send_telegram_message(chat_id, help_text)
         return
+
+    # /kpis
     if text == "/kpis":
         await send_telegram_message(chat_id, build_kpis_text())
         return
+
+    # /invoices
     if text == "/invoices":
         invs = db.get("invoices", [])[:10]
         if not invs:
             await send_telegram_message(chat_id, "No invoices yet.")
         else:
-            lines = [f"{'OK' if i.get('status')=='paid' else 'PENDING'} {i['id']} -- {i.get('client')} -- ${i.get('amount')}" for i in invs]
-            await send_telegram_message(chat_id, "Invoices:\n\n" + "\n".join(lines))
+            lines = [f"{'PAID' if i.get('status')=='paid' else 'PENDING'} {i['id']} -- {i.get('client')} -- ${i.get('amount')}" for i in invs]
+            await send_telegram_message(chat_id, "Recent Invoices:\n\n" + "\n".join(lines))
         return
+
+    # /briefing
     if text == "/briefing":
         if not AI_API_KEY:
             await send_telegram_message(chat_id, "AI not configured.")
             return
         try:
             k = build_kpis()
-            briefing = await call_hermes("HermesWork AI v12.1. Sharp Telegram briefing. Max 230 words.", f"Revenue: ${k['totalRevenue']}, Overdue: {k['overdueCount']}, Win rate: {k['winRate']}%", 400)
+            briefing = await call_hermes(
+                "HermesWork AI v12.1. Sharp daily briefing. Max 230 words.",
+                f"Revenue: ${k['totalRevenue']}, Active invoices: {k['activeInvoices']}, Overdue: {k['overdueCount']}, Win rate: {k['winRate']}%",
+                400,
+            )
             await send_telegram_message(chat_id, f"Daily Briefing -- {today()}\n\n{briefing}")
         except Exception as e:
             await send_telegram_message(chat_id, f"Briefing error: {e}")
         return
+
+    # /ask <question>
     if text.startswith("/ask"):
         question = text.replace("/ask", "", 1).strip()
         if not question:
@@ -601,20 +666,58 @@ async def handle_telegram_command(message: dict):
             return
         try:
             k = build_kpis()
-            answer = await call_hermes("HermesWork v12.1, 41 AI agents. Answer from real data. Max 200 words.", f"Revenue ${k['totalRevenue']}, Win rate {k['winRate']}%\n\nQuestion: {question}", 350)
+            answer = await call_hermes(
+                "HermesWork v12.1, 41 AI agents. Answer from real data. Max 200 words.",
+                f"Revenue ${k['totalRevenue']}, Win rate {k['winRate']}%\n\nQuestion: {question}",
+                350,
+            )
             await send_telegram_message(chat_id, f"Hermes 3:\n\n{answer}")
         except Exception as e:
             await send_telegram_message(chat_id, f"AI error: {e}")
         return
-    # ── Pass to wire handlers (v10/v11/v12) ──────────────────────────────────────────
-    # FIX: pass (message, text) to match wire handler signatures
+
+    # /jobs -- AutoJobScout
+    if text == "/jobs":
+        await send_telegram_message(chat_id, "AutoJobScout scanning for jobs...")
+        try:
+            result = await execute_mcp_tool("auto_job_scout", {"skills": "React Node.js TypeScript AI automation Stripe Hermes"}, True)
+            r = result if isinstance(result, dict) else {}
+            jobs = r.get("jobs", [])
+            if jobs:
+                lines = [
+                    f"{j.get('title','?')} at {j.get('platform','?')} -- {j.get('matchScore','?')}% match"
+                    for j in jobs[:5]
+                ]
+                msg = f"AutoJobScout found {len(jobs)} jobs:\n\n" + "\n".join(lines)
+            else:
+                raw = r.get("result", str(result))
+                msg = f"AutoJobScout result:\n\n{str(raw)[:1500]}"
+            await send_telegram_message(chat_id, msg[:4000])
+        except Exception as e:
+            await send_telegram_message(chat_id, f"AutoJobScout error: {e}")
+        return
+
+    # /runway -- Cash Flow Runway
+    if text == "/runway":
+        try:
+            result = await execute_mcp_tool("cash_flow_runway", {}, True)
+            r = result if isinstance(result, dict) else {}
+            days = r.get("runwayDays") or r.get("runway_days") or r.get("daysLeft") or "?"
+            raw = r.get("result", str(result))
+            msg = f"Cash Flow Runway:\n\nRunway: {days} days\n\n{str(raw)[:800]}"
+            await send_telegram_message(chat_id, msg[:4000])
+        except Exception as e:
+            await send_telegram_message(chat_id, f"Runway error: {e}")
+        return
+
+    # Pass to wire handlers (v10/v11/v12)
     for handler in _telegram_handlers:
         try:
             handled = await handler(message, text)
             if handled:
                 return
         except TypeError:
-            # Fallback: try single-arg signature
+            # Fallback: single-arg signature
             try:
                 handled = await handler(message)
                 if handled:
@@ -623,9 +726,124 @@ async def handle_telegram_command(message: dict):
                 pass
         except Exception as e:
             logger.warning(f"[Telegram] Handler error: {e}")
-    await send_telegram_message(chat_id, "Unknown command. Type /help for all commands.")
 
-_telegram_handlers = []
+    await send_telegram_message(chat_id, "Unknown command. Type /help to see all commands.")
+
+
+async def handle_whatsapp_command(from_number: str, text: str):
+    """Handle WhatsApp commands -- mirrors Telegram commands.
+    Replies are sent back to the from_number via Twilio.
+    """
+    cmd = text.strip().lower().split()[0] if text.strip() else ""
+
+    async def reply(msg: str):
+        await send_whatsapp_message(from_number, msg)
+
+    if cmd in ("/help", "help"):
+        await reply(
+            "HermesWork v12.1 WhatsApp Commands:\n\n"
+            "/kpis - Live KPIs\n"
+            "/invoices - Invoice list\n"
+            "/briefing - Daily briefing\n"
+            "/jobs - AutoJobScout\n"
+            "/runway - Cash runway\n"
+            "/swarm - Revenue scientist\n"
+            "/close - Closer loop\n"
+            "/closer_queue - Queue status\n"
+            "/ask <question> - Ask Hermes AI\n\n"
+            "v12.1 - 41 agents - 70 tools"
+        )
+    elif cmd == "/kpis":
+        await reply(build_kpis_text())
+    elif cmd == "/invoices":
+        invs = db.get("invoices", [])[:5]
+        if not invs:
+            await reply("No invoices yet.")
+        else:
+            lines = [f"{'PAID' if i.get('status')=='paid' else 'PENDING'} {i['id']} {i.get('client')} ${i.get('amount')}" for i in invs]
+            await reply("Invoices:\n\n" + "\n".join(lines))
+    elif cmd == "/briefing":
+        if AI_API_KEY:
+            try:
+                k = build_kpis()
+                briefing = await call_hermes("HermesWork AI briefing. Max 180 words.", f"Revenue: ${k['totalRevenue']}, Win rate: {k['winRate']}%", 300)
+                await reply(f"Daily Briefing {today()}:\n\n{briefing}")
+            except Exception as e:
+                await reply(f"Briefing error: {e}")
+        else:
+            await reply("AI not configured.")
+    elif cmd == "/jobs":
+        await reply("AutoJobScout scanning...")
+        try:
+            result = await execute_mcp_tool("auto_job_scout", {"skills": "React Node.js TypeScript AI automation"}, True)
+            r = result if isinstance(result, dict) else {}
+            raw = r.get("result", str(result))
+            await reply(f"AutoJobScout:\n\n{str(raw)[:1400]}")
+        except Exception as e:
+            await reply(f"Jobs error: {e}")
+    elif cmd == "/runway":
+        try:
+            result = await execute_mcp_tool("cash_flow_runway", {}, True)
+            r = result if isinstance(result, dict) else {}
+            days = r.get("runwayDays") or r.get("runway_days") or r.get("daysLeft") or "?"
+            raw = r.get("result", str(result))
+            await reply(f"Cash Flow Runway: {days} days\n\n{str(raw)[:1000]}")
+        except Exception as e:
+            await reply(f"Runway error: {e}")
+    elif cmd == "/swarm":
+        await reply("Revenue Swarm running...")
+        fake_msg = {"chat": {"id": from_number}, "text": "/swarm"}
+        for handler in _telegram_handlers:
+            try:
+                handled = await handler(fake_msg, "/swarm")
+                if handled:
+                    break
+            except Exception:
+                try:
+                    await handler(fake_msg)
+                    break
+                except Exception:
+                    pass
+    elif cmd == "/close":
+        await reply("ClientCloser running...")
+        fake_msg = {"chat": {"id": from_number}, "text": "/close"}
+        for handler in _telegram_handlers:
+            try:
+                handled = await handler(fake_msg, "/close")
+                if handled:
+                    break
+            except Exception:
+                try:
+                    await handler(fake_msg)
+                    break
+                except Exception:
+                    pass
+    elif cmd in ("/closer_queue", "/closer_status"):
+        fake_msg = {"chat": {"id": from_number}, "text": "/closer_queue"}
+        for handler in _telegram_handlers:
+            try:
+                handled = await handler(fake_msg, "/closer_queue")
+                if handled:
+                    break
+            except Exception:
+                try:
+                    await handler(fake_msg)
+                    break
+                except Exception:
+                    pass
+    elif text.lower().startswith("/ask "):
+        question = text[5:].strip()
+        if AI_API_KEY and question:
+            try:
+                answer = await call_hermes("HermesWork v12.1 AI. Max 180 words.", f"Question: {question}", 300)
+                await reply(f"Hermes 3:\n\n{answer}")
+            except Exception as e:
+                await reply(f"AI error: {e}")
+        else:
+            await reply("Usage: /ask your question")
+    else:
+        await reply("Unknown command. Send /help for all commands.")
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -706,7 +924,7 @@ async def startup_event():
 
     logger.info(f"[HermesWork] v12.1.0 -- {AGENT_COUNT} agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} papers")
     logger.info(f"[Telegram] Bot: {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'}")
-    logger.info(f"[WhatsApp] Twilio: {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'}")
+    logger.info(f"[WhatsApp] Twilio: {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | WHATSAPP_TO: {'SET' if WHATSAPP_TO else 'NOT SET'}")
     logger.info("[Benchmark] All scores: 10.0/10.0")
 
 @app.get("/health")
@@ -864,18 +1082,45 @@ async def telegram_webhook(request: Request):
     if message:
         asyncio.create_task(handle_telegram_command(message))
     elif callback_query:
-        asyncio.create_task(handle_telegram_command({"chat": callback_query.get("message", {}).get("chat", {}), "from": callback_query.get("from", {}), "text": callback_query.get("data", "")}))
+        asyncio.create_task(handle_telegram_command({
+            "chat": callback_query.get("message", {}).get("chat", {}),
+            "from": callback_query.get("from", {}),
+            "text": callback_query.get("data", ""),
+        }))
     return {"ok": True}
 
 @app.post("/webhooks/whatsapp")
 async def whatsapp_webhook(request: Request):
-    body = await request.json()
-    logger.info(f"[WhatsApp] From: {body.get('From', '')}, Body: {body.get('Body', '')}")
-    return {"ok": True}
+    """Twilio sends WhatsApp messages as form-encoded data, not JSON."""
+    try:
+        form = await request.form()
+        from_number = str(form.get("From") or "")
+        body_text = (form.get("Body") or "").strip()
+    except Exception:
+        # Fallback: try JSON body
+        try:
+            body = await request.json()
+            from_number = str(body.get("From") or "")
+            body_text = (body.get("Body") or "").strip()
+        except Exception:
+            from_number = ""
+            body_text = ""
+    logger.info(f"[WhatsApp] From: {from_number}, Body: {body_text[:100]}")
+    if body_text and from_number:
+        asyncio.create_task(handle_whatsapp_command(from_number, body_text))
+    # Twilio expects a TwiML response (empty = no reply from Twilio side)
+    return PlainTextResponse(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        media_type="text/xml",
+    )
 
 @app.get("/whatsapp/status")
 async def whatsapp_status():
-    return {"configured": bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM), "from": TWILIO_WHATSAPP_FROM}
+    return {
+        "configured": bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM),
+        "from": TWILIO_WHATSAPP_FROM,
+        "whatsapp_to_set": bool(WHATSAPP_TO),
+    }
 
 @app.get("/bot/setup")
 async def bot_setup(api_key: str = Depends(require_api_key)):
