@@ -45,7 +45,6 @@ from utils import (
 )
 from catalog import AGENTS, MCP_TOOLS
 
-# WhatsApp destination number (set WHATSAPP_TO env var)
 WHATSAPP_TO = os.getenv("WHATSAPP_TO", "")
 
 logging.basicConfig(level=logging.INFO)
@@ -200,16 +199,74 @@ async def notify_slack(text: str) -> None:
 async def notify(text: str) -> None:
     await asyncio.gather(notify_telegram(text), notify_slack(text), notify_whatsapp(text), return_exceptions=True)
 
+def _parse_nim_response(raw: str) -> dict:
+    """
+    Robustly parse NVIDIA NIM / OpenAI-compatible responses.
+    Handles:
+      - Plain JSON            : {"choices": [...]}
+      - SSE lines             : data: {"choices": [...]}
+      - NDJSON extra data     : {...}\n{...}  (takes first valid object)
+      - [DONE] sentinel lines : skipped
+    """
+    raw = raw.strip()
+    # Fast path: try the whole body first
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    # Slow path: walk lines
+    for line in raw.split('\n'):
+        line = line.strip()
+        if not line or line == 'data: [DONE]' or line == '[DONE]':
+            continue
+        if line.startswith('data: '):
+            line = line[6:].strip()
+        if not line:
+            continue
+        try:
+            return json.loads(line)
+        except json.JSONDecodeError:
+            continue
+    raise ValueError(f"Cannot parse NIM response (first 300 chars): {raw[:300]}")
+
 async def call_hermes(system_prompt: str, user_message: str, max_tokens: int = 800) -> str:
     if not AI_API_KEY:
         raise Exception("AI not configured. Set NVIDIA_NIM_API_KEY.")
-    body = json.dumps({"model": AI_MODEL, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}], "max_tokens": max_tokens, "temperature": 0.7})
-    async with httpx.AsyncClient(timeout=30) as client:
-        res = await client.post(f"{AI_BASE_URL}/chat/completions", content=body, headers={"Content-Type": "application/json", "Authorization": f"Bearer {AI_API_KEY}"})
-        data = res.json()
+    body = json.dumps({
+        "model": AI_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
+        ],
+        "max_tokens": max_tokens,
+        "temperature": 0.7,
+        "stream": False,
+    })
+    async with httpx.AsyncClient(timeout=45) as client:
+        res = await client.post(
+            f"{AI_BASE_URL}/chat/completions",
+            content=body,
+            headers={
+                "Content-Type":  "application/json",
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Accept":        "application/json",
+            },
+        )
+        logger.info(f"[NIM] status={res.status_code} content-type={res.headers.get('content-type','')}")
+        try:
+            data = _parse_nim_response(res.text)
+        except Exception as parse_err:
+            raise Exception(f"NIM parse error: {parse_err} | raw: {res.text[:200]}")
         if "error" in data:
-            raise Exception(data["error"].get("message", str(data["error"])))
-        return (data.get("choices", [{}])[0].get("message", {}).get("content", "")).strip()
+            err = data["error"]
+            msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+            raise Exception(f"NIM error: {msg}")
+        content = (
+            data.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+        )
+        return (content or "").strip()
 
 def _safe_num(v) -> float:
     try:
@@ -549,13 +606,18 @@ async def handle_telegram_command(message: dict):
         return
     if text == "/briefing":
         if not AI_API_KEY:
-            await send_telegram_message(chat_id, "AI not configured.")
+            await send_telegram_message(chat_id, "AI not configured. Set NVIDIA_NIM_API_KEY.")
             return
         try:
             k = build_kpis()
-            briefing = await call_hermes("HermesWork AI v12.1. Sharp daily briefing. Max 230 words.", f"Revenue: ${k['totalRevenue']}, Active invoices: {k['activeInvoices']}, Overdue: {k['overdueCount']}, Win rate: {k['winRate']}%", 400)
+            briefing = await call_hermes(
+                "You are HermesWork AI v12.1. Write a sharp, concise daily business briefing in plain text. Max 200 words. No markdown.",
+                f"Revenue: ${k['totalRevenue']:,.0f} | Active invoices: {k['activeInvoices']} | Overdue: {k['overdueCount']} | Win rate: {k['winRate']}% | Outstanding: ${k['outstandingValue']:,.0f}",
+                400,
+            )
             await send_telegram_message(chat_id, f"Daily Briefing -- {today()}\n\n{briefing}")
         except Exception as e:
+            logger.error(f"[Telegram] /briefing error: {e}", exc_info=True)
             await send_telegram_message(chat_id, f"Briefing error: {e}")
         return
     if text.startswith("/ask"):
@@ -568,7 +630,11 @@ async def handle_telegram_command(message: dict):
             return
         try:
             k = build_kpis()
-            answer = await call_hermes("HermesWork v12.1, 41 AI agents. Answer from real data. Max 200 words.", f"Revenue ${k['totalRevenue']}, Win rate {k['winRate']}%\n\nQuestion: {question}", 350)
+            answer = await call_hermes(
+                "You are HermesWork v12.1 AI. Answer in plain text, max 200 words. No markdown.",
+                f"Context: Revenue ${k['totalRevenue']:,.0f}, Win rate {k['winRate']}%\n\nQuestion: {question}",
+                350,
+            )
             await send_telegram_message(chat_id, f"Hermes 3:\n\n{answer}")
         except Exception as e:
             await send_telegram_message(chat_id, f"AI error: {e}")
@@ -660,7 +726,11 @@ async def handle_whatsapp_command(from_number: str, text: str):
         if AI_API_KEY:
             try:
                 k = build_kpis()
-                briefing = await call_hermes("HermesWork AI briefing. Max 180 words.", f"Revenue: ${k['totalRevenue']}, Win rate: {k['winRate']}%", 300)
+                briefing = await call_hermes(
+                    "You are HermesWork AI. Write a concise daily briefing in plain text. Max 180 words. No markdown.",
+                    f"Revenue: ${k['totalRevenue']:,.0f} | Win rate: {k['winRate']}% | Active: {k['activeInvoices']}",
+                    300,
+                )
                 await reply(f"Daily Briefing {today()}:\n\n{briefing}")
             except Exception as e:
                 await reply(f"Briefing error: {e}")
@@ -701,7 +771,11 @@ async def handle_whatsapp_command(from_number: str, text: str):
         question = text[5:].strip()
         if AI_API_KEY and question:
             try:
-                answer = await call_hermes("HermesWork v12.1 AI. Max 180 words.", f"Question: {question}", 300)
+                answer = await call_hermes(
+                    "You are HermesWork v12.1 AI. Answer in plain text, max 180 words. No markdown.",
+                    f"Question: {question}",
+                    300,
+                )
                 await reply(f"Hermes 3:\n\n{answer}")
             except Exception as e:
                 await reply(f"AI error: {e}")
@@ -742,10 +816,10 @@ async def startup_event():
         "ai_api_key": AI_API_KEY,
     }
     for wire_mod, wire_fn, key_exec, key_tg in [
-        ("wire_v9", "register_v9_routes", None, None),
+        ("wire_v9",  "register_v9_routes",  None,            None),
         ("wire_v10", "register_v10_routes", "execute_v10_tool", "handle_v10_command"),
-        ("wire_v11", "register_v11_routes", None, "handle_v11_telegram"),
-        ("wire_v12", "register_v12_routes", None, "handle_v12_telegram"),
+        ("wire_v11", "register_v11_routes", None,            "handle_v11_telegram"),
+        ("wire_v12", "register_v12_routes", None,            "handle_v12_telegram"),
     ]:
         try:
             mod = __import__(wire_mod)
@@ -765,13 +839,13 @@ async def startup_event():
     try:
         from extra_routes import register_extra_routes
         register_extra_routes(app, deps)
-        logger.info("[ExtraRoutes] /demo + /metrics registered")
+        logger.info("[ExtraRoutes] Registered")
     except Exception as e:
         logger.warning(f"[ExtraRoutes] Load failed: {e}")
     logger.info(f"[HermesWork] v12.1.0 -- {AGENT_COUNT} agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} papers")
-    logger.info(f"[Telegram] Bot: {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'}")
-    logger.info(f"[WhatsApp] Twilio: {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | WHATSAPP_TO: {'SET' if WHATSAPP_TO else 'NOT SET'}")
-    logger.info("[Benchmark] All scores: 10.0/10.0")
+    logger.info(f"[NIM] model={AI_MODEL} base_url={AI_BASE_URL} configured={'YES' if AI_API_KEY else 'NO'}")
+    logger.info(f"[Telegram] {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'}")
+    logger.info(f"[WhatsApp] {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | TO: {'SET' if WHATSAPP_TO else 'NOT SET'}")
 
 @app.get("/health")
 async def health():
@@ -890,14 +964,7 @@ async def pay_page(invoice_id: str):
         try:
             session = stripe_client.checkout.Session.create(
                 mode="payment",
-                line_items=[{
-                    "price_data": {
-                        "currency": "usd",
-                        "product_data": {"name": inv.get("description") or f"Invoice {invoice_id} -- {client}"},
-                        "unit_amount": int(round(float(amount) * 100)),
-                    },
-                    "quantity": 1,
-                }],
+                line_items=[{"price_data": {"currency": "usd", "product_data": {"name": inv.get("description") or f"Invoice {invoice_id} -- {client}"}, "unit_amount": int(round(float(amount) * 100))}, "quantity": 1}],
                 success_url=f"{PUBLIC_BASE_URL}/pay/{invoice_id}/success",
                 cancel_url=f"{PUBLIC_BASE_URL}/pay/{invoice_id}",
                 metadata={"invoiceId": invoice_id, "client": client},
