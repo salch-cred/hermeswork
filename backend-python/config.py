@@ -1,5 +1,5 @@
 """
-HermesWork v12.0.0 — Configuration Module
+HermesWork v12.1.0 — Configuration Module
 All configuration from server.js ported to Python with python-dotenv.
 """
 import os
@@ -22,6 +22,14 @@ def sanitize_env_url(raw: str) -> str:
     return v.strip()
 
 
+def sanitize_token(raw: str) -> str:
+    """Strip all whitespace, newlines, and non-printable chars from a token."""
+    if not raw:
+        return ""
+    # Remove all whitespace including \n \r \t and spaces
+    return re.sub(r'\s+', '', str(raw))
+
+
 # ── Core ──────────────────────────────────────────────────────────────────
 PORT = int(os.getenv("PORT", "3500"))
 NODE_ENV = os.getenv("NODE_ENV", "development")
@@ -37,8 +45,9 @@ PROFILE_HANDLE = os.getenv("PROFILE_HANDLE", "salman")
 SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL") or ""
 
 # ── Telegram ──────────────────────────────────────────────────────────────
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or ""
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID") or ""
+# sanitize_token removes hidden newlines/spaces that break the Telegram API URL
+TELEGRAM_BOT_TOKEN = sanitize_token(os.getenv("TELEGRAM_BOT_TOKEN") or "")
+TELEGRAM_CHAT_ID = sanitize_token(os.getenv("TELEGRAM_CHAT_ID") or "")
 
 # ── AI Provider (NVIDIA NIM / Nous) ───────────────────────────────────────
 NVIDIA_NIM_API_KEY = os.getenv("NVIDIA_NIM_API_KEY") or ""
@@ -106,7 +115,7 @@ ALLOWED_ORIGINS = [
 ALLOWED_ORIGINS = [o for o in ALLOWED_ORIGINS if o]
 
 # Version constants
-VERSION = "v12.0.0"
+VERSION = "v12.1.0"
 AGENT_COUNT = 41
-TOOL_COUNT = 66
+TOOL_COUNT = 70
 RESEARCH_PAPERS = 41
