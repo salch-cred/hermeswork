@@ -1,19 +1,17 @@
 /* HermesWork Frontend v12.1 */
 
-// ── Hardcoded config (not shown in UI) ──────────────────────────────────────
+// ── Hardcoded config (not shown in UI) ──────────────────────────────────────────
 const _HW_API_KEY = 'WdB4KSbQt1ChKSzRr79RBQdSMdMwJ2pe';
 const _HW_BACKEND = 'https://hermeswork.onrender.com';
-// ────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────
 
 const API_BASE = (() => {
   const saved = localStorage.getItem('HERMESWORK_BACKEND_URL');
-  // Ignore stale localhost values — always use the hardcoded production backend
   if (saved && !/localhost|127\.0\.0\.1/.test(saved)) return saved.replace(/\/$/, '');
   try { localStorage.setItem('HERMESWORK_BACKEND_URL', _HW_BACKEND); } catch (e) {}
   return _HW_BACKEND;
 })();
 
-// Always use the hardcoded key — never expose in UI
 const getApiKey = () => _HW_API_KEY;
 
 let state = {
@@ -208,7 +206,7 @@ function renderInvoices() {
   if (!rows.length) tbody.innerHTML = `<tr><td colspan="7">${realEmpty('No invoices yet','Create your first invoice.','<button class="btn btn-primary" onclick="openInvoiceModal()">Create invoice</button>')}</td></tr>`;
   else tbody.innerHTML = rows.map(i => `<tr class="clickable-row" onclick="openDrawerById('${esc(i.id)}')"><td class="mono">${esc(i.id)}</td><td><strong>${esc(i.client)}</strong><br><span style="font-size:11px;color:var(--text-muted)">${esc(i.description||'')}</span></td><td>${money(i.amount)}</td><td>${badge(i.status)}</td><td>${dateFmt(i.dueDate)}</td><td>${esc(i.paymentMethod||'stripe')}</td><td class="table-actions" onclick="event.stopPropagation()"><button class="btn btn-ghost btn-xs" onclick="copyPayLink('${esc(i.id)}')">Copy link</button>${i.stripeUrl?`<button class="btn btn-ghost btn-xs" onclick="window.open('${esc(i.stripeUrl)}','_blank')">Stripe ↗</button>`:''}${i.status!=='paid'?`<button class="btn btn-ghost btn-xs" onclick="markPaid('${esc(i.id)}')">Mark paid</button>`:''}<button class="btn btn-ghost btn-xs" style="color:#e11d48" onclick="deleteInvoice('${esc(i.id)}')">Delete</button></td></tr>`).join('');
   const outstanding = state.invoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+Number(i.amount||0),0);
-  const bar = $('invoice-summary'); if (bar) bar.innerHTML = `<span>Outstanding: <strong>${money(outstanding)}</strong></span><span>${rows.length} of ${state.invoices.length} invoices</span><button class="btn btn-ghost btn-xs" onclick="exportCSV()">↓ Export CSV</button>`;
+  const bar = $('invoice-summary'); if (bar) bar.innerHTML = `<span>Outstanding: <strong>${money(outstanding)}</strong></span><span>${rows.length} of ${state.invoices.length} invoices</span><button class="btn btn-ghost btn-xs" onclick="exportCSV()">\u2193 Export CSV</button>`;
 }
 function filterInvoices(f, el) { state.invoiceFilter = f; document.querySelectorAll('#invoice-filters .filter-tab').forEach(t => t.classList.remove('active')); el?.classList.add('active'); renderInvoices(); }
 function searchInvoices(q) { state.invoiceSearch = q; renderInvoices(); }
@@ -217,7 +215,21 @@ function openPdf(id) { toast('PDF endpoint not enabled.', 'error'); }
 
 function renderClients() {
   const grid = $('clients-grid'); if (!grid) return;
-  grid.innerHTML = state.clients.length ? state.clients.map(c => `<div class="client-card"><div class="client-avatar">${esc((c.company||c.name||'HW').slice(0,2).toUpperCase())}</div><h3 style="font-size:16px;margin-bottom:4px">${esc(c.company||c.name)}</h3><p style="color:var(--text-muted);font-size:12px;margin-bottom:12px">${esc(c.name||'')} · ${esc(c.industry||'Client')}</p><div class="stats-row" style="grid-template-columns:1fr 1fr;margin:0"><div class="stat-box"><div class="stat-box-value">${money(c.totalBilled)}</div><div class="stat-box-label">Billed</div></div><div class="stat-box"><div class="stat-box-value">${esc(c.paymentSpeed||'N/A')}</div><div class="stat-box-label">Speed</div></div></div></div>`).join('') : `<div class="card" style="grid-column:1/-1">${realEmpty('No clients yet','Clients appear from invoices or the Add Client button.','<button class="btn btn-primary" onclick="openClientModal()">Add client</button>')}</div>`;
+  grid.innerHTML = state.clients.length ? state.clients.map(c => {
+    const phoneHtml = c.phone
+      ? `<div style="font-size:11px;color:#16a34a;margin-top:4px;margin-bottom:8px">📱 ${esc(c.phone)} · <span style="color:#94a3b8">WhatsApp invoices enabled</span></div>`
+      : `<div style="font-size:11px;color:#f59e0b;margin-top:4px;margin-bottom:8px">⚠️ No phone · <a href="javascript:void(0)" onclick="openClientModal()" style="color:#5046e4">Add to enable WhatsApp invoices</a></div>`;
+    return `<div class="client-card">
+      <div class="client-avatar">${esc((c.company||c.name||'HW').slice(0,2).toUpperCase())}</div>
+      <h3 style="font-size:16px;margin-bottom:4px">${esc(c.company||c.name)}</h3>
+      <p style="color:var(--text-muted);font-size:12px;margin-bottom:4px">${esc(c.name||'')} · ${esc(c.industry||'Client')}</p>
+      ${phoneHtml}
+      <div class="stats-row" style="grid-template-columns:1fr 1fr;margin:0">
+        <div class="stat-box"><div class="stat-box-value">${money(c.totalBilled)}</div><div class="stat-box-label">Billed</div></div>
+        <div class="stat-box"><div class="stat-box-value">${esc(c.paymentSpeed||'N/A')}</div><div class="stat-box-label">Speed</div></div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="card" style="grid-column:1/-1">${realEmpty('No clients yet','Add a client with their WhatsApp number to auto-send invoice links.','<button class="btn btn-primary" onclick="openClientModal()">Add client</button>')}</div>`;
 }
 function renderProposals() {
   const stats = $('proposal-stats'); const won=state.proposals.filter(p=>p.status==='won').length; const decided=state.proposals.filter(p=>['won','lost'].includes(p.status)).length;
@@ -233,7 +245,6 @@ function renderPayments() {
   const tbody = $('payments-tbody'); if (!tbody) return;
   tbody.innerHTML = state.payments.length ? state.payments.map(p => `<tr><td>${dateFmt(p.date)}</td><td>${esc(p.client)}</td><td>${money(p.amount)}</td><td>${esc(p.rail||'stripe')}</td><td class="mono" style="cursor:pointer" onclick="copyText('${esc(p.txHash||p.stripeId||'')}')">${esc(hashStr(p.txHash||p.stripeId))}</td></tr>`).join('') : `<tr><td colspan="5">${realEmpty('No payments yet','Stripe payments appear here after webhook confirmation.')}</td></tr>`;
   setText('stripe-volume', money((state.payments||[]).filter(p=>p.rail!=='x402').reduce((s,p)=>s+Number(p.amount||0),0)));
-  setText('x402-volume', money((state.payments||[]).filter(p=>p.rail==='x402').reduce((s,p)=>s+Number(p.amount||0),0)));
 }
 function renderAnalytics() {
   const stats = $('analytics-stats'); if (!stats) return;
@@ -243,7 +254,6 @@ function renderAnalytics() {
   const tbody = $('hypothesis-tbody'); if (tbody) tbody.innerHTML = `<tr><td>Revenue Swarm</td><td>v10 manual</td><td>autonomous loop</td><td><strong>v11 active</strong></td><td>${badge('paid')}</td></tr><tr><td>Agents</td><td>36</td><td>41</td><td><strong>${state.health.agents || 41}</strong></td><td>${badge('paid')}</td></tr>`;
 }
 function renderSettings() {
-  // API key field is hidden — key is embedded in app code
   const keySection = $('hermes-api-key');
   if (keySection) {
     const wrapper = keySection.closest('.settings-field') || keySection.parentElement;
@@ -257,7 +267,7 @@ function renderSettings() {
   const url = $('backend-url'); if (url) url.value = API_BASE;
   const cron = $('cron-list'); if (cron) cron.innerHTML = `<div class="cron-item"><div class="cron-status"></div><div><div class="cron-name">Revenue Swarm Scientist</div><div class="cron-schedule">Manual /swarm or POST /ai/revenue-swarm</div></div><div class="cron-last-run">v11</div></div>`;
   const healthEl = $('backend-health');
-  if (healthEl) healthEl.innerHTML = `<div class="health-row"><span>Version</span><strong>${esc(state.health.version || 'v12.1.0')}</strong></div><div class="health-row"><span>Agents</span><strong>${esc(state.health.agents || 41)}</strong></div><div class="health-row"><span>MCP Tools</span><strong>${esc(state.health.mcpTools || 70)}</strong></div><div class="health-row"><span>AI</span><strong>${esc(state.health.ai || 'configured')}</strong></div><div class="health-row"><span>Stripe</span><strong>${esc(state.health.stripe || '—')}</strong></div><div class="health-row"><span>Redis</span><strong>${esc(state.health.redis || '—')}</strong></div><div class="health-row"><span>Profile</span><a href="${API_BASE}/profile/salman" target="_blank" style="color:#5046e4;font-size:12px">/profile/salman ↗</a></div>`;
+  if (healthEl) healthEl.innerHTML = `<div class="health-row"><span>Version</span><strong>${esc(state.health.version || 'v12.1.0')}</strong></div><div class="health-row"><span>Agents</span><strong>${esc(state.health.agents || 41)}</strong></div><div class="health-row"><span>MCP Tools</span><strong>${esc(state.health.mcpTools || 70)}</strong></div><div class="health-row"><span>AI</span><strong>${esc(state.health.ai || 'configured')}</strong></div><div class="health-row"><span>Stripe</span><strong>${esc(state.health.stripe || '—')}</strong></div><div class="health-row"><span>Redis</span><strong>${esc(state.health.redis || '—')}</strong></div><div class="health-row"><span>NL Replies</span><strong>${esc(state.health.nl_replies || '—')}</strong></div><div class="health-row"><span>Profile</span><a href="${API_BASE}/profile/salman" target="_blank" style="color:#5046e4;font-size:12px">/profile/salman ↗</a></div>`;
 }
 
 function drawCharts() {
@@ -273,13 +283,28 @@ function drawCharts() {
   mkChart('chart-credentials','bar',{ labels, datasets:[{ data:Array(labels.length).fill(0), backgroundColor:'#16A34A', borderRadius:6 }] });
 }
 
-function requireKey() { return true; } // Always authenticated
+function requireKey() { return true; }
 function openInvoiceModal() { const m=$('invoice-modal'); if (m) { m.classList.add('open'); $('inv-client')?.focus(); } }
 function closeInvoiceModal() { $('invoice-modal')?.classList.remove('open'); }
 async function submitInvoice(e) {
   e.preventDefault();
   const btn=e.target.querySelector('[type=submit]'); if (btn) { btn.disabled=true; btn.textContent='Creating…'; }
-  try { const body = { client:$('inv-client').value, amount:Number($('inv-amount').value), dueDate:$('inv-due').value, description:$('inv-desc').value, paymentMethod:$('inv-rail')?.value || 'stripe' }; await apiFetch('/invoices', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }); toast('Invoice created!'); closeInvoiceModal(); $('invoice-form')?.reset(); await loadAllData(true); }
+  try {
+    const body = {
+      client: $('inv-client').value,
+      amount: Number($('inv-amount').value),
+      dueDate: $('inv-due').value,
+      description: $('inv-desc').value,
+      paymentMethod: $('inv-rail')?.value || 'stripe'
+    };
+    const result = await apiFetch('/invoices', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    // Check if WhatsApp was sent to client
+    const waSent = result.whatsappSent;
+    toast(waSent ? 'Invoice created! Payment link sent to client WhatsApp 📱' : 'Invoice created!');
+    closeInvoiceModal();
+    $('invoice-form')?.reset();
+    await loadAllData(true);
+  }
   catch(err) { toast('Error: '+err.message,'error'); }
   finally { if (btn) { btn.disabled=false; btn.textContent='Create invoice'; } }
 }
@@ -292,7 +317,10 @@ function openDrawerById(id) {
   const inv=state.invoices.find(i=>i.id===id); if (!inv) return;
   const title=$('drawer-title'), body=$('drawer-body'), drawer=$('invoice-drawer'), backdrop=$('drawer-backdrop'); if (!drawer||!body) return;
   if (title) title.textContent=`Invoice ${inv.id}`;
-  body.innerHTML=`<div class="drawer-field"><span class="drawer-label">Client</span><span class="drawer-value">${esc(inv.client)}</span></div><div class="drawer-field"><span class="drawer-label">Amount</span><span class="drawer-value" style="font-size:22px;font-weight:800;color:var(--accent)">${money(inv.amount)}</span></div><div class="drawer-field"><span class="drawer-label">Status</span><span class="drawer-value">${badge(inv.status)}</span></div><div class="drawer-field"><span class="drawer-label">Due</span><span class="drawer-value">${dateFmt(inv.dueDate)}</span></div><div class="drawer-actions"><button class="btn btn-primary" onclick="copyPayLink('${esc(inv.id)}')">Copy payment link</button>${inv.status!=='paid'?`<button class="btn btn-secondary" onclick="markPaid('${esc(inv.id)}')">Mark paid</button>`:''}<button class="btn" style="background:#fee2e2;color:#e11d48;border:none" onclick="deleteInvoice('${esc(inv.id)}')">Delete</button></div>`;
+  // Find client phone
+  const client = state.clients.find(c => (c.name||'').toLowerCase() === (inv.client||'').toLowerCase() || (c.company||'').toLowerCase() === (inv.client||'').toLowerCase());
+  const phoneRow = client?.phone ? `<div class="drawer-field"><span class="drawer-label">📱 Client WhatsApp</span><span class="drawer-value">${esc(client.phone)}</span></div>` : '';
+  body.innerHTML=`<div class="drawer-field"><span class="drawer-label">Client</span><span class="drawer-value">${esc(inv.client)}</span></div><div class="drawer-field"><span class="drawer-label">Amount</span><span class="drawer-value" style="font-size:22px;font-weight:800;color:var(--accent)">${money(inv.amount)}</span></div><div class="drawer-field"><span class="drawer-label">Status</span><span class="drawer-value">${badge(inv.status)}</span></div><div class="drawer-field"><span class="drawer-label">Due</span><span class="drawer-value">${dateFmt(inv.dueDate)}</span></div>${phoneRow}<div class="drawer-actions"><button class="btn btn-primary" onclick="copyPayLink('${esc(inv.id)}')">Copy payment link</button>${inv.status!=='paid'?`<button class="btn btn-secondary" onclick="markPaid('${esc(inv.id)}')">Mark paid</button>`:''}<button class="btn" style="background:#fee2e2;color:#e11d48;border:none" onclick="deleteInvoice('${esc(inv.id)}')">Delete</button></div>`;
   drawer.classList.add('open'); backdrop?.classList.add('active');
 }
 function closeDrawer() { $('invoice-drawer')?.classList.remove('open'); $('drawer-backdrop')?.classList.remove('active'); }
@@ -304,7 +332,27 @@ async function updateProposal(id, status) { try { await apiFetch(`/proposals/${i
 
 function openClientModal() { $('client-modal')?.classList.add('open'); $('cli-name')?.focus(); }
 function closeClientModal() { $('client-modal')?.classList.remove('open'); }
-async function submitClient(e) { e.preventDefault(); const btn=e.target.querySelector('[type=submit]'); if(btn){btn.disabled=true;btn.textContent='Saving…';} try { const body={name:$('cli-name').value,company:$('cli-company').value,industry:$('cli-industry').value,email:$('cli-email').value}; await apiFetch('/clients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); toast('Client added!'); closeClientModal(); $('client-form')?.reset(); await loadAllData(true); } catch(err) { toast('Error: '+err.message,'error'); } finally { if(btn){btn.disabled=false;btn.textContent='Add client';} } }
+async function submitClient(e) {
+  e.preventDefault();
+  const btn=e.target.querySelector('[type=submit]'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try {
+    const phone = ($('cli-phone')?.value || '').trim();
+    const body = {
+      name: $('cli-name').value,
+      company: $('cli-company').value,
+      industry: $('cli-industry').value,
+      email: $('cli-email').value,
+      phone: phone || null,
+      notes: $('cli-notes')?.value || ''
+    };
+    await apiFetch('/clients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    toast(phone ? `Client added! Invoice links will be sent to ${phone} 📱` : 'Client added!');
+    closeClientModal();
+    $('client-form')?.reset();
+    await loadAllData(true);
+  } catch(err) { toast('Error: '+err.message,'error'); }
+  finally { if(btn){btn.disabled=false;btn.textContent='Add client';} }
+}
 function createInvoiceForClient(id) { openInvoiceModal(); setTimeout(()=>{ if($('inv-client')) $('inv-client').value=id; },50); }
 function createProposalForClient(id) { openProposalModal(id); }
 function copyVerifyLink(url) { navigator.clipboard?.writeText(url).then(()=>toast('Verification link copied!')).catch(()=>toast('Copy failed','error')); }
@@ -343,7 +391,6 @@ Object.assign(window, { navigate, openCmdPalette, closeCmdPalette, toggleDark, o
 
 document.addEventListener('DOMContentLoaded', () => {
   applyDark(); startClock(); initKeyboard();
-  // Force-correct any stale localhost backend URL left in this browser
   const cur = localStorage.getItem('HERMESWORK_BACKEND_URL');
   if (!cur || /localhost|127\.0\.0\.1/.test(cur)) {
     localStorage.setItem('HERMESWORK_BACKEND_URL', _HW_BACKEND);
