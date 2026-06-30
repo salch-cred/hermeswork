@@ -88,8 +88,8 @@ Create an invoice once (via dashboard, AI chat, or Telegram bot) and the entire 
 
 You trigger step one. Everything else is automatic.
 
-### 🤖 Claude-Style AI Chat on the Dashboard
-A full AI chat panel built into the dashboard. Talk to it like a person:
+### 🤖 Autonomous AI Chat on the Dashboard
+A full AI chat panel built into the dashboard, powered by Nous Hermes 3 via NVIDIA NIM. Talk to it like a person:
 
 ```
 You: "Create invoice for Acme Corp $500 due July 15"
@@ -228,7 +228,7 @@ Every agent is grounded in a published academic paper or proven technique:
 │                │  Render (hosting)                   │
 ├─────────────────────────────────────────────────────┤
 │  Frontend      │  Vanilla JS + Chart.js              │
-│                │  Claude-style AI chat panel         │
+│                │  Autonomous AI chat (Hermes 3)      │
 │                │  Dark mode · Command palette        │
 ├─────────────────────────────────────────────────────┤
 │  Protocols     │  MCP Manifest · A2A Agent Card      │
@@ -408,7 +408,7 @@ Events: checkout.session.completed, invoice.payment_succeeded
 
 ### Telegram Webhook
 ```bash
-curl "https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://your-backend.onrender.com/webhooks/telegram"
+curl "{{https://api.telegram.org/bot{TOKEN}}}/setWebhook?url=https://your-backend.onrender.com/webhooks/telegram"
 ```
 
 ---
@@ -458,7 +458,7 @@ hermeswork/
 │   ├── wire_v12.py         # v12 routes (NL bots, chat)
 │   └── requirements.txt
 ├── frontend/
-│   ├── index.html          # Dashboard + Claude-style AI chat
+│   ├── index.html          # Dashboard + Autonomous AI chat
 │   ├── app.js              # Frontend logic + AI chat engine
 │   └── styles.css
 └── README.md
