@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HermesWork — Live Operations Dashboard</title>
-  <meta name="description" content="HermesWork live operations dashboard — real invoices, Stripe, client verification, and payment-backed reputation.">
+  <title>HermesWork — Autonomous Freelance Agent</title>
+  <meta name="description" content="HermesWork — real Stripe invoices, WhatsApp payment delivery, proposal pipeline, and 41 AI agents powered by Nous Hermes 3 on NVIDIA NIM.">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
@@ -69,56 +69,19 @@
     .stripe-only-badge{display:inline-flex;align-items:center;gap:6px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#0369a1}
     .stripe-only-badge svg{width:16px;height:16px;opacity:.8}
     .phone-hint{font-size:11px;color:#94a3b8;margin-top:3px}
+    .live-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    .live-pills span{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.7);border:1px solid #e2e8f0;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600;color:#475569}
 
-    /* ═══════════════════════════════════════════════
-       AI CHAT PANEL — Claude-style
-    ═══════════════════════════════════════════════ */
-    #ai-chat-btn {
-      position:fixed; bottom:28px; right:28px; z-index:1100;
-      width:56px; height:56px; border-radius:50%;
-      background:linear-gradient(135deg,#5046e4,#818cf8);
-      border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
-      box-shadow:0 4px 24px rgba(80,70,228,.45); transition:transform .2s,box-shadow .2s;
-      color:#fff; font-size:24px;
-    }
+    /* AI CHAT PANEL */
+    #ai-chat-btn{position:fixed;bottom:28px;right:28px;z-index:1100;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#5046e4,#818cf8);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(80,70,228,.45);transition:transform .2s,box-shadow .2s;color:#fff;font-size:24px}
     #ai-chat-btn:hover{transform:scale(1.08);box-shadow:0 8px 32px rgba(80,70,228,.55)}
-    #ai-chat-btn .chat-badge{
-      position:absolute;top:-4px;right:-4px;background:#ef4444;
-      color:#fff;font-size:10px;font-weight:700;border-radius:10px;
-      padding:1px 5px;display:none;
-    }
-    #ai-chat-panel {
-      position:fixed; bottom:96px; right:28px; z-index:1099;
-      width:min(420px, calc(100vw - 40px));
-      height:min(620px, calc(100vh - 120px));
-      background:#fff;
-      border-radius:20px;
-      box-shadow:0 20px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06);
-      display:flex; flex-direction:column; overflow:hidden;
-      transform:scale(.92) translateY(12px); opacity:0;
-      pointer-events:none;
-      transition:transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s;
-    }
-    #ai-chat-panel.open{
-      transform:scale(1) translateY(0); opacity:1; pointer-events:all;
-    }
+    #ai-chat-btn .chat-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 5px;display:none}
+    #ai-chat-panel{position:fixed;bottom:96px;right:28px;z-index:1099;width:min(420px,calc(100vw - 40px));height:min(620px,calc(100vh - 120px));background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.06);display:flex;flex-direction:column;overflow:hidden;transform:scale(.92) translateY(12px);opacity:0;pointer-events:none;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s}
+    #ai-chat-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
     body.dark #ai-chat-panel{background:#1a1d27;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06)}
-
-    /* Chat header */
-    .chat-header{
-      display:flex; align-items:center; gap:12px;
-      padding:16px 20px 14px;
-      border-bottom:1px solid #f1f5f9;
-      background:#fff;
-      flex-shrink:0;
-    }
+    .chat-header{display:flex;align-items:center;gap:12px;padding:16px 20px 14px;border-bottom:1px solid #f1f5f9;background:#fff;flex-shrink:0}
     body.dark .chat-header{background:#1a1d27;border-color:#2d3142}
-    .chat-header-avatar{
-      width:36px;height:36px;border-radius:50%;
-      background:linear-gradient(135deg,#5046e4,#818cf8);
-      display:flex;align-items:center;justify-content:center;
-      color:#fff;font-weight:700;font-size:14px;flex-shrink:0;
-    }
+    .chat-header-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#5046e4,#818cf8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
     .chat-header-info{flex:1}
     .chat-header-name{font-size:15px;font-weight:700;color:#0a0a0a;line-height:1.2}
     body.dark .chat-header-name{color:#e2e8f0}
@@ -128,130 +91,60 @@
     .chat-hbtn{background:none;border:none;cursor:pointer;padding:5px;border-radius:7px;color:#94a3b8;font-size:16px;line-height:1;transition:background .15s}
     .chat-hbtn:hover{background:#f1f5f9}
     body.dark .chat-hbtn:hover{background:#2d3142}
-
-    /* Messages area */
-    #chat-messages{
-      flex:1; overflow-y:auto; padding:16px 16px 8px;
-      display:flex; flex-direction:column; gap:14px;
-      scroll-behavior:smooth;
-    }
+    #chat-messages{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
     #chat-messages::-webkit-scrollbar{width:4px}
     #chat-messages::-webkit-scrollbar-track{background:transparent}
     #chat-messages::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:2px}
     body.dark #chat-messages::-webkit-scrollbar-thumb{background:#2d3142}
-
     .chat-msg{display:flex;gap:10px;align-items:flex-end;max-width:100%}
     .chat-msg.user{flex-direction:row-reverse}
-    .chat-msg-avatar{
-      width:28px;height:28px;border-radius:50%;flex-shrink:0;
-      background:linear-gradient(135deg,#5046e4,#818cf8);
-      display:flex;align-items:center;justify-content:center;
-      color:#fff;font-size:11px;font-weight:700;
-    }
+    .chat-msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#5046e4,#818cf8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
     .chat-msg.user .chat-msg-avatar{background:linear-gradient(135deg,#0f172a,#334155)}
-    .chat-bubble{
-      max-width:78%; padding:10px 14px; border-radius:18px; font-size:14px;
-      line-height:1.55; word-break:break-word; position:relative;
-    }
-    .chat-msg.ai .chat-bubble{
-      background:#f8f7ff; color:#1e1b4b;
-      border-bottom-left-radius:4px;
-    }
+    .chat-bubble{max-width:78%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.55;word-break:break-word;position:relative}
+    .chat-msg.ai .chat-bubble{background:#f8f7ff;color:#1e1b4b;border-bottom-left-radius:4px}
     body.dark .chat-msg.ai .chat-bubble{background:#252837;color:#e2e8f0}
-    .chat-msg.user .chat-bubble{
-      background:linear-gradient(135deg,#5046e4,#6d63f0); color:#fff;
-      border-bottom-right-radius:4px;
-    }
+    .chat-msg.user .chat-bubble{background:linear-gradient(135deg,#5046e4,#6d63f0);color:#fff;border-bottom-right-radius:4px}
     .chat-bubble a{color:#5046e4;text-decoration:underline}
     body.dark .chat-bubble a{color:#a5b4fc}
     .chat-msg.user .chat-bubble a{color:#c7d2fe}
-    .chat-bubble code{
-      background:rgba(0,0,0,.08);border-radius:4px;
-      padding:1px 5px;font-family:monospace;font-size:12px;
-    }
+    .chat-bubble code{background:rgba(0,0,0,.08);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:12px}
     .chat-msg.user .chat-bubble code{background:rgba(255,255,255,.2)}
     .chat-bubble .action-row{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
-    .chat-action-btn{
-      background:#5046e4;color:#fff;border:none;border-radius:8px;
-      padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;
-      transition:background .15s;
-    }
+    .chat-action-btn{background:#5046e4;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
     .chat-action-btn:hover{background:#4338ca}
-    .chat-action-btn.secondary{
-      background:rgba(80,70,228,.1);color:#5046e4;
-    }
+    .chat-action-btn.secondary{background:rgba(80,70,228,.1);color:#5046e4}
     body.dark .chat-action-btn.secondary{background:rgba(165,180,252,.15);color:#a5b4fc}
-    .chat-time{
-      font-size:10px;color:#94a3b8;
-      text-align:right;margin-top:3px;padding:0 4px;
-    }
+    .chat-time{font-size:10px;color:#94a3b8;text-align:right;margin-top:3px;padding:0 4px}
     .chat-msg.ai .chat-time{text-align:left}
-
-    /* Typing indicator */
     .chat-typing{display:flex;gap:10px;align-items:flex-end}
-    .chat-typing-bubble{
-      background:#f8f7ff;border-radius:18px;border-bottom-left-radius:4px;
-      padding:12px 16px;display:flex;gap:4px;align-items:center;
-    }
+    .chat-typing-bubble{background:#f8f7ff;border-radius:18px;border-bottom-left-radius:4px;padding:12px 16px;display:flex;gap:4px;align-items:center}
     body.dark .chat-typing-bubble{background:#252837}
-    .typing-dot{
-      width:7px;height:7px;border-radius:50%;background:#94a3b8;
-      animation:typing-bounce 1.2s ease-in-out infinite;
-    }
+    .typing-dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:typing-bounce 1.2s ease-in-out infinite}
     .typing-dot:nth-child(2){animation-delay:.2s}
     .typing-dot:nth-child(3){animation-delay:.4s}
     @keyframes typing-bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-
-    /* Welcome message / suggestions */
     .chat-welcome{text-align:center;padding:8px 0 4px}
     .chat-welcome-icon{font-size:32px;margin-bottom:8px}
     .chat-welcome-title{font-size:15px;font-weight:700;color:#0a0a0a;margin-bottom:4px}
     body.dark .chat-welcome-title{color:#e2e8f0}
     .chat-welcome-sub{font-size:12px;color:#94a3b8;margin-bottom:14px}
     .chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-    .chat-suggestion{
-      background:#f5f3ff;border:1px solid #e0deff;color:#5046e4;
-      border-radius:20px;padding:5px 13px;font-size:12px;font-weight:500;
-      cursor:pointer;transition:background .15s;
-    }
+    .chat-suggestion{background:#f5f3ff;border:1px solid #e0deff;color:#5046e4;border-radius:20px;padding:5px 13px;font-size:12px;font-weight:500;cursor:pointer;transition:background .15s}
     .chat-suggestion:hover{background:#ede9fe}
     body.dark .chat-suggestion{background:#252837;border-color:#3d3a6b;color:#a5b4fc}
     body.dark .chat-suggestion:hover{background:#2d3142}
-
-    /* Input area */
-    .chat-input-area{
-      padding:12px 16px 16px;
-      border-top:1px solid #f1f5f9;
-      background:#fff;
-      flex-shrink:0;
-    }
+    .chat-input-area{padding:12px 16px 16px;border-top:1px solid #f1f5f9;background:#fff;flex-shrink:0}
     body.dark .chat-input-area{background:#1a1d27;border-color:#2d3142}
     .chat-input-row{display:flex;gap:8px;align-items:flex-end}
-    #chat-input{
-      flex:1; border:1.5px solid #e2e8f0; border-radius:14px;
-      padding:10px 14px; font-size:14px; resize:none;
-      font-family:inherit; line-height:1.5; max-height:120px; min-height:42px;
-      background:#fff; color:#0a0a0a; outline:none;
-      transition:border-color .2s;
-    }
+    #chat-input{flex:1;border:1.5px solid #e2e8f0;border-radius:14px;padding:10px 14px;font-size:14px;resize:none;font-family:inherit;line-height:1.5;max-height:120px;min-height:42px;background:#fff;color:#0a0a0a;outline:none;transition:border-color .2s}
     #chat-input:focus{border-color:#5046e4;box-shadow:0 0 0 3px rgba(80,70,228,.1)}
     body.dark #chat-input{background:#252837;color:#e2e8f0;border-color:#2d3142}
     body.dark #chat-input:focus{border-color:#818cf8}
-    #chat-send-btn{
-      width:40px;height:40px;border-radius:12px;flex-shrink:0;
-      background:linear-gradient(135deg,#5046e4,#818cf8);
-      border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
-      color:#fff;transition:transform .15s,opacity .15s;
-    }
+    #chat-send-btn{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,#5046e4,#818cf8);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:transform .15s,opacity .15s}
     #chat-send-btn:hover{transform:scale(1.05)}
     #chat-send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
     .chat-input-hint{font-size:11px;color:#94a3b8;margin-top:6px;text-align:center}
-
-    /* Result card inside bubble */
-    .chat-result-card{
-      background:#fff;border:1px solid #e0deff;border-radius:10px;
-      padding:10px 12px;margin-top:8px;font-size:13px;
-    }
+    .chat-result-card{background:#fff;border:1px solid #e0deff;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px}
     body.dark .chat-result-card{background:#1a1d27;border-color:#3d3a6b}
     .chat-result-card .rcr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f1f5f9}
     .chat-result-card .rcr:last-child{border-bottom:none}
@@ -316,16 +209,16 @@
       <div class="form-row">
         <div class="form-group"><label class="form-label">Due date</label><input type="date" class="form-input" id="inv-due" required></div>
         <div class="form-group">
-          <label class="form-label">Payment rail</label>
+          <label class="form-label">Payment via</label>
           <input type="hidden" id="inv-rail" value="stripe">
           <div class="stripe-only-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 10h18M7 15h4"/></svg>
-            Stripe
+            Stripe Checkout
           </div>
         </div>
       </div>
       <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="inv-desc" placeholder="Work description"></div>
-      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create invoice</button></div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create &amp; send</button></div>
     </form>
   </div>
 </div>
@@ -337,14 +230,14 @@
     <form id="proposal-form" onsubmit="submitProposal(event)">
       <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="prop-title" required placeholder="Proposal title"></div>
       <div class="form-group"><label class="form-label">Client</label><input class="form-input" id="prop-client" required placeholder="Client name"></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Platform</label><input class="form-input" id="prop-platform" placeholder="Upwork, Direct…"></div><div class="form-group"><label class="form-label">Amount</label><input type="number" class="form-input" id="prop-amount" min="0" placeholder="0"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Platform</label><input class="form-input" id="prop-platform" placeholder="Upwork, Direct…"></div><div class="form-group"><label class="form-label">Amount ($)</label><input type="number" class="form-input" id="prop-amount" min="0" placeholder="0"></div></div>
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prop-status"><option value="pending">Pending</option><option value="won">Won</option><option value="lost">Lost</option></select></div>
       <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeProposalModal()">Cancel</button><button class="btn btn-primary" type="submit">Add proposal</button></div>
     </form>
   </div>
 </div>
 
-<!-- Add Client Modal (with phone number) -->
+<!-- Add Client Modal -->
 <div class="modal-overlay" id="client-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Client</div><button class="modal-close" type="button" onclick="closeClientModal()">×</button></div>
@@ -359,9 +252,9 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label"><svg style="width:13px;height:13px;vertical-align:middle;margin-right:4px"><use href="#i-phone"/></svg>WhatsApp / Phone</label>
+          <label class="form-label"><svg style="width:13px;height:13px;vertical-align:middle;margin-right:4px"><use href="#i-phone"/></svg>WhatsApp Number</label>
           <input class="form-input" id="cli-phone" type="tel" placeholder="+919876543210">
-          <div class="phone-hint">Include country code · Invoice links sent here automatically</div>
+          <div class="phone-hint">Include country code · Invoice payment links sent here automatically via Twilio</div>
         </div>
         <div class="form-group">
           <label class="form-label">Notes</label>
@@ -392,7 +285,7 @@
       <button class="nav-item" id="nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button>
     </div>
     <div class="sidebar-footer">
-      <div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label">Checking backend…</div><div class="status-sub">Render connection</div></div></div>
+      <div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label" id="backend-status-label">Connecting…</div><div class="status-sub">FastAPI · Render</div></div></div>
     </div>
   </aside>
 
@@ -413,45 +306,58 @@
     <main class="page-content active fade-in" id="page-dashboard">
       <section class="hero-strip">
         <div>
-          <p class="overline">Real-time mode</p>
-          <h1>Real invoices, live backend, Stripe payments.</h1>
-          <p>No demo dataset. Fills from real records — invoices, webhook events, confirmed payments.</p>
+          <p class="overline">Powered by Nous Hermes 3 · NVIDIA NIM · Stripe · Twilio</p>
+          <h1>Real invoices. Real payments. 41 AI agents.</h1>
+          <p>Creates Stripe invoices, sends payment links to clients via WhatsApp, tracks proposals, forecasts revenue — all automated.</p>
           <div class="live-pills">
             <span id="realtime-state">Connecting…</span>
             <span id="stripe-state">Checking Stripe…</span>
-            <span id="slack-state">Checking Agents…</span>
             <span id="storage-state">Checking storage…</span>
-            <span id="last-sync">Waiting for first sync</span>
+            <span id="last-sync">Waiting for sync</span>
           </div>
         </div>
         <button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create invoice</button>
       </section>
+
       <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-head"><span>Monthly Revenue</span><svg><use href="#i-chart"/></svg></div><div class="kpi-value" id="kpi-mrr">$0</div><div class="kpi-trend up">live backend</div><div class="mini-chart" id="sparkline-mrr"></div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Active Invoices</span><svg><use href="#i-file"/></svg></div><div class="kpi-value" id="kpi-invoices">0</div><div class="kpi-trend neutral">unpaid records</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Win Rate</span><svg><use href="#i-send"/></svg></div><div class="kpi-value" id="kpi-winrate">0%</div><div class="kpi-trend up">real proposals</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Reputation Score</span><svg><use href="#i-shield"/></svg></div><div class="kpi-value" id="kpi-rep">0</div><div class="kpi-trend up">payment-backed</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Days to Payment</span><svg><use href="#i-card"/></svg></div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-trend neutral">collection time</div></div>
-        <div class="kpi-card"><div class="kpi-head"><span>Active Projects</span><svg><use href="#i-bolt"/></svg></div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">open work</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Monthly Revenue</span><svg><use href="#i-chart"/></svg></div><div class="kpi-value" id="kpi-mrr">$0</div><div class="kpi-trend up">confirmed payments</div><div class="mini-chart" id="sparkline-mrr"></div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Active Invoices</span><svg><use href="#i-file"/></svg></div><div class="kpi-value" id="kpi-invoices">0</div><div class="kpi-trend neutral">unpaid · awaiting payment</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Win Rate</span><svg><use href="#i-send"/></svg></div><div class="kpi-value" id="kpi-winrate">0%</div><div class="kpi-trend up">from real proposals</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Reputation Score</span><svg><use href="#i-shield"/></svg></div><div class="kpi-value" id="kpi-rep">0</div><div class="kpi-trend up">Stripe-verified payments</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Avg. Days to Pay</span><svg><use href="#i-card"/></svg></div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-trend neutral">invoice → payment</div></div>
+        <div class="kpi-card"><div class="kpi-head"><span>Open Projects</span><svg><use href="#i-bolt"/></svg></div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">active work items</div></div>
       </div>
+
       <div style="margin-bottom:24px">
         <div class="forecast-card">
           <div class="forecast-label">📈 Revenue Forecast — Next Month</div>
           <div class="forecast-value" id="kpi-forecast">$0</div>
-          <div class="forecast-sub">Calculated from pipeline win rate × pending proposals + trailing avg. <a href="javascript:navigate('analytics')" style="color:#c7d2fe;text-decoration:underline">View breakdown →</a></div>
+          <div class="forecast-sub">Pipeline value × win rate + trailing 3-month average. <a href="javascript:navigate('analytics')" style="color:#c7d2fe;text-decoration:underline">View breakdown →</a></div>
         </div>
       </div>
+
       <div class="two-col">
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> Live workflows</div><div class="card-subtitle">Backend tasks</div></div><span class="badge badge-paid">Live</span></div><div id="scheduled-tasks-mini"></div></div>
-        <div class="card"><div class="card-header"><div><div class="card-title"><svg><use href="#i-activity"/></svg> Real activity</div><div class="card-subtitle">Invoice creation, Stripe webhooks</div></div></div><div class="activity-feed" id="activity-feed"></div></div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title"><svg><use href="#i-bolt"/></svg> AI Agent Activity</div><div class="card-subtitle">41 agents · Hermes 3 via NVIDIA NIM</div></div>
+            <span class="badge badge-paid">Live</span>
+          </div>
+          <div id="scheduled-tasks-mini"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title"><svg><use href="#i-activity"/></svg> Activity Log</div><div class="card-subtitle">Invoice creation · Stripe webhook events · Proposal outcomes</div></div>
+          </div>
+          <div class="activity-feed" id="activity-feed"></div>
+        </div>
       </div>
     </main>
 
     <!-- Invoices -->
     <main class="page-content fade-in" id="page-invoices">
       <div class="section-header">
-        <div><p class="overline">Finance</p><div class="section-title">Invoices</div><div class="section-subtitle">Create real backend records and Stripe invoices · Payment link auto-sent to client WhatsApp</div></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button><button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create Invoice</button></div>
+        <div><p class="overline">Finance</p><div class="section-title">Invoices</div><div class="section-subtitle">Real Stripe Checkout invoices · Payment link auto-sent to client WhatsApp via Twilio</div></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="exportCSV()">↓ Export CSV</button><button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create Invoice</button></div>
       </div>
       <div class="toolbar">
         <div class="filter-tabs" id="invoice-filters">
@@ -460,23 +366,23 @@
           <button class="filter-tab" onclick="filterInvoices('pending',this)">Pending</button>
           <button class="filter-tab" onclick="filterInvoices('overdue',this)">Overdue</button>
         </div>
-        <div class="search-input"><input id="invoice-search" placeholder="Search invoices" oninput="searchInvoices(this.value)"></div>
+        <div class="search-input"><input id="invoice-search" placeholder="Search invoices…" oninput="searchInvoices(this.value)"></div>
       </div>
       <div class="card table-card">
-        <div class="table-wrap"><table class="data-table"><thead><tr><th onclick="sortTable('invoices','id')" style="cursor:pointer">Invoice ↕</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th>Rail</th><th>Actions</th></tr></thead><tbody id="invoices-tbody"></tbody></table></div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th onclick="sortTable('invoices','id')" style="cursor:pointer">Invoice ↕</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th>Payment</th><th>Actions</th></tr></thead><tbody id="invoices-tbody"></tbody></table></div>
         <div class="summary-bar" id="invoice-summary"><span>Outstanding: <strong>$0</strong></span><span><span id="invoice-count">0</span> invoices</span></div>
       </div>
     </main>
 
     <!-- Clients -->
     <main class="page-content fade-in" id="page-clients">
-      <div class="section-header"><div><p class="overline">CRM</p><div class="section-title">Clients</div><div class="section-subtitle">Add client phone numbers to auto-send invoice links via WhatsApp</div></div><button class="btn btn-primary" onclick="openClientModal()"><svg><use href="#i-plus"/></svg> Add Client</button></div>
+      <div class="section-header"><div><p class="overline">CRM</p><div class="section-title">Clients</div><div class="section-subtitle">Add a WhatsApp number to auto-deliver Stripe payment links on every invoice</div></div><button class="btn btn-primary" onclick="openClientModal()"><svg><use href="#i-plus"/></svg> Add Client</button></div>
       <div class="grid-auto" id="clients-grid"></div>
     </main>
 
     <!-- Proposals -->
     <main class="page-content fade-in" id="page-proposals">
-      <div class="section-header"><div><p class="overline">Pipeline</p><div class="section-title">Proposals</div></div><button class="btn btn-primary" onclick="openProposalModal()"><svg><use href="#i-plus"/></svg> Add Proposal</button></div>
+      <div class="section-header"><div><p class="overline">Pipeline</p><div class="section-title">Proposals</div><div class="section-subtitle">Track proposals from sent → won/lost · AI win-rate analysis via Hermes 3</div></div><button class="btn btn-primary" onclick="openProposalModal()"><svg><use href="#i-plus"/></svg> Add Proposal</button></div>
       <div class="stats-row" id="proposal-stats"></div>
       <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Title</th><th>Client</th><th>Platform</th><th>Amount</th><th>Status</th><th>Sent</th><th>Score</th><th>Actions</th></tr></thead><tbody id="proposals-tbody"></tbody></table></div></div>
     </main>
@@ -484,7 +390,7 @@
     <!-- Reputation -->
     <main class="page-content fade-in" id="page-reputation">
       <div class="section-header">
-        <div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-backed records — copy verification link and send to client</div></div>
+        <div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-confirmed work history · Share your public profile link with clients</div></div>
         <a id="profile-link" href="#" target="_blank" class="btn btn-secondary">🌐 Public Profile ↗</a>
       </div>
       <div class="stats-row"><div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Records</div></div><div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Client verified</div></div><div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">Confirmed value</div></div></div>
@@ -493,47 +399,44 @@
 
     <!-- Payments -->
     <main class="page-content fade-in" id="page-payments">
-      <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div></div></div>
-      <div class="payment-rails">
+      <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div><div class="section-subtitle">Stripe Checkout + Webhooks · Payments confirmed via webhook events</div></div></div>
+      <div class="payment-rails" style="grid-template-columns:1fr">
         <div class="rail-card">
           <div class="rail-logo"><svg><use href="#i-card"/></svg></div>
           <div class="rail-name">Stripe</div>
-          <div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div>
-          <div class="rail-status">◉ Connected · Checkout + Webhooks</div>
+          <div class="rail-subtitle">Checkout API · Payment links · Webhook confirmation</div>
+          <div class="rail-stat"><span>Confirmed volume</span><strong id="stripe-volume">$0</strong></div>
+          <div class="rail-status">◉ Connected · Checkout + Webhooks active</div>
         </div>
       </div>
       <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead><tbody id="payments-tbody"></tbody></table></div></div>
-      <span id="x402-volume" style="display:none"></span>
     </main>
 
     <!-- Analytics -->
     <main class="page-content fade-in" id="page-analytics">
-      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Revenue forecast, win rate, collection speed — all from real data</div></div></div>
+      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Revenue, win rate, and collection speed — calculated from real backend data</div></div></div>
       <div class="stats-row" id="analytics-stats"></div>
       <div class="two-col">
         <div class="card"><div class="card-title">Revenue + Forecast</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div>
-        <div class="card"><div class="card-title">Win rate</div><div class="chart-container"><canvas id="chart-winrate"></canvas></div></div>
+        <div class="card"><div class="card-title">Proposal win rate</div><div class="chart-container"><canvas id="chart-winrate"></canvas></div></div>
         <div class="card"><div class="card-title">Days to payment</div><div class="chart-container"><canvas id="chart-days"></canvas></div></div>
-        <div class="card"><div class="card-title">ERC-8004 records / month</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
+        <div class="card"><div class="card-title">Invoices created / month</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
       </div>
-      <div class="card table-card" style="margin-top:20px"><div class="table-wrap"><table class="data-table"><thead><tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Current</th><th>Status</th></tr></thead><tbody id="hypothesis-tbody"></tbody></table></div></div>
     </main>
 
     <!-- Settings -->
     <main class="page-content fade-in" id="page-settings">
-      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div></div></div>
+      <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div><div class="section-subtitle">Backend health, scheduled tasks, and system status</div></div></div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-activity"/></svg> Backend Health</div></div><div id="backend-health"><div style="color:var(--text-muted);font-size:13px;padding:8px 0">Connecting…</div></div></div>
-        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-bolt"/></svg> Scheduled Tasks</div></div><div id="cron-list"><div style="color:var(--text-muted);font-size:13px;padding:8px 0">Loading…</div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-activity"/></svg> Backend Health</div></div><div id="backend-health"><div style="color:var(--text-muted);font-size:13px;padding:8px 0">Connecting to Render…</div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-bolt"/></svg> AI Agent Tasks</div></div><div id="cron-list"><div style="color:var(--text-muted);font-size:13px;padding:8px 0">Loading…</div></div></div>
       </div>
     </main>
 
   </div><!-- /.main-content -->
 </div><!-- /.app-shell -->
 
-<!-- ═══════════════════════════════════════════════
-     AI CHAT PANEL (Claude-style)
-═══════════════════════════════════════════════ -->
+<!-- AI CHAT PANEL -->
 <button id="ai-chat-btn" onclick="toggleChat()" title="Ask HermesWork AI">
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -543,34 +446,21 @@
 </button>
 
 <div id="ai-chat-panel">
-  <!-- Header -->
   <div class="chat-header">
     <div class="chat-header-avatar">H</div>
     <div class="chat-header-info">
       <div class="chat-header-name">HermesWork AI</div>
-      <div class="chat-header-sub">Powered by Hermes 3 · Online</div>
+      <div class="chat-header-sub">Nous Hermes 3 · NVIDIA NIM · Online</div>
     </div>
     <div class="chat-header-actions">
       <button class="chat-hbtn" onclick="clearChat()" title="Clear chat">🗑</button>
       <button class="chat-hbtn" onclick="toggleChat()" title="Close">✕</button>
     </div>
   </div>
-
-  <!-- Messages -->
-  <div id="chat-messages">
-    <!-- Welcome rendered by JS -->
-  </div>
-
-  <!-- Input -->
+  <div id="chat-messages"></div>
   <div class="chat-input-area">
     <div class="chat-input-row">
-      <textarea
-        id="chat-input"
-        placeholder="Ask anything… create invoice, send payment link, check KPIs…"
-        rows="1"
-        onkeydown="chatKeydown(event)"
-        oninput="chatAutoResize(this)"
-      ></textarea>
+      <textarea id="chat-input" placeholder="Create invoice, send payment link, check KPIs…" rows="1" onkeydown="chatKeydown(event)" oninput="chatAutoResize(this)"></textarea>
       <button id="chat-send-btn" onclick="sendChatMessage()" title="Send">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 2L11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/>
