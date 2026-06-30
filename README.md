@@ -16,6 +16,37 @@
 
 ---
 
+## 🧪 Try It Live — Right Now
+
+> **No setup needed. These are live, real connections.**
+
+### 📱 WhatsApp Bot
+1. Open WhatsApp and message **+1 415 523 8886**
+2. Send the text: `join car-solar`
+3. Once joined, just talk naturally — try:
+   - *"how's my business doing?"*
+   - *"show unpaid invoices"*
+   - *"give me a daily briefing"*
+
+### ✈️ Telegram Bot
+👉 **[t.me/HermesWorkOpenbot](https://t.me/HermesWorkOpenbot)**
+
+Just open and message it anything:
+- *"what's my revenue?"*
+- *"/kpis"* — live KPI snapshot
+- *"/briefing"* — AI business summary
+- *"/runway"* — days until cash runs out
+- *"/jobs"* — finds matching freelance jobs
+
+### 🖥️ Dashboard
+👉 **[hermeswork-frontend.onrender.com/frontend/index.html](https://hermeswork-frontend.onrender.com/frontend/index.html)**
+
+Open the AI chat (bottom right) and type anything — create invoices, check KPIs, ask questions.
+
+> **Hermes 3 via NVIDIA NIM understands any language, any phrasing.**
+
+---
+
 ## 📺 Live Links
 
 | Resource | URL |
@@ -416,21 +447,20 @@ Or just **talk naturally** — any message is understood by Hermes 3.
 ```
 hermeswork/
 ├── backend-python/
-│   ├── app.py              # Main FastAPI app (all routes + agent logic)
+│   ├── app.py              # Main FastAPI app
 │   ├── config.py           # Environment configuration
 │   ├── memory.py           # Redis + in-memory agent memory
 │   ├── utils.py            # Helpers, models, data functions
-│   ├── catalog.py          # All 41 agents + 70 MCP tools definitions
+│   ├── catalog.py          # All 41 agents + 70 MCP tools
 │   ├── wire_v9.py          # v9 routes (core MCP tools)
 │   ├── wire_v10.py         # v10 routes (autonomous agents)
-│   ├── wire_v11.py         # v11 routes (Revenue Swarm Scientist)
-│   ├── wire_v12.py         # v12 routes (NL bots, chat, health)
-│   ├── extra_routes.py     # Additional API endpoints
-│   └── requirements.txt    # Python dependencies
+│   ├── wire_v11.py         # v11 routes (Revenue Swarm)
+│   ├── wire_v12.py         # v12 routes (NL bots, chat)
+│   └── requirements.txt
 ├── frontend/
-│   ├── index.html          # Main dashboard (with AI chat panel)
-│   ├── app.js              # All frontend logic + AI chat engine
-│   └── styles.css          # Dashboard styles
+│   ├── index.html          # Dashboard + Claude-style AI chat
+│   ├── app.js              # Frontend logic + AI chat engine
+│   └── styles.css
 └── README.md
 ```
 
@@ -449,5 +479,6 @@ MIT License — see [LICENSE](LICENSE)
 *The agent doesn't simulate running a freelance business. It actually runs one.*
 
 [![Live Demo](https://img.shields.io/badge/Try%20It%20Live-brightgreen?style=for-the-badge)](https://hermeswork-frontend.onrender.com/frontend/index.html)
+[![Telegram](https://img.shields.io/badge/Telegram%20Bot-Live-blue?style=for-the-badge&logo=telegram)](https://t.me/HermesWorkOpenbot)
 
 </div>
