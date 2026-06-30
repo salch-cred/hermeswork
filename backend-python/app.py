@@ -129,12 +129,15 @@ async def broadcast_sse(event: str, data: Any):
 async def send_telegram_message(chat_id: str, text: str) -> None:
     if not TELEGRAM_BOT_TOKEN:
         return
+    # NOTE: No parse_mode -- plain text avoids 400 Bad Request from special chars
     safe_text = str(text or "")[:4000]
-    body = json.dumps({"chat_id": chat_id, "text": safe_text, "parse_mode": "Markdown"})
+    body = json.dumps({"chat_id": chat_id, "text": safe_text})
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             tg_url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage"
-            await client.post(tg_url, content=body, headers={"Content-Type": "application/json"})
+            res = await client.post(tg_url, content=body, headers={"Content-Type": "application/json"})
+            if res.status_code != 200:
+                logger.warning(f"[Telegram] sendMessage {res.status_code}: {res.text[:200]}")
     except Exception as e:
         logger.warning(f"[Telegram] Send error: {e}")
 
@@ -558,8 +561,13 @@ async def handle_telegram_command(message: dict):
     text = (message.get("text") or "").strip()
     if not text:
         return
-    if text == "/help":
-        await send_telegram_message(chat_id, "HermesWork v12.1 -- 41 Agents\n\n/kpis -- Live KPIs\n/invoices -- Invoice list\n/briefing -- AI daily briefing\n/ask [question] -- Ask Hermes 3\n/jobs -- AutoJobScout\n/runway -- Cash flow runway\n/swarm -- Revenue scientist loop\n/close -- Autonomous closer\n/closer_queue -- Closer status\n\nv12.1 - 41 agents - 68 tools - 41 papers")
+    # ── /start ──────────────────────────────────────────────────────────────────
+    if text in ("/start", "/start@HermesWorkOpenbot"):
+        await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\n41 research agents, 70 MCP tools, benchmark 10.0/10.0\n\nType /help to see all commands.")
+        return
+    # ── /help ──────────────────────────────────────────────────────────────────
+    if text in ("/help", "/help@HermesWorkOpenbot"):
+        await send_telegram_message(chat_id, "HermesWork v12.1 -- 41 Agents\n\n/kpis -- Live KPIs\n/invoices -- Invoice list\n/briefing -- AI daily briefing\n/ask <question> -- Ask Hermes 3\n/jobs -- AutoJobScout\n/runway -- Cash flow runway\n/swarm -- Revenue scientist loop\n/close -- Autonomous closer\n/closer_queue -- Closer status\n\nv12.1 - 41 agents - 70 tools - 41 papers")
         return
     if text == "/kpis":
         await send_telegram_message(chat_id, build_kpis_text())
@@ -586,7 +594,7 @@ async def handle_telegram_command(message: dict):
     if text.startswith("/ask"):
         question = text.replace("/ask", "", 1).strip()
         if not question:
-            await send_telegram_message(chat_id, "Usage: /ask [question]")
+            await send_telegram_message(chat_id, "Usage: /ask your question here")
             return
         if not AI_API_KEY:
             await send_telegram_message(chat_id, "AI not configured.")
@@ -598,11 +606,24 @@ async def handle_telegram_command(message: dict):
         except Exception as e:
             await send_telegram_message(chat_id, f"AI error: {e}")
         return
+    # ── Pass to wire handlers (v10/v11/v12) ──────────────────────────────────────────
+    # FIX: pass (message, text) to match wire handler signatures
     for handler in _telegram_handlers:
-        handled = await handler(message)
-        if handled:
-            return
-    await send_telegram_message(chat_id, "Unknown command. Type /help for all 41-agent commands.")
+        try:
+            handled = await handler(message, text)
+            if handled:
+                return
+        except TypeError:
+            # Fallback: try single-arg signature
+            try:
+                handled = await handler(message)
+                if handled:
+                    return
+            except Exception:
+                pass
+        except Exception as e:
+            logger.warning(f"[Telegram] Handler error: {e}")
+    await send_telegram_message(chat_id, "Unknown command. Type /help for all commands.")
 
 _telegram_handlers = []
 
