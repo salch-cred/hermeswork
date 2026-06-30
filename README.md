@@ -8,7 +8,6 @@
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Online-brightgreen?style=for-the-badge&logo=render)](https://hermeswork-frontend.onrender.com/frontend/index.html)
 [![Backend](https://img.shields.io/badge/Backend-API-blue?style=for-the-badge&logo=fastapi)](https://hermeswork.onrender.com/health)
 [![GitHub](https://img.shields.io/badge/GitHub-Repo-black?style=for-the-badge&logo=github)](https://github.com/salch-cred/hermeswork)
-[![Hackathon](https://img.shields.io/badge/NVIDIA%20%C3%97%20Stripe%20%C3%97%20Nous-Hackathon-purple?style=for-the-badge)](https://nousresearch.com)
 
 > **HermesWork is a fully autonomous freelance business platform.**
 > It creates Stripe invoices, sends payment links to clients via WhatsApp, tracks proposals, forecasts revenue, and runs 41 AI research agents — all powered by Nous Hermes 3.
@@ -351,13 +350,11 @@ uvicorn app:app --reload --port 8000
 
 ```bash
 open frontend/index.html
-# or serve with:
-npx serve frontend
 ```
 
 ---
 
-## 🌐 Deploy to Render (Recommended)
+## 🌐 Deploy to Render
 
 ### Backend
 1. New Web Service → connect `salch-cred/hermeswork`
@@ -387,8 +384,6 @@ curl "https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://your-backend.on
 
 ## 💬 AI Chat — What You Can Say
 
-The dashboard has a Claude-style AI chat panel. Examples:
-
 | You type | What happens |
 |----------|--------------|
 | `"Show my KPIs"` | Live revenue, invoices, win rate card |
@@ -397,7 +392,6 @@ The dashboard has a Claude-style AI chat panel. Examples:
 | `"Send payment link to Acme"` | Finds latest invoice → sends via WhatsApp |
 | `"Add client John +919876543210"` | Client added with WhatsApp number |
 | `"Daily briefing"` | Hermes 3 generates full business summary |
-| `"How is my pipeline looking?"` | Proposal stats, win rate, pipeline value |
 | *Any other question* | Hermes 3 answers with live business context |
 
 ---
@@ -408,7 +402,6 @@ The dashboard has a Claude-style AI chat panel. Examples:
 /kpis      — Live KPI snapshot
 /invoices  — Recent invoices with payment links
 /pay       — All unpaid invoice payment links
-/pay INV-001 — Specific invoice payment link
 /briefing  — AI-generated daily business briefing
 /jobs      — AutoJobScout: find matching freelance jobs
 /runway    — CashFlowRunway: days until cash runs out
@@ -440,21 +433,6 @@ hermeswork/
 │   └── styles.css          # Dashboard styles
 └── README.md
 ```
-
----
-
-## 🏆 Hackathon
-
-Built for the **NVIDIA × Stripe × Nous Research Hermes Agent Hackathon**
-
-**Why HermesWork qualifies:**
-- ✅ Powered by Nous Hermes 3 as the core reasoning engine
-- ✅ Real Stripe payments — Checkout API + live webhooks
-- ✅ Production deployed — not a local demo
-- ✅ Autonomous agents that take real actions (not just chat)
-- ✅ 41 research papers implemented as working agents
-- ✅ End-to-end automated business loop
-- ✅ Natural language interfaces on 3 channels (dashboard, Telegram, WhatsApp)
 
 ---
 
