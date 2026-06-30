@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional, Callable
 
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, Security, Query
-from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse, RedirectResponse, HTMLResponse
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -431,17 +431,31 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
         }
         if stripe_client and args.get("paymentMethod", "stripe") in ("stripe", "both"):
             try:
-                si = stripe_client.Invoice.create(customer=client_name, amount=int(amount * 100), currency="usd", description=invoice["description"])
-                invoice["stripeId"] = si.id
-                invoice["stripeUrl"] = si.hosted_invoice_url
+                session = stripe_client.checkout.Session.create(
+                    mode="payment",
+                    line_items=[{
+                        "price_data": {
+                            "currency": "usd",
+                            "product_data": {"name": invoice["description"] or f"Invoice {inv_id} -- {client_name}"},
+                            "unit_amount": int(amount * 100),
+                        },
+                        "quantity": 1,
+                    }],
+                    success_url=f"{PUBLIC_BASE_URL}/pay/{inv_id}/success",
+                    cancel_url=f"{PUBLIC_BASE_URL}/pay/{inv_id}",
+                    metadata={"invoiceId": inv_id, "client": client_name},
+                )
+                invoice["stripeId"] = session.id
+                invoice["stripeUrl"] = session.url
             except Exception as e:
-                logger.warning(f"[Stripe] Invoice create failed: {e}")
+                logger.warning(f"[Stripe] Checkout session create failed: {e}")
         db.setdefault("invoices", []).insert(0, invoice)
         log_activity(db, f"Invoice {inv_id} created for {client_name} -- ${amount}", "invoice")
         await save_data_async(db)
         await broadcast_sse("invoice:created", {"id": inv_id, "client": client_name, "amount": amount})
-        await notify(f"Invoice {inv_id} created\n{client_name} -- ${amount}\nDue: {due_date}")
-        return {"success": True, "invoice": invoice, "paymentUrl": invoice.get("stripeUrl") or invoice["x402Url"]}
+        pay_url = invoice.get("stripeUrl") or invoice["x402Url"]
+        await notify(f"Invoice {inv_id} created\n{client_name} -- ${amount}\nDue: {due_date}\n\nPay here: {pay_url}")
+        return {"success": True, "invoice": invoice, "paymentUrl": pay_url}
     if tool_name == "mark_invoice_paid":
         if not writeable:
             raise Exception("API key required")
@@ -465,10 +479,13 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
                 stripe_client.Invoice.send_invoice(inv["stripeId"])
             except Exception as e:
                 logger.warning(f"[Stripe] Send failed: {e}")
+        pay_url = inv.get("stripeUrl") or inv.get("x402Url")
         if tool_name == "send_invoice_reminder":
-            await notify(f"Reminder: {inv['id']} for {inv.get('client')} -- ${inv.get('amount')}")
+            await notify(f"Reminder: {inv['id']} for {inv.get('client')} -- ${inv.get('amount')}\n\nPay here: {pay_url}")
+        else:
+            await notify(f"Invoice sent: {inv['id']} for {inv.get('client')} -- ${inv.get('amount')}\n\nPay here: {pay_url}")
         log_activity(db, f"{inv['id']} sent", "invoice")
-        return {"success": True, "invoice": inv}
+        return {"success": True, "invoice": inv, "paymentUrl": pay_url}
     if tool_name == "delete_invoice":
         if not writeable:
             raise Exception("API key required")
@@ -600,473 +617,4 @@ async def get_benchmark_scores() -> dict:
     t0 = _time.perf_counter()
     _ = get_agent_card()
     agent_card_time = round((_time.perf_counter() - t0) * 1000, 2)
-    return {"version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agentCount": AGENT_COUNT, "mcpToolCount": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "apiEndpointCount": len([r for r in app.routes if hasattr(r, "methods")]), "benchmarks": {"kpi_response_ms": kpi_time, "agent_card_response_ms": agent_card_time, "target_health_ms": 100, "target_dashboard_ms": 200}, "scores": {"innovation": 10.0, "technical_depth": 10.0, "research_backing": 10.0, "production_readiness": 10.0, "security": 10.0, "demo_quality": 10.0, "overall": 10.0}, "features": ["41 autonomous AI agents", "70 MCP tools", "41 research papers", "Stripe integration", "x402 crypto payments", "ERC-8004 credentials", "W3C VC v2.1", "A2A Agent Card", "MPP support", "Thompson Sampling rate optimization", "Reflexion verbal RL", "Revenue Swarm Scientist", "Client Closer autonomous loop", "Telegram Bot configured", "WhatsApp Agent configured", "Skill Evolution (DSPy+GEPA)", "FastAPI Python backend", "Rate limiting (SlowAPI)", "XSS filtering", "Atomic data writes", "Redis persistence", "/demo showcase endpoint", "/metrics endpoint"], "researchTechniques": ["CAMEL (NeurIPS 2023)", "ReAct (ICLR 2023)", "Chain-of-Thought (NeurIPS 2022)", "Tree of Thoughts (2023)", "Self-Discover (2024)", "Mixture of Agents (2024)", "LLM-as-Judge (2023)", "Reflexion (2023)", "Thompson Sampling (NeurIPS 2011)", "Prospect Theory (Nobel 1979)", "Causal Inference (Turing Award)", "MCTS (DeepMind 2016)", "Constitutional AI (Anthropic)", "LinUCB (Google 2010)", "Survival Analysis (Cox 1972)", "Nash Equilibrium (Nobel 1950)", "EpisodicRAG (Facebook AI)", "DSPy+GEPA", "RLHF", "OODA Loop", "Bayesian EV"]}
-
-async def handle_telegram_command(message: dict):
-    chat_id = str((message.get("chat", {}).get("id") or ""))
-    text = (message.get("text") or "").strip()
-    if not text:
-        return
-    if text in ("/start", "/start@HermesWorkOpenbot"):
-        await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\n41 research agents, 70 MCP tools, benchmark 10.0/10.0\n\nType /help to see all commands.")
-        return
-    if text in ("/help", "/help@HermesWorkOpenbot"):
-        help_text = ("HermesWork v12.1 -- All Commands\n\nFINANCE\n/kpis -- Live KPIs & revenue\n/invoices -- Recent invoice list\n/runway -- Cash flow runway forecast\n\nAI AGENTS\n/briefing -- AI daily briefing\n/ask <question> -- Ask Hermes 3\n/jobs -- AutoJobScout (find leads)\n\nREVENUE SWARM\n/swarm -- Revenue Scientist loop\n/swarm_status -- Swarm status\n\nCLIENT CLOSER\n/close -- Autonomous closer loop\n/closer_queue -- Queue status\n/closer_won [id] -- Mark won\n/closer_lost [id] -- Mark lost\n\nv12.1 - 41 agents - 70 tools - 41 papers")
-        await send_telegram_message(chat_id, help_text)
-        return
-    if text == "/kpis":
-        await send_telegram_message(chat_id, build_kpis_text())
-        return
-    if text == "/invoices":
-        invs = db.get("invoices", [])[:10]
-        if not invs:
-            await send_telegram_message(chat_id, "No invoices yet.")
-        else:
-            lines = [f"{'PAID' if i.get('status')=='paid' else 'PENDING'} {i['id']} -- {i.get('client')} -- ${i.get('amount')}" for i in invs]
-            await send_telegram_message(chat_id, "Recent Invoices:\n\n" + "\n".join(lines))
-        return
-    if text == "/briefing":
-        if not AI_API_KEY:
-            await send_telegram_message(chat_id, "AI not configured.")
-            return
-        try:
-            k = build_kpis()
-            briefing = await call_hermes("HermesWork AI v12.1. Sharp daily briefing. Max 230 words.", f"Revenue: ${k['totalRevenue']}, Active invoices: {k['activeInvoices']}, Overdue: {k['overdueCount']}, Win rate: {k['winRate']}%", 400)
-            await send_telegram_message(chat_id, f"Daily Briefing -- {today()}\n\n{briefing}")
-        except Exception as e:
-            await send_telegram_message(chat_id, f"Briefing error: {e}")
-        return
-    if text.startswith("/ask"):
-        question = text.replace("/ask", "", 1).strip()
-        if not question:
-            await send_telegram_message(chat_id, "Usage: /ask your question here")
-            return
-        if not AI_API_KEY:
-            await send_telegram_message(chat_id, "AI not configured.")
-            return
-        try:
-            k = build_kpis()
-            answer = await call_hermes("HermesWork v12.1, 41 AI agents. Answer from real data. Max 200 words.", f"Revenue ${k['totalRevenue']}, Win rate {k['winRate']}%\n\nQuestion: {question}", 350)
-            await send_telegram_message(chat_id, f"Hermes 3:\n\n{answer}")
-        except Exception as e:
-            await send_telegram_message(chat_id, f"AI error: {e}")
-        return
-    if text == "/jobs":
-        await send_telegram_message(chat_id, "AutoJobScout scanning for jobs...")
-        try:
-            result = await execute_mcp_tool("auto_job_scout", {"skills": "React Node.js TypeScript AI automation Stripe Hermes"}, True)
-            r = result if isinstance(result, dict) else {}
-            jobs = r.get("jobs", [])
-            if jobs:
-                lines = [f"{j.get('title','?')} at {j.get('platform','?')} -- {j.get('matchScore','?')}% match" for j in jobs[:5]]
-                msg = f"AutoJobScout found {len(jobs)} jobs:\n\n" + "\n".join(lines)
-            else:
-                raw = r.get("result", str(result))
-                msg = f"AutoJobScout result:\n\n{str(raw)[:1500]}"
-            await send_telegram_message(chat_id, msg[:4000])
-        except Exception as e:
-            await send_telegram_message(chat_id, f"AutoJobScout error: {e}")
-        return
-    if text == "/runway":
-        try:
-            result = await execute_mcp_tool("cash_flow_runway", {}, True)
-            r = result if isinstance(result, dict) else {}
-            days = r.get("runwayDays") or r.get("runway_days") or r.get("daysLeft") or "?"
-            raw = r.get("result", str(result))
-            msg = f"Cash Flow Runway:\n\nRunway: {days} days\n\n{str(raw)[:800]}"
-            await send_telegram_message(chat_id, msg[:4000])
-        except Exception as e:
-            await send_telegram_message(chat_id, f"Runway error: {e}")
-        return
-    for handler in _telegram_handlers:
-        try:
-            handled = await handler(message, text)
-            if handled:
-                return
-        except TypeError:
-            try:
-                handled = await handler(message)
-                if handled:
-                    return
-            except Exception:
-                pass
-        except Exception as e:
-            logger.warning(f"[Telegram] Handler error: {e}")
-    await send_telegram_message(chat_id, "Unknown command. Type /help to see all commands.")
-
-async def handle_whatsapp_command(from_number: str, text: str):
-    cmd = text.strip().lower().split()[0] if text.strip() else ""
-    async def reply(msg: str):
-        await send_whatsapp_message(from_number, msg)
-    if cmd in ("/help", "help"):
-        await reply("HermesWork v12.1 WhatsApp Commands:\n\n/kpis - Live KPIs\n/invoices - Invoice list\n/briefing - Daily briefing\n/jobs - AutoJobScout\n/runway - Cash runway\n/swarm - Revenue scientist\n/close - Closer loop\n/closer_queue - Queue status\n/ask <question> - Ask Hermes AI\n\nv12.1 - 41 agents - 70 tools")
-    elif cmd == "/kpis":
-        await reply(build_kpis_text())
-    elif cmd == "/invoices":
-        invs = db.get("invoices", [])[:5]
-        if not invs:
-            await reply("No invoices yet.")
-        else:
-            lines = [f"{'PAID' if i.get('status')=='paid' else 'PENDING'} {i['id']} {i.get('client')} ${i.get('amount')}" for i in invs]
-            await reply("Invoices:\n\n" + "\n".join(lines))
-    elif cmd == "/briefing":
-        if AI_API_KEY:
-            try:
-                k = build_kpis()
-                briefing = await call_hermes("HermesWork AI briefing. Max 180 words.", f"Revenue: ${k['totalRevenue']}, Win rate: {k['winRate']}%", 300)
-                await reply(f"Daily Briefing {today()}:\n\n{briefing}")
-            except Exception as e:
-                await reply(f"Briefing error: {e}")
-        else:
-            await reply("AI not configured.")
-    elif cmd == "/jobs":
-        await reply("AutoJobScout scanning...")
-        try:
-            result = await execute_mcp_tool("auto_job_scout", {"skills": "React Node.js TypeScript AI automation"}, True)
-            r = result if isinstance(result, dict) else {}
-            raw = r.get("result", str(result))
-            await reply(f"AutoJobScout:\n\n{str(raw)[:1400]}")
-        except Exception as e:
-            await reply(f"Jobs error: {e}")
-    elif cmd == "/runway":
-        try:
-            result = await execute_mcp_tool("cash_flow_runway", {}, True)
-            r = result if isinstance(result, dict) else {}
-            days = r.get("runwayDays") or r.get("runway_days") or r.get("daysLeft") or "?"
-            raw = r.get("result", str(result))
-            await reply(f"Cash Flow Runway: {days} days\n\n{str(raw)[:1000]}")
-        except Exception as e:
-            await reply(f"Runway error: {e}")
-    elif cmd in ("/swarm", "/close", "/closer_queue", "/closer_status"):
-        fake_msg = {"chat": {"id": from_number}, "text": cmd}
-        for handler in _telegram_handlers:
-            try:
-                handled = await handler(fake_msg, cmd)
-                if handled:
-                    break
-            except Exception:
-                try:
-                    await handler(fake_msg)
-                    break
-                except Exception:
-                    pass
-    elif text.lower().startswith("/ask "):
-        question = text[5:].strip()
-        if AI_API_KEY and question:
-            try:
-                answer = await call_hermes("HermesWork v12.1 AI. Max 180 words.", f"Question: {question}", 300)
-                await reply(f"Hermes 3:\n\n{answer}")
-            except Exception as e:
-                await reply(f"AI error: {e}")
-        else:
-            await reply("Usage: /ask your question")
-    else:
-        await reply("Unknown command. Send /help for all commands.")
-
-@app.on_event("startup")
-async def startup_event():
-    global db
-    redis_db = await redis_load_db()
-    if redis_db:
-        db.update(normalize_db(redis_db))
-        logger.info(f"[Redis] Loaded db: {len(db.get('invoices', []))} invoices")
-    bandits = await memory_get("bandits")
-    if bandits:
-        agent_memory["bandits"] = bandits
-    reflex = await memory_get("reflexionHistory")
-    if reflex:
-        agent_memory["reflexionHistory"] = reflex
-    deps = {
-        "require_api_key": require_api_key, "async_wrap": async_wrap,
-        "call_hermes": call_hermes, "notify_telegram": notify_telegram,
-        "notify_whatsapp": notify_whatsapp, "db": db,
-        "memory_get": memory_get, "memory_set": memory_set,
-        "save_data": save_data_async, "today": today,
-        "ai_model": AI_MODEL, "telegram_chat_id": TELEGRAM_CHAT_ID,
-        "send_telegram_message": send_telegram_message,
-        "get_best_rate_bucket": lambda: get_best_rate_bucket(agent_memory.get("bandits", {})),
-        "broadcast_sse": broadcast_sse, "stripe": stripe_client,
-        "make_invoice_id": lambda: make_invoice_id(db), "log_activity": log_activity,
-        "public_base_url": PUBLIC_BASE_URL, "profile_handle": PROFILE_HANDLE,
-        "version": "v12.1.0", "agent_count": AGENT_COUNT,
-        "tool_count": len(MCP_TOOLS), "research_papers": RESEARCH_PAPERS,
-        "telegram_bot_token": TELEGRAM_BOT_TOKEN, "twilio_account_sid": TWILIO_ACCOUNT_SID,
-        "stripe_enabled": bool(stripe_client), "redis_enabled": REDIS_ENABLED,
-        "ai_api_key": AI_API_KEY,
-    }
-    for wire_mod, wire_fn, key_exec, key_tg in [
-        ("wire_v9", "register_v9_routes", None, None),
-        ("wire_v10", "register_v10_routes", "execute_v10_tool", "handle_v10_command"),
-        ("wire_v11", "register_v11_routes", None, "handle_v11_telegram"),
-        ("wire_v12", "register_v12_routes", None, "handle_v12_telegram"),
-    ]:
-        try:
-            mod = __import__(wire_mod)
-            fn = getattr(mod, wire_fn)
-            if wire_mod == "wire_v9":
-                result = fn(app, MCP_TOOLS, deps)
-                _wire_executors.append(result)
-            else:
-                result = fn(app, deps)
-                if key_exec and key_exec in result:
-                    _wire_executors.append(result[key_exec])
-                if key_tg and key_tg in result:
-                    _telegram_handlers.append(result[key_tg])
-            logger.info(f"[{wire_mod}] Registered")
-        except Exception as e:
-            logger.warning(f"[{wire_mod}] Load failed: {e}")
-    try:
-        from extra_routes import register_extra_routes
-        register_extra_routes(app, deps)
-        logger.info("[ExtraRoutes] /demo + /metrics registered")
-    except Exception as e:
-        logger.warning(f"[ExtraRoutes] Load failed: {e}")
-    logger.info(f"[HermesWork] v12.1.0 -- {AGENT_COUNT} agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} papers")
-    logger.info(f"[Telegram] Bot: {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'}")
-    logger.info(f"[WhatsApp] Twilio: {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | WHATSAPP_TO: {'SET' if WHATSAPP_TO else 'NOT SET'}")
-    logger.info("[Benchmark] All scores: 10.0/10.0")
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agents": AGENT_COUNT, "automationAgents": 11, "mcpTools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "ai": "configured" if AI_API_KEY else "not_configured", "redis": "connected" if REDIS_ENABLED else "not_configured", "stripe": "connected" if stripe_client else "not_configured", "telegram": "configured" if TELEGRAM_BOT_TOKEN else "not_configured", "whatsapp": "configured" if TWILIO_ACCOUNT_SID else "not_configured", "benchmarkScore": "10.0/10.0", "features": ["SkillEvolution", "ClientAcquisition", "StripeCapital", "SkillDistill", "LiveDashboard", "RevenueSwarm", "ClientCloser", "Demo", "Metrics"]}
-
-@app.get("/agents")
-async def get_agents():
-    return {"agents": AGENTS, "total": len(AGENTS), "version": "v12.1.0"}
-
-@app.get("/mcp/manifest")
-async def mcp_manifest():
-    return {"schema_version": "1.0", "name": "HermesWork AI Agent v12.1.0", "description": f"World-first autonomous freelance platform: {AGENT_COUNT} AI research agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} research papers. Benchmark: 10.0/10.0", "auth": {"type": "api_key", "header": "x-api-key"}, "base_url": PUBLIC_BASE_URL, "dashboardUrl": f"{PUBLIC_BASE_URL}/dashboard/live", "tools": MCP_TOOLS}
-
-@app.post("/mcp/execute")
-async def mcp_execute(req: McpExecuteModel, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool(req.tool, req.args or {}, True)
-
-@app.get("/dashboard/live")
-async def dashboard_live():
-    return build_kpis()
-
-@app.get("/benchmark")
-async def benchmark():
-    return await get_benchmark_scores()
-
-@app.get("/v12/agents")
-async def v12_agents_route():
-    return {"agents": [a for a in AGENTS if a["id"] >= 36], "total": len([a for a in AGENTS if a["id"] >= 36]), "version": "v12.1.0"}
-
-@app.get("/v11/agents")
-async def v11_agents_route():
-    return {"agents": [a for a in AGENTS if 36 <= a["id"] <= 40], "total": len([a for a in AGENTS if 36 <= a["id"] <= 40]), "version": "v12.1.0"}
-
-@app.get("/.well-known/agent.json")
-async def agent_card():
-    return get_agent_card()
-
-@app.get("/.well-known/mpp.json")
-async def mpp_config():
-    return get_mpp_config()
-
-@app.get("/reputation/vc")
-async def reputation_vc():
-    return get_reputation_vc()
-
-@app.get("/profile/{handle}")
-async def profile(handle: str):
-    return get_profile(handle)
-
-@app.get("/invoices")
-async def get_invoices(status: str = "all", api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("list_invoices", {"status": status}, True)
-
-@app.post("/invoices", status_code=201)
-async def create_invoice_route(req: CreateInvoiceModel, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("create_invoice", req.model_dump(), True)
-
-@app.get("/invoices/{id}")
-async def get_invoice_route(id: str, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("get_invoice", {"id": id}, True)
-
-@app.post("/invoices/{id}/send")
-async def send_invoice_route(id: str, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("send_invoice", {"id": id}, True)
-
-@app.post("/invoices/{id}/remind")
-async def remind_invoice_route(id: str, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("send_invoice_reminder", {"id": id}, True)
-
-@app.delete("/invoices/{id}")
-async def delete_invoice_route(id: str, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("delete_invoice", {"id": id}, True)
-
-@app.get("/clients")
-async def get_clients(api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("list_clients", {}, True)
-
-@app.post("/clients", status_code=201)
-async def create_client_route(req: CreateClientModel, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("add_client", req.model_dump(), True)
-
-@app.get("/proposals")
-async def get_proposals(api_key: str = Depends(require_api_key)):
-    return {"proposals": db.get("proposals", []), "total": len(db.get("proposals", []))}
-
-@app.post("/proposals", status_code=201)
-async def create_proposal_route(req: CreateProposalModel, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("create_proposal", req.model_dump(), True)
-
-@app.post("/proposals/{id}/outcome")
-async def proposal_outcome_route(id: str, req: ProposalOutcomeModel, api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("record_proposal_outcome", {"proposalId": id, **req.model_dump()}, True)
-
-@app.get("/activities")
-async def get_activities(api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("get_activities", {}, True)
-
-@app.get("/analytics")
-async def get_analytics(api_key: str = Depends(require_api_key)):
-    return await execute_mcp_tool("get_analytics", {}, True)
-
-@app.get("/reputation")
-async def get_reputation(api_key: str = Depends(require_api_key)):
-    return {"reputation": db.get("reputation", []), "total": len(db.get("reputation", []))}
-
-@app.post("/pay/{invoice_id}/confirm")
-async def confirm_payment(invoice_id: str, request: Request, api_key: str = Depends(require_api_key)):
-    body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
-    tx_hash = body.get("txHash") or request.headers.get("x-payment-hash", "")
-    inv = next((i for i in db.get("invoices", []) if i.get("id") == invoice_id), None)
-    if not inv:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    inv["status"] = "paid"
-    inv["paidAt"] = datetime.now(timezone.utc).isoformat()
-    inv["txHash"] = tx_hash if tx_hash else "manual"
-    cred = {"id": str(uuid.uuid4()), "invoiceId": inv["id"], "client": inv.get("client"), "amount": inv.get("amount"), "txHash": tx_hash if tx_hash else "manual", "mintedAt": datetime.now(timezone.utc).isoformat(), "chain": "base_sepolia", "standard": "ERC-8004"}
-    db.setdefault("reputation", []).append(cred)
-    log_activity(db, f"Payment confirmed: {inv['id']}", "payment")
-    await save_data_async(db)
-    await broadcast_sse("invoice:paid", {"id": inv["id"]})
-    await notify(f"Payment confirmed: {inv['id']} -- ${inv.get('amount')}\nERC-8004 credential minted")
-    return {"success": True, "invoice": inv, "credential": cred}
-
-@app.post("/webhooks/stripe")
-async def stripe_webhook(request: Request):
-    body = await request.body()
-    sig = request.headers.get("stripe-signature", "")
-    if NODE_ENV == "production" and STRIPE_WEBHOOK_SECRET and stripe_client:
-        try:
-            event = stripe_client.Webhook.construct_event(body, sig, STRIPE_WEBHOOK_SECRET)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Webhook signature failed: {e}")
-    else:
-        try:
-            event = json.loads(body)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid JSON")
-    if event.get("type") == "invoice.payment_succeeded":
-        stripe_id = event.get("data", {}).get("object", {}).get("id")
-        inv = next((i for i in db.get("invoices", []) if i.get("stripeId") == stripe_id), None)
-        if inv:
-            inv["status"] = "paid"
-            inv["paidAt"] = datetime.now(timezone.utc).isoformat()
-            log_activity(db, f"Stripe payment: {inv['id']}", "payment")
-            await save_data_async(db)
-            await broadcast_sse("invoice:paid", {"id": inv["id"]})
-    return {"received": True}
-
-@app.post("/webhooks/telegram")
-async def telegram_webhook(request: Request):
-    body = await request.json()
-    message = body.get("message") or {}
-    callback_query = body.get("callback_query")
-    if message:
-        asyncio.create_task(handle_telegram_command(message))
-    elif callback_query:
-        asyncio.create_task(handle_telegram_command({"chat": callback_query.get("message", {}).get("chat", {}), "from": callback_query.get("from", {}), "text": callback_query.get("data", "")}))
-    return {"ok": True}
-
-@app.post("/webhooks/whatsapp")
-async def whatsapp_webhook(request: Request):
-    try:
-        form = await request.form()
-        from_number = str(form.get("From") or "")
-        body_text = (form.get("Body") or "").strip()
-    except Exception:
-        try:
-            body = await request.json()
-            from_number = str(body.get("From") or "")
-            body_text = (body.get("Body") or "").strip()
-        except Exception:
-            from_number = ""
-            body_text = ""
-    logger.info(f"[WhatsApp] From: {from_number}, Body: {body_text[:100]}")
-    if body_text and from_number:
-        asyncio.create_task(handle_whatsapp_command(from_number, body_text))
-    return PlainTextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="text/xml")
-
-@app.get("/whatsapp/status")
-async def whatsapp_status():
-    return {"configured": bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM), "from": TWILIO_WHATSAPP_FROM, "whatsapp_to_set": bool(WHATSAPP_TO)}
-
-@app.get("/bot/setup")
-async def bot_setup(api_key: str = Depends(require_api_key)):
-    if not TELEGRAM_BOT_TOKEN:
-        raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN not set")
-    webhook_url = f"{PUBLIC_BASE_URL}/webhooks/telegram"
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            tg_url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/setWebhook"
-            res = await client.get(tg_url, params={"url": webhook_url, "drop_pending_updates": "true"})
-            data = res.json()
-            return {**data, "webhookUrl": webhook_url, "message": "Webhook registered!" if data.get("ok") else "Failed"}
-    except Exception as e:
-        return {"ok": False, "reason": str(e)}
-
-@app.get("/skills/export")
-async def skills_export(format: str = "md", api_key: str = Depends(require_api_key)):
-    skill_md = f"# HermesWork v12.1.0\n\nBenchmark: 10.0/10.0\nAgents: {AGENT_COUNT}\nMCP Tools: {len(MCP_TOOLS)}\nResearch Papers: {RESEARCH_PAPERS}\n"
-    if format == "md":
-        return PlainTextResponse(skill_md, media_type="text/markdown")
-    return {"skill": skill_md, "version": "v12.1.0"}
-
-@app.get("/skills/history")
-async def skills_history(api_key: str = Depends(require_api_key)):
-    versions = await memory_get("skillVersions") or {}
-    return {"versions": versions, "current": versions.get("hermeswork", 1)}
-
-@app.post("/demo/seed")
-async def demo_seed(api_key: str = Depends(require_api_key)):
-    if NODE_ENV == "production" and not ENABLE_DEMO_SEED:
-        raise HTTPException(status_code=403, detail="Demo seed blocked in production. Set ENABLE_DEMO_SEED=true")
-    global db
-    db = {"invoices": [{"id": "INV-001", "client": "Acme Labs", "amount": 4800, "status": "paid", "dueDate": "2026-06-25", "createdAt": "2026-06-10", "paymentMethod": "stripe"}, {"id": "INV-002", "client": "Dune Media", "amount": 3600, "status": "pending", "dueDate": "2026-07-18", "createdAt": "2026-06-05", "paymentMethod": "stripe"}, {"id": "INV-003", "client": "Solaris Labs", "amount": 8500, "status": "pending", "dueDate": "2026-07-30", "createdAt": "2026-06-20", "paymentMethod": "x402"}, {"id": "INV-004", "client": "NovaTech", "amount": 6200, "status": "paid", "dueDate": "2026-06-15", "createdAt": "2026-06-01", "paymentMethod": "stripe"}, {"id": "INV-005", "client": "BlueOcean AI", "amount": 12000, "status": "pending", "dueDate": "2026-07-10", "createdAt": "2026-06-25", "paymentMethod": "stripe"}], "clients": [{"id": str(uuid.uuid4()), "name": "Acme Labs", "company": "Acme Inc", "industry": "SaaS", "totalBilled": 4800, "totalPaid": 4800, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-10"}, {"id": str(uuid.uuid4()), "name": "Dune Media", "company": "Dune Co", "industry": "Media", "totalBilled": 3600, "totalPaid": 0, "health": "yellow", "invoiceCount": 1, "createdAt": "2026-06-05"}, {"id": str(uuid.uuid4()), "name": "Solaris Labs", "company": "Solaris", "industry": "Blockchain", "totalBilled": 8500, "totalPaid": 0, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-20"}, {"id": str(uuid.uuid4()), "name": "NovaTech", "company": "NovaTech Inc", "industry": "AI/ML", "totalBilled": 6200, "totalPaid": 6200, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-01"}, {"id": str(uuid.uuid4()), "name": "BlueOcean AI", "company": "BlueOcean", "industry": "AI", "totalBilled": 12000, "totalPaid": 0, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-25"}], "proposals": [{"id": str(uuid.uuid4()), "title": "AI Dashboard Sprint", "client": "Acme Labs", "amount": 4800, "status": "won", "score": 9, "platform": "Direct", "createdAt": "2026-06-08"}, {"id": str(uuid.uuid4()), "title": "Brand Refresh", "client": "Dune Media", "amount": 3600, "status": "pending", "score": 7, "platform": "Upwork", "createdAt": "2026-06-03"}, {"id": str(uuid.uuid4()), "title": "Blockchain Integration", "client": "Solaris Labs", "amount": 8500, "status": "won", "score": 8, "platform": "Direct", "createdAt": "2026-06-15"}, {"id": str(uuid.uuid4()), "title": "ML Pipeline Build", "client": "NovaTech", "amount": 6200, "status": "won", "score": 9, "platform": "Toptal", "createdAt": "2026-05-28"}, {"id": str(uuid.uuid4()), "title": "AI Agent Platform", "client": "BlueOcean AI", "amount": 12000, "status": "pending", "score": 9, "platform": "Direct", "createdAt": "2026-06-24"}], "reputation": [{"id": str(uuid.uuid4()), "invoiceId": "INV-001", "client": "Acme Labs", "amount": 4800, "txHash": "0xabc123def456", "mintedAt": "2026-06-25", "chain": "base_sepolia", "standard": "ERC-8004", "clientVerified": True}, {"id": str(uuid.uuid4()), "invoiceId": "INV-004", "client": "NovaTech", "amount": 6200, "txHash": "0xdef789abc012", "mintedAt": "2026-06-15", "chain": "base_sepolia", "standard": "ERC-8004", "clientVerified": True}], "payments": [{"date": "2026-06-25", "client": "Acme Labs", "amount": 4800, "rail": "stripe", "txHash": "pi_abc123"}, {"date": "2026-06-15", "client": "NovaTech", "amount": 6200, "rail": "stripe", "txHash": "pi_def456"}], "activities": [{"type": "payment", "action": "Invoice INV-001 paid by Acme Labs -- $4,800", "time": "2h ago"}, {"type": "invoice", "action": "New invoice INV-005 created for BlueOcean AI -- $12,000", "time": "4h ago"}, {"type": "ai", "action": "RevenueSwarm ran -- 3 new offers generated", "time": "6h ago"}, {"type": "proposal", "action": "Proposal won: AI Agent Platform -- $12,000", "time": "8h ago"}, {"type": "payment", "action": "Invoice INV-004 paid by NovaTech -- $6,200", "time": "1d ago"}]}
-    await save_data_async(db)
-    log_activity(db, "Demo data seeded", "system")
-    return {"success": True, "message": "Demo data seeded! 5 invoices, 5 clients, 5 proposals, 2 payments.", "counts": {k: len(v) for k, v in db.items() if isinstance(v, list)}}
-
-@app.get("/sse")
-async def sse_endpoint(request: Request):
-    import asyncio as _aio
-    queue = _aio.Queue()
-    sse_clients.add(queue)
-    async def event_generator():
-        try:
-            yield f"event: connected\ndata: {json.dumps({'status': 'ok', 'version': 'v12.1.0'})}\n\n"
-            while True:
-                try:
-                    data = await _aio.wait_for(queue.get(), timeout=15)
-                    yield data
-                except _aio.TimeoutError:
-                    yield f"event: ping\ndata: {json.dumps({'ts': datetime.now(timezone.utc).isoformat()})}\n\n"
-        except Exception:
-            pass
-        finally:
-            sse_clients.discard(queue)
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
-
-@app.get("/")
-async def root():
-    return {"name": "HermesWork AI Agent", "version": "v12.1.0", "benchmarkScore": "10.0/10.0", "agents": AGENT_COUNT, "tools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "endpoints": {"health": "/health", "agents": "/agents", "mcp": "/mcp/manifest", "dashboard": "/dashboard/live", "benchmark": "/benchmark", "demo": "/demo", "metrics": "/metrics", "agentCard": "/.well-known/agent.json", "mpp": "/.well-known/mpp.json", "vc": "/reputation/vc"}}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=PORT, reload=False)
+    return {"version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agentCount": AGENT_COUNT, "mcpToolCount": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "apiEndpointCount": len([r for r in app.routes if hasattr(r, "methods")]), "benchmarks": {"kpi_response_ms": kpi_time, "agent_card_response_ms": agent_card_time,
