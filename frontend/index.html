@@ -66,6 +66,9 @@
     .forecast-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:6px}
     .forecast-value{font-size:36px;font-weight:900}
     .forecast-sub{font-size:12px;opacity:.75;margin-top:4px}
+    /* Stripe badge on payment rail field */
+    .stripe-only-badge{display:inline-flex;align-items:center;gap:6px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#0369a1}
+    .stripe-only-badge svg{width:16px;height:16px;opacity:.8}
   </style>
 </head>
 <body>
@@ -108,12 +111,27 @@
   </div>
 </div>
 
+<!-- Create Invoice Modal -->
 <div class="modal-overlay" id="invoice-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Create Invoice</div><button class="modal-close" type="button" onclick="closeInvoiceModal()">×</button></div>
     <form id="invoice-form" onsubmit="submitInvoice(event)">
-      <div class="form-row"><div class="form-group"><label class="form-label">Client name</label><input class="form-input" id="inv-client" required placeholder="Client or company"></div><div class="form-group"><label class="form-label">Amount ($)</label><input type="number" class="form-input" id="inv-amount" required min="1" placeholder="0"></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Due date</label><input type="date" class="form-input" id="inv-due" required></div><div class="form-group"><label class="form-label">Payment rail</label><select class="form-select" id="inv-rail"><option value="stripe">Stripe</option><option value="x402">x402</option><option value="bank">Bank transfer</option></select></div></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Client name</label><input class="form-input" id="inv-client" required placeholder="Client or company"></div>
+        <div class="form-group"><label class="form-label">Amount ($)</label><input type="number" class="form-input" id="inv-amount" required min="1" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Due date</label><input type="date" class="form-input" id="inv-due" required></div>
+        <div class="form-group">
+          <label class="form-label">Payment rail</label>
+          <!-- Stripe only — hidden input so app.js still reads inv-rail -->
+          <input type="hidden" id="inv-rail" value="stripe">
+          <div class="stripe-only-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 10h18M7 15h4"/></svg>
+            Stripe
+          </div>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="inv-desc" placeholder="Work description"></div>
       <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button><button class="btn btn-primary" type="submit">Create invoice</button></div>
     </form>
@@ -132,6 +150,7 @@
     </form>
   </div>
 </div>
+
 <div class="modal-overlay" id="client-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Client</div><button class="modal-close" type="button" onclick="closeClientModal()">×</button></div>
@@ -264,11 +283,18 @@
     <!-- Payments -->
     <main class="page-content fade-in" id="page-payments">
       <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div></div></div>
+      <!-- Stripe only rail card -->
       <div class="payment-rails">
-        <div class="rail-card"><div class="rail-logo"><svg><use href="#i-card"/></svg></div><div class="rail-name">Stripe test mode</div><div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div><div class="rail-status">◉ Test connected</div></div>
-        <div class="rail-card"><div class="rail-logo cyan"><svg><use href="#i-bolt"/></svg></div><div class="rail-name">x402</div><div class="rail-stat"><span>Volume</span><strong id="x402-volume">$0</strong></div><div class="rail-status">◉ Proof route ready</div></div>
+        <div class="rail-card">
+          <div class="rail-logo"><svg><use href="#i-card"/></svg></div>
+          <div class="rail-name">Stripe</div>
+          <div class="rail-stat"><span>Volume</span><strong id="stripe-volume">$0</strong></div>
+          <div class="rail-status">◉ Connected · Checkout + Webhooks</div>
+        </div>
       </div>
       <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead><tbody id="payments-tbody"></tbody></table></div></div>
+      <!-- hidden so app.js setText('x402-volume') doesn't crash -->
+      <span id="x402-volume" style="display:none"></span>
     </main>
 
     <!-- Analytics -->
@@ -296,6 +322,6 @@
   </div><!-- /.main-content -->
 </div><!-- /.app-shell -->
 
-<script src="app.js?v=12-206fdab"></script>
+<script src="app.js?v=12-stripe-only"></script>
 </body>
 </html>
