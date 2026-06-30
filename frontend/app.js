@@ -7,7 +7,10 @@ const _HW_BACKEND = 'https://hermeswork.onrender.com';
 
 const API_BASE = (() => {
   const saved = localStorage.getItem('HERMESWORK_BACKEND_URL');
-  return (saved ? saved : _HW_BACKEND).replace(/\/$/, '');
+  // Ignore stale localhost values — always use the hardcoded production backend
+  if (saved && !/localhost|127\.0\.0\.1/.test(saved)) return saved.replace(/\/$/, '');
+  try { localStorage.setItem('HERMESWORK_BACKEND_URL', _HW_BACKEND); } catch (e) {}
+  return _HW_BACKEND;
 })();
 
 // Always use the hardcoded key — never expose in UI
@@ -246,7 +249,6 @@ function renderSettings() {
     const wrapper = keySection.closest('.settings-field') || keySection.parentElement;
     if (wrapper) wrapper.style.display = 'none';
   }
-  // Hide the save key button too
   const saveKeyBtn = document.querySelector('[onclick="saveApiKeyFromField()"]');
   if (saveKeyBtn) {
     const wrap = saveKeyBtn.closest('.settings-field') || saveKeyBtn.parentElement;
@@ -307,7 +309,6 @@ function createInvoiceForClient(id) { openInvoiceModal(); setTimeout(()=>{ if($(
 function createProposalForClient(id) { openProposalModal(id); }
 function copyVerifyLink(url) { navigator.clipboard?.writeText(url).then(()=>toast('Verification link copied!')).catch(()=>toast('Copy failed','error')); }
 
-// Settings actions
 function saveApiKeyFromField() { toast('API key is managed automatically.'); }
 function testBackend() { const url=$('backend-url')?.value?.trim(); if(url){ localStorage.setItem('HERMESWORK_BACKEND_URL',url.replace(/\/$/,'')); toast('Backend URL saved. Reloading…'); setTimeout(()=>location.reload(),500); } }
 function refreshData() { loadAllData(false); }
@@ -342,8 +343,9 @@ Object.assign(window, { navigate, openCmdPalette, closeCmdPalette, toggleDark, o
 
 document.addEventListener('DOMContentLoaded', () => {
   applyDark(); startClock(); initKeyboard();
-  // Pre-set localStorage so backend URL is always correct
-  if (!localStorage.getItem('HERMESWORK_BACKEND_URL')) {
+  // Force-correct any stale localhost backend URL left in this browser
+  const cur = localStorage.getItem('HERMESWORK_BACKEND_URL');
+  if (!cur || /localhost|127\.0\.0\.1/.test(cur)) {
     localStorage.setItem('HERMESWORK_BACKEND_URL', _HW_BACKEND);
   }
   const cmdInput=$('cmd-input');
