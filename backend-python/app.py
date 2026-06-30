@@ -172,7 +172,7 @@ async def send_whatsapp_message(to: str, text: str) -> None:
             auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
         ) as client:
             res = await client.post(
-                f"{{https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}}}/Messages.json",
+                f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
                 data={
                     "From": TWILIO_WHATSAPP_FROM,
                     "To": to,
@@ -276,12 +276,10 @@ async def call_hermes(system_prompt: str, user_message: str, max_tokens: int = 8
     """
     Call NVIDIA NIM with automatic model fallback.
     Tries AI_MODEL first, then each entry in AI_MODEL_FALLBACKS.
-    Falls back gracefully on 404/422 (model not available).
     """
     if not AI_API_KEY:
         raise Exception("AI not configured. Set NVIDIA_NIM_API_KEY on Render.")
 
-    # Build ordered list: primary first, then unique fallbacks
     models_to_try: list[str] = [AI_MODEL]
     for fb in AI_MODEL_FALLBACKS:
         if fb not in models_to_try:
@@ -297,18 +295,43 @@ async def call_hermes(system_prompt: str, user_message: str, max_tokens: int = 8
         except Exception as e:
             last_error = e
             err_str = str(e)
-            # Retry with next model only on 404/422/model-not-found
             if any(x in err_str for x in ("404", "422", "not found", "not available")):
                 logger.warning(f"[NIM] model '{model}' unavailable, trying next fallback...")
                 continue
-            # Other errors (401, 429, 500, parse) -- don't retry
             raise
 
     raise Exception(
         f"All NIM models failed. Last error: {last_error}. "
-        f"Check NVIDIA_NIM_API_KEY on Render and verify the key has access to "
-        f"'{AI_MODEL}' at {AI_BASE_URL}."
+        f"Check NVIDIA_NIM_API_KEY on Render."
     )
+
+# ── Natural-language AI reply (used by both Telegram and WhatsApp) ────────────
+AI_SYSTEM_PROMPT = """You are HermesWork AI, a smart and friendly freelance business assistant powered by Nous Hermes 3.
+You help with invoices, clients, proposals, revenue, business advice, and any question the user asks.
+You have access to live business data provided in the context.
+Always reply in plain text. Be concise but helpful. Max 200 words.
+If the user writes in another language, reply in that same language.
+Never say you cannot help — always give a useful answer."""
+
+async def ai_reply(user_text: str) -> str:
+    """Generate a natural language reply for any user message using live KPI context."""
+    k = build_kpis()
+    context = (
+        f"Live business snapshot: Revenue ${k['totalRevenue']:,.0f} | "
+        f"Active invoices {k['activeInvoices']} | "
+        f"Outstanding ${k['outstandingValue']:,.0f} | "
+        f"Overdue {k['overdueCount']} | "
+        f"Win rate {k['winRate']}% | "
+        f"Pipeline ${k['pipelineValue']:,.0f} | "
+        f"Clients {k['clients']} | "
+        f"Agents 41 active"
+    )
+    return await call_hermes(
+        AI_SYSTEM_PROMPT,
+        f"{context}\n\nUser: {user_text}",
+        350,
+    )
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _safe_num(v) -> float:
     try:
@@ -604,10 +627,10 @@ async def handle_telegram_command(message: dict):
     if not text:
         return
     if text in ("/start", "/start@HermesWorkOpenbot"):
-        await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\n41 research agents, 70 MCP tools, benchmark 10.0/10.0\n\nType /help to see all commands.")
+        await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\nI understand any message \u2014 just talk to me naturally!\n\nTry: \"How is my business doing?\" or \"Show me unpaid invoices\" or \"Give me a daily briefing\"\n\nQuick commands:\n/kpis \u2014 Live KPIs\n/invoices \u2014 Invoice list\n/briefing \u2014 AI daily briefing\n/help \u2014 All commands")
         return
     if text in ("/help", "/help@HermesWorkOpenbot"):
-        await send_telegram_message(chat_id, "HermesWork v12.1 -- All Commands\n\nFINANCE\n/kpis -- Live KPIs & revenue\n/invoices -- Recent invoice list\n/pay [id] -- Get payment link\n/runway -- Cash flow runway\n\nAI AGENTS\n/briefing -- AI daily briefing\n/ask <question> -- Ask Hermes 3\n/jobs -- AutoJobScout\n\nREVENUE SWARM\n/swarm -- Revenue Scientist\n/swarm_status -- Swarm status\n\nCLIENT CLOSER\n/close -- Closer loop\n/closer_queue -- Queue status\n\nv12.1 - 41 agents - 70 tools - 41 papers")
+        await send_telegram_message(chat_id, "HermesWork v12.1 \u2014 I understand natural language!\n\nJust send any message and I\u2019ll reply intelligently.\n\nExamples:\n\u2022 \"how is my business?\"\n\u2022 \"any overdue invoices?\"\n\u2022 \"what\u2019s my win rate?\"\n\u2022 \"give me a briefing\"\n\u2022 \"help me write a proposal\"\n\nQuick commands:\n/kpis /invoices /briefing /jobs /runway /pay [id]")
         return
     if text == "/kpis":
         await send_telegram_message(chat_id, build_kpis_text())
@@ -667,12 +690,7 @@ async def handle_telegram_command(message: dict):
             await send_telegram_message(chat_id, "AI not configured.")
             return
         try:
-            k = build_kpis()
-            answer = await call_hermes(
-                "You are HermesWork v12.1 AI. Answer in plain text, max 200 words. No markdown.",
-                f"Context: Revenue ${k['totalRevenue']:,.0f}, Win rate {k['winRate']}%\n\nQuestion: {question}",
-                350,
-            )
+            answer = await ai_reply(question)
             await send_telegram_message(chat_id, f"Hermes 3:\n\n{answer}")
         except Exception as e:
             await send_telegram_message(chat_id, f"AI error: {e}")
@@ -697,6 +715,7 @@ async def handle_telegram_command(message: dict):
         except Exception as e:
             await send_telegram_message(chat_id, f"Runway error: {e}")
         return
+    # Let wire handlers try first (swarm, closer, etc.)
     for handler in _telegram_handlers:
         try:
             handled = await handler(message, text)
@@ -711,14 +730,32 @@ async def handle_telegram_command(message: dict):
                 pass
         except Exception as e:
             logger.warning(f"[Telegram] Handler error: {e}")
-    await send_telegram_message(chat_id, "Unknown command. Type /help to see all commands.")
+    # ── Natural language fallback: any text goes to Hermes AI ──────────────────
+    if not AI_API_KEY:
+        await send_telegram_message(
+            chat_id,
+            "Hi! I understand your message but AI isn't configured yet.\n"
+            "Set NVIDIA_NIM_API_KEY on Render and I'll answer anything.\n\n"
+            "Quick commands: /kpis /invoices /briefing /help"
+        )
+        return
+    try:
+        logger.info(f"[Telegram] NL message from {chat_id}: {text[:80]}")
+        answer = await ai_reply(text)
+        await send_telegram_message(chat_id, answer)
+    except Exception as e:
+        logger.error(f"[Telegram] AI reply error: {e}", exc_info=True)
+        await send_telegram_message(
+            chat_id,
+            f"Sorry, I had trouble with that. Try:\n/kpis \u2014 Business KPIs\n/briefing \u2014 Daily briefing\n/invoices \u2014 Invoice list"
+        )
 
 async def handle_whatsapp_command(from_number: str, text: str):
     cmd = text.strip().lower().split()[0] if text.strip() else ""
     async def reply(msg: str):
         await send_whatsapp_message(from_number, msg)
     if cmd in ("/help", "help"):
-        await reply("HermesWork v12.1 WhatsApp Commands:\n\n/kpis\n/invoices\n/pay [id]\n/briefing\n/jobs\n/runway\n/ask <question>\n\nv12.1 - 41 agents - 70 tools")
+        await reply("HermesWork v12.1 WhatsApp AI\n\nJust send any message \u2014 I understand natural language!\n\nExamples:\n\u2022 how is my business?\n\u2022 any overdue invoices?\n\u2022 show my win rate\n\u2022 give me a briefing\n\nCommands: /kpis /invoices /pay [id] /briefing /jobs /runway")
     elif cmd == "/kpis":
         await reply(build_kpis_text())
     elif cmd == "/invoices":
@@ -752,13 +789,8 @@ async def handle_whatsapp_command(from_number: str, text: str):
     elif cmd == "/briefing":
         if AI_API_KEY:
             try:
-                k = build_kpis()
-                briefing = await call_hermes(
-                    "You are HermesWork AI. Write a concise daily briefing in plain text. Max 180 words. No markdown.",
-                    f"Revenue: ${k['totalRevenue']:,.0f} | Win rate: {k['winRate']}% | Active: {k['activeInvoices']}",
-                    300,
-                )
-                await reply(f"Daily Briefing {today()}:\n\n{briefing}")
+                answer = await ai_reply("Give me a sharp daily business briefing")
+                await reply(f"Daily Briefing {today()}:\n\n{answer}")
             except Exception as e:
                 await reply(f"Briefing error: {e}")
         else:
@@ -793,21 +825,25 @@ async def handle_whatsapp_command(from_number: str, text: str):
                     break
                 except Exception:
                     pass
-    elif text.lower().startswith("/ask "):
-        question = text[5:].strip()
-        if AI_API_KEY and question:
-            try:
-                answer = await call_hermes(
-                    "You are HermesWork v12.1 AI. Answer in plain text, max 180 words. No markdown.",
-                    f"Question: {question}", 300,
-                )
-                await reply(f"Hermes 3:\n\n{answer}")
-            except Exception as e:
-                await reply(f"AI error: {e}")
-        else:
-            await reply("Usage: /ask your question")
     else:
-        await reply("Unknown command. Send /help for all commands.")
+        # ── Natural language fallback: any text goes to Hermes AI ──────────────
+        if not AI_API_KEY:
+            await reply(
+                "Hi! I understand your message, but AI isn't configured yet.\n"
+                "Set NVIDIA_NIM_API_KEY on Render to enable full AI replies.\n"
+                "Commands: /kpis /invoices /briefing /help"
+            )
+            return
+        try:
+            logger.info(f"[WhatsApp] NL message from {from_number}: {text[:80]}")
+            answer = await ai_reply(text)
+            await reply(answer)
+        except Exception as e:
+            logger.error(f"[WhatsApp] AI reply error: {e}", exc_info=True)
+            await reply(
+                f"Sorry, I had trouble with that. Try:\n"
+                f"/kpis \u2014 KPIs\n/briefing \u2014 Daily briefing\n/invoices \u2014 Invoices"
+            )
 
 @app.on_event("startup")
 async def startup_event():
@@ -870,12 +906,12 @@ async def startup_event():
     logger.info(f"[HermesWork] v12.1.0 -- {AGENT_COUNT} agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} papers")
     logger.info(f"[NIM] model={AI_MODEL} base={AI_BASE_URL} key={'SET' if AI_API_KEY else 'MISSING'}")
     logger.info(f"[NIM] fallbacks={AI_MODEL_FALLBACKS}")
-    logger.info(f"[Telegram] {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'}")
-    logger.info(f"[WhatsApp] {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'}")
+    logger.info(f"[Telegram] {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'} | NL replies: {'ENABLED' if AI_API_KEY else 'DISABLED (set NVIDIA_NIM_API_KEY)'}")
+    logger.info(f"[WhatsApp] {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | NL replies: {'ENABLED' if AI_API_KEY else 'DISABLED (set NVIDIA_NIM_API_KEY)'}")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agents": AGENT_COUNT, "automationAgents": 11, "mcpTools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "ai": "configured" if AI_API_KEY else "not_configured", "nim_model": AI_MODEL, "nim_base": AI_BASE_URL, "redis": "connected" if REDIS_ENABLED else "not_configured", "stripe": "connected" if stripe_client else "not_configured", "telegram": "configured" if TELEGRAM_BOT_TOKEN else "not_configured", "whatsapp": "configured" if TWILIO_ACCOUNT_SID else "not_configured", "benchmarkScore": "10.0/10.0"}
+    return {"status": "ok", "version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agents": AGENT_COUNT, "automationAgents": 11, "mcpTools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "ai": "configured" if AI_API_KEY else "not_configured", "nim_model": AI_MODEL, "nim_base": AI_BASE_URL, "redis": "connected" if REDIS_ENABLED else "not_configured", "stripe": "connected" if stripe_client else "not_configured", "telegram": "configured" if TELEGRAM_BOT_TOKEN else "not_configured", "whatsapp": "configured" if TWILIO_ACCOUNT_SID else "not_configured", "nl_replies": "enabled" if AI_API_KEY else "disabled", "benchmarkScore": "10.0/10.0"}
 
 @app.get("/agents")
 async def get_agents():
