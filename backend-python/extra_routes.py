@@ -1,20 +1,23 @@
 """
 HermesWork Extra Routes v12.1
-Adds /demo and /metrics endpoints to the FastAPI app.
-Import and call register_extra_routes(app) from app.py startup.
+Adds /demo and /metrics endpoints + auto-registers Telegram webhook on startup.
 """
 from fastapi import FastAPI
 from datetime import datetime, timezone
+import httpx
+import logging
+
+logger = logging.getLogger("hermeswork")
 
 
 def register_extra_routes(app, deps: dict):
-    """Register /demo and /metrics endpoints."""
+    """Register /demo and /metrics endpoints + auto-register Telegram webhook."""
 
     PUBLIC_BASE_URL = deps.get("public_base_url", "https://hermeswork.onrender.com")
     PROFILE_HANDLE = deps.get("profile_handle", "salman")
-    VERSION = deps.get("version", "v12.0.0")
+    VERSION = deps.get("version", "v12.1.0")
     AGENT_COUNT = deps.get("agent_count", 41)
-    TOOL_COUNT = deps.get("tool_count", 68)
+    TOOL_COUNT = deps.get("tool_count", 70)
     RESEARCH_PAPERS = deps.get("research_papers", 41)
     TELEGRAM_BOT_TOKEN = deps.get("telegram_bot_token", "")
     TWILIO_ACCOUNT_SID = deps.get("twilio_account_sid", "")
@@ -22,6 +25,37 @@ def register_extra_routes(app, deps: dict):
     REDIS_ENABLED = deps.get("redis_enabled", False)
     AI_API_KEY = deps.get("ai_api_key", "")
 
+    # ── Auto-register Telegram webhook on startup ──────────────────────────────
+    import asyncio
+
+    async def _register_telegram_webhook():
+        if not TELEGRAM_BOT_TOKEN or not PUBLIC_BASE_URL:
+            logger.warning("[Telegram] Skipping webhook auto-register: token or base URL missing")
+            return
+        webhook_url = f"{PUBLIC_BASE_URL}/webhooks/telegram"
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                tg_url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/setWebhook"
+                res = await client.get(tg_url, params={"url": webhook_url, "drop_pending_updates": "true"})
+                data = res.json()
+                if data.get("ok"):
+                    logger.info(f"[Telegram] ✅ Webhook auto-registered: {webhook_url}")
+                else:
+                    logger.warning(f"[Telegram] ❌ Webhook registration failed: {data}")
+        except Exception as e:
+            logger.warning(f"[Telegram] Auto-webhook error: {e}")
+
+    # Schedule webhook registration as a background task after startup
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(_register_telegram_webhook())
+        else:
+            loop.run_until_complete(_register_telegram_webhook())
+    except Exception as e:
+        logger.warning(f"[Telegram] Webhook schedule error: {e}")
+
+    # ── /demo endpoint ─────────────────────────────────────────────────────────
     @app.get("/demo")
     async def demo_showcase():
         return {
@@ -59,6 +93,7 @@ def register_extra_routes(app, deps: dict):
             },
         }
 
+    # ── /metrics endpoint ──────────────────────────────────────────────────────
     @app.get("/metrics")
     async def metrics():
         return {
