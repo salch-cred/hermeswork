@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request, Response, HTTPException, Depends, Security
 from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse, RedirectResponse
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -71,13 +72,28 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS or ["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+# CORS: Use a custom middleware that echoes back the request Origin.
+# This is needed because allow_origins=["*"] + allow_credentials=True is
+# rejected by browsers. Echoing the origin allows credentials if ever needed
+# while keeping all origins open for the hackathon demo.
+class WideCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin", "*")
+        if request.method == "OPTIONS":
+            response = Response(status_code=204)
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*, x-api-key, authorization, content-type"
+            response.headers["Access-Control-Max-Age"] = "86400"
+            return response
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*, x-api-key, authorization, content-type"
+        return response
+
+app.add_middleware(WideCORSMiddleware)
 
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 
@@ -132,7 +148,6 @@ async def broadcast_sse(event: str, data: Any):
 async def send_telegram_message(chat_id: str, text: str) -> None:
     if not TELEGRAM_BOT_TOKEN:
         return
-    # NOTE: No parse_mode -- plain text avoids 400 Bad Request from special chars
     safe_text = str(text or "")[:4000]
     body = json.dumps({"chat_id": chat_id, "text": safe_text})
     try:
@@ -149,7 +164,6 @@ async def notify_telegram(text: str) -> None:
         await send_telegram_message(TELEGRAM_CHAT_ID, text)
 
 async def send_whatsapp_message(to: str, text: str) -> None:
-    """Send a WhatsApp message via Twilio."""
     if not (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM):
         logger.warning("[WhatsApp] Twilio not configured -- skipping send")
         return
@@ -174,7 +188,6 @@ async def send_whatsapp_message(to: str, text: str) -> None:
         logger.warning(f"[WhatsApp] Send error: {e}")
 
 async def notify_whatsapp(text: str) -> None:
-    """Send WhatsApp notification to the configured WHATSAPP_TO number."""
     if WHATSAPP_TO:
         await send_whatsapp_message(WHATSAPP_TO, text)
 
@@ -248,6 +261,19 @@ def build_kpis() -> dict:
         "clients": len(clients), "proposals": len(proposals),
         "credentialsMinted": len(reputation), "overdueCount": len(overdue),
         "overdueValue": overdue_value, "monthlyRevenue": monthly_revenue,
+        "liveMetrics": {
+            "totalRevenue": total_revenue, "activeValue": outstanding_value,
+            "winRate": win_rate, "agentsActive": AGENT_COUNT, "mcpTools": TOOL_COUNT
+        },
+        "invoiceSummary": {"pending": len(pending), "paid": len(paid), "overdue": len(overdue)},
+        "revenueMeter": {
+            "forecastConversion": forecast, "pipelineValue": pipeline,
+            "sparkline": [
+                {"month": ["Jan","Feb","Mar","Apr","May","Jun"][i], "revenue": monthly_revenue[i]}
+                for i in range(6)
+            ]
+        },
+        "recentActivity": db.get("activities", [])[:8],
     }
 
 def build_kpis_text() -> str:
@@ -574,61 +600,23 @@ async def get_benchmark_scores() -> dict:
     t0 = _time.perf_counter()
     _ = get_agent_card()
     agent_card_time = round((_time.perf_counter() - t0) * 1000, 2)
-    return {
-        "version": "v12.1.0",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "agentCount": AGENT_COUNT,
-        "mcpToolCount": len(MCP_TOOLS),
-        "researchPapers": RESEARCH_PAPERS,
-        "apiEndpointCount": len([r for r in app.routes if hasattr(r, "methods")]),
-        "benchmarks": {"kpi_response_ms": kpi_time, "agent_card_response_ms": agent_card_time, "target_health_ms": 100, "target_dashboard_ms": 200},
-        "scores": {"innovation": 10.0, "technical_depth": 10.0, "research_backing": 10.0, "production_readiness": 10.0, "security": 10.0, "demo_quality": 10.0, "overall": 10.0},
-        "features": ["41 autonomous AI agents", "70 MCP tools", "41 research papers", "Stripe integration", "x402 crypto payments", "ERC-8004 credentials", "W3C VC v2.1", "A2A Agent Card", "MPP support", "Thompson Sampling rate optimization", "Reflexion verbal RL", "Revenue Swarm Scientist", "Client Closer autonomous loop", "Telegram Bot configured", "WhatsApp Agent configured", "Skill Evolution (DSPy+GEPA)", "FastAPI Python backend", "Rate limiting (SlowAPI)", "XSS filtering", "Atomic data writes", "Redis persistence", "/demo showcase endpoint", "/metrics endpoint"],
-        "researchTechniques": ["CAMEL (NeurIPS 2023)", "ReAct (ICLR 2023)", "Chain-of-Thought (NeurIPS 2022)", "Tree of Thoughts (2023)", "Self-Discover (2024)", "Mixture of Agents (2024)", "LLM-as-Judge (2023)", "Reflexion (2023)", "Thompson Sampling (NeurIPS 2011)", "Prospect Theory (Nobel 1979)", "Causal Inference (Turing Award)", "MCTS (DeepMind 2016)", "Constitutional AI (Anthropic)", "LinUCB (Google 2010)", "Survival Analysis (Cox 1972)", "Nash Equilibrium (Nobel 1950)", "EpisodicRAG (Facebook AI)", "DSPy+GEPA", "RLHF", "OODA Loop", "Bayesian EV"],
-    }
+    return {"version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agentCount": AGENT_COUNT, "mcpToolCount": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "apiEndpointCount": len([r for r in app.routes if hasattr(r, "methods")]), "benchmarks": {"kpi_response_ms": kpi_time, "agent_card_response_ms": agent_card_time, "target_health_ms": 100, "target_dashboard_ms": 200}, "scores": {"innovation": 10.0, "technical_depth": 10.0, "research_backing": 10.0, "production_readiness": 10.0, "security": 10.0, "demo_quality": 10.0, "overall": 10.0}, "features": ["41 autonomous AI agents", "70 MCP tools", "41 research papers", "Stripe integration", "x402 crypto payments", "ERC-8004 credentials", "W3C VC v2.1", "A2A Agent Card", "MPP support", "Thompson Sampling rate optimization", "Reflexion verbal RL", "Revenue Swarm Scientist", "Client Closer autonomous loop", "Telegram Bot configured", "WhatsApp Agent configured", "Skill Evolution (DSPy+GEPA)", "FastAPI Python backend", "Rate limiting (SlowAPI)", "XSS filtering", "Atomic data writes", "Redis persistence", "/demo showcase endpoint", "/metrics endpoint"], "researchTechniques": ["CAMEL (NeurIPS 2023)", "ReAct (ICLR 2023)", "Chain-of-Thought (NeurIPS 2022)", "Tree of Thoughts (2023)", "Self-Discover (2024)", "Mixture of Agents (2024)", "LLM-as-Judge (2023)", "Reflexion (2023)", "Thompson Sampling (NeurIPS 2011)", "Prospect Theory (Nobel 1979)", "Causal Inference (Turing Award)", "MCTS (DeepMind 2016)", "Constitutional AI (Anthropic)", "LinUCB (Google 2010)", "Survival Analysis (Cox 1972)", "Nash Equilibrium (Nobel 1950)", "EpisodicRAG (Facebook AI)", "DSPy+GEPA", "RLHF", "OODA Loop", "Bayesian EV"]}
 
 async def handle_telegram_command(message: dict):
     chat_id = str((message.get("chat", {}).get("id") or ""))
     text = (message.get("text") or "").strip()
     if not text:
         return
-
-    # /start
     if text in ("/start", "/start@HermesWorkOpenbot"):
         await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\n41 research agents, 70 MCP tools, benchmark 10.0/10.0\n\nType /help to see all commands.")
         return
-
-    # /help
     if text in ("/help", "/help@HermesWorkOpenbot"):
-        help_text = (
-            "HermesWork v12.1 -- All Commands\n\n"
-            "FINANCE\n"
-            "/kpis -- Live KPIs & revenue\n"
-            "/invoices -- Recent invoice list\n"
-            "/runway -- Cash flow runway forecast\n\n"
-            "AI AGENTS\n"
-            "/briefing -- AI daily briefing\n"
-            "/ask <question> -- Ask Hermes 3\n"
-            "/jobs -- AutoJobScout (find leads)\n\n"
-            "REVENUE SWARM\n"
-            "/swarm -- Revenue Scientist loop\n"
-            "/swarm_status -- Swarm status\n\n"
-            "CLIENT CLOSER\n"
-            "/close -- Autonomous closer loop\n"
-            "/closer_queue -- Queue status\n"
-            "/closer_won [id] -- Mark won\n"
-            "/closer_lost [id] -- Mark lost\n\n"
-            "v12.1 - 41 agents - 70 tools - 41 papers"
-        )
+        help_text = ("HermesWork v12.1 -- All Commands\n\nFINANCE\n/kpis -- Live KPIs & revenue\n/invoices -- Recent invoice list\n/runway -- Cash flow runway forecast\n\nAI AGENTS\n/briefing -- AI daily briefing\n/ask <question> -- Ask Hermes 3\n/jobs -- AutoJobScout (find leads)\n\nREVENUE SWARM\n/swarm -- Revenue Scientist loop\n/swarm_status -- Swarm status\n\nCLIENT CLOSER\n/close -- Autonomous closer loop\n/closer_queue -- Queue status\n/closer_won [id] -- Mark won\n/closer_lost [id] -- Mark lost\n\nv12.1 - 41 agents - 70 tools - 41 papers")
         await send_telegram_message(chat_id, help_text)
         return
-
-    # /kpis
     if text == "/kpis":
         await send_telegram_message(chat_id, build_kpis_text())
         return
-
-    # /invoices
     if text == "/invoices":
         invs = db.get("invoices", [])[:10]
         if not invs:
@@ -637,25 +625,17 @@ async def handle_telegram_command(message: dict):
             lines = [f"{'PAID' if i.get('status')=='paid' else 'PENDING'} {i['id']} -- {i.get('client')} -- ${i.get('amount')}" for i in invs]
             await send_telegram_message(chat_id, "Recent Invoices:\n\n" + "\n".join(lines))
         return
-
-    # /briefing
     if text == "/briefing":
         if not AI_API_KEY:
             await send_telegram_message(chat_id, "AI not configured.")
             return
         try:
             k = build_kpis()
-            briefing = await call_hermes(
-                "HermesWork AI v12.1. Sharp daily briefing. Max 230 words.",
-                f"Revenue: ${k['totalRevenue']}, Active invoices: {k['activeInvoices']}, Overdue: {k['overdueCount']}, Win rate: {k['winRate']}%",
-                400,
-            )
+            briefing = await call_hermes("HermesWork AI v12.1. Sharp daily briefing. Max 230 words.", f"Revenue: ${k['totalRevenue']}, Active invoices: {k['activeInvoices']}, Overdue: {k['overdueCount']}, Win rate: {k['winRate']}%", 400)
             await send_telegram_message(chat_id, f"Daily Briefing -- {today()}\n\n{briefing}")
         except Exception as e:
             await send_telegram_message(chat_id, f"Briefing error: {e}")
         return
-
-    # /ask <question>
     if text.startswith("/ask"):
         question = text.replace("/ask", "", 1).strip()
         if not question:
@@ -666,17 +646,11 @@ async def handle_telegram_command(message: dict):
             return
         try:
             k = build_kpis()
-            answer = await call_hermes(
-                "HermesWork v12.1, 41 AI agents. Answer from real data. Max 200 words.",
-                f"Revenue ${k['totalRevenue']}, Win rate {k['winRate']}%\n\nQuestion: {question}",
-                350,
-            )
+            answer = await call_hermes("HermesWork v12.1, 41 AI agents. Answer from real data. Max 200 words.", f"Revenue ${k['totalRevenue']}, Win rate {k['winRate']}%\n\nQuestion: {question}", 350)
             await send_telegram_message(chat_id, f"Hermes 3:\n\n{answer}")
         except Exception as e:
             await send_telegram_message(chat_id, f"AI error: {e}")
         return
-
-    # /jobs -- AutoJobScout
     if text == "/jobs":
         await send_telegram_message(chat_id, "AutoJobScout scanning for jobs...")
         try:
@@ -684,10 +658,7 @@ async def handle_telegram_command(message: dict):
             r = result if isinstance(result, dict) else {}
             jobs = r.get("jobs", [])
             if jobs:
-                lines = [
-                    f"{j.get('title','?')} at {j.get('platform','?')} -- {j.get('matchScore','?')}% match"
-                    for j in jobs[:5]
-                ]
+                lines = [f"{j.get('title','?')} at {j.get('platform','?')} -- {j.get('matchScore','?')}% match" for j in jobs[:5]]
                 msg = f"AutoJobScout found {len(jobs)} jobs:\n\n" + "\n".join(lines)
             else:
                 raw = r.get("result", str(result))
@@ -696,8 +667,6 @@ async def handle_telegram_command(message: dict):
         except Exception as e:
             await send_telegram_message(chat_id, f"AutoJobScout error: {e}")
         return
-
-    # /runway -- Cash Flow Runway
     if text == "/runway":
         try:
             result = await execute_mcp_tool("cash_flow_runway", {}, True)
@@ -709,15 +678,12 @@ async def handle_telegram_command(message: dict):
         except Exception as e:
             await send_telegram_message(chat_id, f"Runway error: {e}")
         return
-
-    # Pass to wire handlers (v10/v11/v12)
     for handler in _telegram_handlers:
         try:
             handled = await handler(message, text)
             if handled:
                 return
         except TypeError:
-            # Fallback: single-arg signature
             try:
                 handled = await handler(message)
                 if handled:
@@ -726,33 +692,14 @@ async def handle_telegram_command(message: dict):
                 pass
         except Exception as e:
             logger.warning(f"[Telegram] Handler error: {e}")
-
     await send_telegram_message(chat_id, "Unknown command. Type /help to see all commands.")
 
-
 async def handle_whatsapp_command(from_number: str, text: str):
-    """Handle WhatsApp commands -- mirrors Telegram commands.
-    Replies are sent back to the from_number via Twilio.
-    """
     cmd = text.strip().lower().split()[0] if text.strip() else ""
-
     async def reply(msg: str):
         await send_whatsapp_message(from_number, msg)
-
     if cmd in ("/help", "help"):
-        await reply(
-            "HermesWork v12.1 WhatsApp Commands:\n\n"
-            "/kpis - Live KPIs\n"
-            "/invoices - Invoice list\n"
-            "/briefing - Daily briefing\n"
-            "/jobs - AutoJobScout\n"
-            "/runway - Cash runway\n"
-            "/swarm - Revenue scientist\n"
-            "/close - Closer loop\n"
-            "/closer_queue - Queue status\n"
-            "/ask <question> - Ask Hermes AI\n\n"
-            "v12.1 - 41 agents - 70 tools"
-        )
+        await reply("HermesWork v12.1 WhatsApp Commands:\n\n/kpis - Live KPIs\n/invoices - Invoice list\n/briefing - Daily briefing\n/jobs - AutoJobScout\n/runway - Cash runway\n/swarm - Revenue scientist\n/close - Closer loop\n/closer_queue - Queue status\n/ask <question> - Ask Hermes AI\n\nv12.1 - 41 agents - 70 tools")
     elif cmd == "/kpis":
         await reply(build_kpis_text())
     elif cmd == "/invoices":
@@ -790,39 +737,11 @@ async def handle_whatsapp_command(from_number: str, text: str):
             await reply(f"Cash Flow Runway: {days} days\n\n{str(raw)[:1000]}")
         except Exception as e:
             await reply(f"Runway error: {e}")
-    elif cmd == "/swarm":
-        await reply("Revenue Swarm running...")
-        fake_msg = {"chat": {"id": from_number}, "text": "/swarm"}
+    elif cmd in ("/swarm", "/close", "/closer_queue", "/closer_status"):
+        fake_msg = {"chat": {"id": from_number}, "text": cmd}
         for handler in _telegram_handlers:
             try:
-                handled = await handler(fake_msg, "/swarm")
-                if handled:
-                    break
-            except Exception:
-                try:
-                    await handler(fake_msg)
-                    break
-                except Exception:
-                    pass
-    elif cmd == "/close":
-        await reply("ClientCloser running...")
-        fake_msg = {"chat": {"id": from_number}, "text": "/close"}
-        for handler in _telegram_handlers:
-            try:
-                handled = await handler(fake_msg, "/close")
-                if handled:
-                    break
-            except Exception:
-                try:
-                    await handler(fake_msg)
-                    break
-                except Exception:
-                    pass
-    elif cmd in ("/closer_queue", "/closer_status"):
-        fake_msg = {"chat": {"id": from_number}, "text": "/closer_queue"}
-        for handler in _telegram_handlers:
-            try:
-                handled = await handler(fake_msg, "/closer_queue")
+                handled = await handler(fake_msg, cmd)
                 if handled:
                     break
             except Exception:
@@ -844,7 +763,6 @@ async def handle_whatsapp_command(from_number: str, text: str):
     else:
         await reply("Unknown command. Send /help for all commands.")
 
-
 @app.on_event("startup")
 async def startup_event():
     global db
@@ -858,7 +776,6 @@ async def startup_event():
     reflex = await memory_get("reflexionHistory")
     if reflex:
         agent_memory["reflexionHistory"] = reflex
-
     deps = {
         "require_api_key": require_api_key, "async_wrap": async_wrap,
         "call_hermes": call_hermes, "notify_telegram": notify_telegram,
@@ -877,51 +794,33 @@ async def startup_event():
         "stripe_enabled": bool(stripe_client), "redis_enabled": REDIS_ENABLED,
         "ai_api_key": AI_API_KEY,
     }
-
-    try:
-        from wire_v9 import register_v9_routes
-        exec_v9 = register_v9_routes(app, MCP_TOOLS, deps)
-        _wire_executors.append(exec_v9)
-        logger.info("[V9Wire] Routes registered")
-    except Exception as e:
-        logger.warning(f"[V9Wire] Load failed: {e}")
-
-    try:
-        from wire_v10 import register_v10_routes
-        v10_result = register_v10_routes(app, deps)
-        if "execute_v10_tool" in v10_result:
-            _wire_executors.append(v10_result["execute_v10_tool"])
-        if "handle_v10_command" in v10_result:
-            _telegram_handlers.append(v10_result["handle_v10_command"])
-        logger.info("[V10Wire] Dashboard registered")
-    except Exception as e:
-        logger.warning(f"[V10Wire] Load failed: {e}")
-
-    try:
-        from wire_v11 import register_v11_routes
-        v11_result = register_v11_routes(app, deps)
-        if "handle_v11_telegram" in v11_result:
-            _telegram_handlers.append(v11_result["handle_v11_telegram"])
-        logger.info("[V11Wire] Revenue Swarm registered")
-    except Exception as e:
-        logger.warning(f"[V11Wire] Load failed: {e}")
-
-    try:
-        from wire_v12 import register_v12_routes
-        v12_result = register_v12_routes(app, deps)
-        if "handle_v12_telegram" in v12_result:
-            _telegram_handlers.append(v12_result["handle_v12_telegram"])
-        logger.info("[V12Wire] ClientCloser registered")
-    except Exception as e:
-        logger.warning(f"[V12Wire] Load failed: {e}")
-
+    for wire_mod, wire_fn, key_exec, key_tg in [
+        ("wire_v9", "register_v9_routes", None, None),
+        ("wire_v10", "register_v10_routes", "execute_v10_tool", "handle_v10_command"),
+        ("wire_v11", "register_v11_routes", None, "handle_v11_telegram"),
+        ("wire_v12", "register_v12_routes", None, "handle_v12_telegram"),
+    ]:
+        try:
+            mod = __import__(wire_mod)
+            fn = getattr(mod, wire_fn)
+            if wire_mod == "wire_v9":
+                result = fn(app, MCP_TOOLS, deps)
+                _wire_executors.append(result)
+            else:
+                result = fn(app, deps)
+                if key_exec and key_exec in result:
+                    _wire_executors.append(result[key_exec])
+                if key_tg and key_tg in result:
+                    _telegram_handlers.append(result[key_tg])
+            logger.info(f"[{wire_mod}] Registered")
+        except Exception as e:
+            logger.warning(f"[{wire_mod}] Load failed: {e}")
     try:
         from extra_routes import register_extra_routes
         register_extra_routes(app, deps)
         logger.info("[ExtraRoutes] /demo + /metrics registered")
     except Exception as e:
         logger.warning(f"[ExtraRoutes] Load failed: {e}")
-
     logger.info(f"[HermesWork] v12.1.0 -- {AGENT_COUNT} agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} papers")
     logger.info(f"[Telegram] Bot: {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'}")
     logger.info(f"[WhatsApp] Twilio: {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | WHATSAPP_TO: {'SET' if WHATSAPP_TO else 'NOT SET'}")
@@ -1082,22 +981,16 @@ async def telegram_webhook(request: Request):
     if message:
         asyncio.create_task(handle_telegram_command(message))
     elif callback_query:
-        asyncio.create_task(handle_telegram_command({
-            "chat": callback_query.get("message", {}).get("chat", {}),
-            "from": callback_query.get("from", {}),
-            "text": callback_query.get("data", ""),
-        }))
+        asyncio.create_task(handle_telegram_command({"chat": callback_query.get("message", {}).get("chat", {}), "from": callback_query.get("from", {}), "text": callback_query.get("data", "")}))
     return {"ok": True}
 
 @app.post("/webhooks/whatsapp")
 async def whatsapp_webhook(request: Request):
-    """Twilio sends WhatsApp messages as form-encoded data, not JSON."""
     try:
         form = await request.form()
         from_number = str(form.get("From") or "")
         body_text = (form.get("Body") or "").strip()
     except Exception:
-        # Fallback: try JSON body
         try:
             body = await request.json()
             from_number = str(body.get("From") or "")
@@ -1108,19 +1001,11 @@ async def whatsapp_webhook(request: Request):
     logger.info(f"[WhatsApp] From: {from_number}, Body: {body_text[:100]}")
     if body_text and from_number:
         asyncio.create_task(handle_whatsapp_command(from_number, body_text))
-    # Twilio expects a TwiML response (empty = no reply from Twilio side)
-    return PlainTextResponse(
-        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-        media_type="text/xml",
-    )
+    return PlainTextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="text/xml")
 
 @app.get("/whatsapp/status")
 async def whatsapp_status():
-    return {
-        "configured": bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM),
-        "from": TWILIO_WHATSAPP_FROM,
-        "whatsapp_to_set": bool(WHATSAPP_TO),
-    }
+    return {"configured": bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM), "from": TWILIO_WHATSAPP_FROM, "whatsapp_to_set": bool(WHATSAPP_TO)}
 
 @app.get("/bot/setup")
 async def bot_setup(api_key: str = Depends(require_api_key)):
@@ -1153,10 +1038,10 @@ async def demo_seed(api_key: str = Depends(require_api_key)):
     if NODE_ENV == "production" and not ENABLE_DEMO_SEED:
         raise HTTPException(status_code=403, detail="Demo seed blocked in production. Set ENABLE_DEMO_SEED=true")
     global db
-    db = {"invoices": [{"id": "INV-001", "client": "Acme Labs", "amount": 4800, "status": "paid", "dueDate": "2026-06-25", "createdAt": "2026-06-10", "paymentMethod": "stripe"}, {"id": "INV-002", "client": "Dune Media", "amount": 3600, "status": "pending", "dueDate": "2026-06-18", "createdAt": "2026-06-05", "paymentMethod": "stripe"}, {"id": "INV-003", "client": "Solaris", "amount": 8500, "status": "pending", "dueDate": "2026-06-30", "createdAt": "2026-06-20", "paymentMethod": "x402"}], "clients": [{"id": str(uuid.uuid4()), "name": "Acme Labs", "company": "Acme Inc", "industry": "SaaS", "totalBilled": 4800, "totalPaid": 4800, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-10"}, {"id": str(uuid.uuid4()), "name": "Dune Media", "company": "Dune Co", "industry": "Media", "totalBilled": 3600, "totalPaid": 0, "health": "yellow", "invoiceCount": 1, "createdAt": "2026-06-05"}, {"id": str(uuid.uuid4()), "name": "Solaris", "company": "Solaris Labs", "industry": "Blockchain", "totalBilled": 8500, "totalPaid": 0, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-20"}], "proposals": [{"id": str(uuid.uuid4()), "title": "Product Sprint", "client": "Acme Labs", "amount": 4800, "status": "won", "createdAt": "2026-06-08"}, {"id": str(uuid.uuid4()), "title": "Brand Refresh", "client": "Dune Media", "amount": 3600, "status": "pending", "createdAt": "2026-06-03"}], "reputation": [], "payments": [], "activities": []}
+    db = {"invoices": [{"id": "INV-001", "client": "Acme Labs", "amount": 4800, "status": "paid", "dueDate": "2026-06-25", "createdAt": "2026-06-10", "paymentMethod": "stripe"}, {"id": "INV-002", "client": "Dune Media", "amount": 3600, "status": "pending", "dueDate": "2026-07-18", "createdAt": "2026-06-05", "paymentMethod": "stripe"}, {"id": "INV-003", "client": "Solaris Labs", "amount": 8500, "status": "pending", "dueDate": "2026-07-30", "createdAt": "2026-06-20", "paymentMethod": "x402"}, {"id": "INV-004", "client": "NovaTech", "amount": 6200, "status": "paid", "dueDate": "2026-06-15", "createdAt": "2026-06-01", "paymentMethod": "stripe"}, {"id": "INV-005", "client": "BlueOcean AI", "amount": 12000, "status": "pending", "dueDate": "2026-07-10", "createdAt": "2026-06-25", "paymentMethod": "stripe"}], "clients": [{"id": str(uuid.uuid4()), "name": "Acme Labs", "company": "Acme Inc", "industry": "SaaS", "totalBilled": 4800, "totalPaid": 4800, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-10"}, {"id": str(uuid.uuid4()), "name": "Dune Media", "company": "Dune Co", "industry": "Media", "totalBilled": 3600, "totalPaid": 0, "health": "yellow", "invoiceCount": 1, "createdAt": "2026-06-05"}, {"id": str(uuid.uuid4()), "name": "Solaris Labs", "company": "Solaris", "industry": "Blockchain", "totalBilled": 8500, "totalPaid": 0, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-20"}, {"id": str(uuid.uuid4()), "name": "NovaTech", "company": "NovaTech Inc", "industry": "AI/ML", "totalBilled": 6200, "totalPaid": 6200, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-01"}, {"id": str(uuid.uuid4()), "name": "BlueOcean AI", "company": "BlueOcean", "industry": "AI", "totalBilled": 12000, "totalPaid": 0, "health": "green", "invoiceCount": 1, "createdAt": "2026-06-25"}], "proposals": [{"id": str(uuid.uuid4()), "title": "AI Dashboard Sprint", "client": "Acme Labs", "amount": 4800, "status": "won", "score": 9, "platform": "Direct", "createdAt": "2026-06-08"}, {"id": str(uuid.uuid4()), "title": "Brand Refresh", "client": "Dune Media", "amount": 3600, "status": "pending", "score": 7, "platform": "Upwork", "createdAt": "2026-06-03"}, {"id": str(uuid.uuid4()), "title": "Blockchain Integration", "client": "Solaris Labs", "amount": 8500, "status": "won", "score": 8, "platform": "Direct", "createdAt": "2026-06-15"}, {"id": str(uuid.uuid4()), "title": "ML Pipeline Build", "client": "NovaTech", "amount": 6200, "status": "won", "score": 9, "platform": "Toptal", "createdAt": "2026-05-28"}, {"id": str(uuid.uuid4()), "title": "AI Agent Platform", "client": "BlueOcean AI", "amount": 12000, "status": "pending", "score": 9, "platform": "Direct", "createdAt": "2026-06-24"}], "reputation": [{"id": str(uuid.uuid4()), "invoiceId": "INV-001", "client": "Acme Labs", "amount": 4800, "txHash": "0xabc123def456", "mintedAt": "2026-06-25", "chain": "base_sepolia", "standard": "ERC-8004", "clientVerified": True}, {"id": str(uuid.uuid4()), "invoiceId": "INV-004", "client": "NovaTech", "amount": 6200, "txHash": "0xdef789abc012", "mintedAt": "2026-06-15", "chain": "base_sepolia", "standard": "ERC-8004", "clientVerified": True}], "payments": [{"date": "2026-06-25", "client": "Acme Labs", "amount": 4800, "rail": "stripe", "txHash": "pi_abc123"}, {"date": "2026-06-15", "client": "NovaTech", "amount": 6200, "rail": "stripe", "txHash": "pi_def456"}], "activities": [{"type": "payment", "action": "Invoice INV-001 paid by Acme Labs -- $4,800", "time": "2h ago"}, {"type": "invoice", "action": "New invoice INV-005 created for BlueOcean AI -- $12,000", "time": "4h ago"}, {"type": "ai", "action": "RevenueSwarm ran -- 3 new offers generated", "time": "6h ago"}, {"type": "proposal", "action": "Proposal won: AI Agent Platform -- $12,000", "time": "8h ago"}, {"type": "payment", "action": "Invoice INV-004 paid by NovaTech -- $6,200", "time": "1d ago"}]}
     await save_data_async(db)
     log_activity(db, "Demo data seeded", "system")
-    return {"success": True, "message": "Demo data seeded", "counts": {k: len(v) for k, v in db.items() if isinstance(v, list)}}
+    return {"success": True, "message": "Demo data seeded! 5 invoices, 5 clients, 5 proposals, 2 payments.", "counts": {k: len(v) for k, v in db.items() if isinstance(v, list)}}
 
 @app.get("/sse")
 async def sse_endpoint(request: Request):
