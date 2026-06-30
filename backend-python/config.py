@@ -14,9 +14,7 @@ def sanitize_env_url(raw: str) -> str:
     if not raw:
         return ""
     v = str(raw).strip()
-    # Remove leading ENV_VAR= prefix
     v = re.sub(r'^[A-Z_0-9]+=', '', v)
-    # Remove surrounding quotes
     v = re.sub(r'^"|"$', '', v)
     v = re.sub(r"^'|'$", '', v)
     return v.strip()
@@ -26,7 +24,6 @@ def sanitize_token(raw: str) -> str:
     """Strip all whitespace, newlines, and non-printable chars from a token."""
     if not raw:
         return ""
-    # Remove all whitespace including \n \r \t and spaces
     return re.sub(r'\s+', '', str(raw))
 
 
@@ -45,7 +42,6 @@ PROFILE_HANDLE = os.getenv("PROFILE_HANDLE", "salman")
 SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL") or ""
 
 # ── Telegram ──────────────────────────────────────────────────────────────
-# sanitize_token removes hidden newlines/spaces that break the Telegram API URL
 TELEGRAM_BOT_TOKEN = sanitize_token(os.getenv("TELEGRAM_BOT_TOKEN") or "")
 TELEGRAM_CHAT_ID = sanitize_token(os.getenv("TELEGRAM_CHAT_ID") or "")
 
@@ -104,15 +100,9 @@ FRONTEND_URL = os.getenv("FRONTEND_URL") or ""
 # ── Misc ──────────────────────────────────────────────────────────────────
 ENABLE_DEMO_SEED = os.getenv("ENABLE_DEMO_SEED", "false").lower() == "true"
 
-# Allowed CORS origins
-ALLOWED_ORIGINS = [
-    "http://localhost:4200",
-    "http://localhost:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:4200",
-    FRONTEND_URL,
-]
-ALLOWED_ORIGINS = [o for o in ALLOWED_ORIGINS if o]
+# CORS: allow all origins so the dashboard, MCP clients, and hackathon judges
+# can all reach the API freely. The API key still protects write endpoints.
+ALLOWED_ORIGINS = ["*"]
 
 # Version constants
 VERSION = "v12.1.0"
