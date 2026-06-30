@@ -71,7 +71,11 @@
     .phone-hint{font-size:11px;color:#94a3b8;margin-top:3px}
     .live-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
     .live-pills span{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.7);border:1px solid #e2e8f0;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600;color:#475569}
-
+    .hero-links{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+    .hero-link{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;text-decoration:none;transition:opacity .15s}
+    .hero-link:hover{opacity:.85}
+    .hero-link.github{background:#0a0a0a;color:#fff;border:1px solid #0a0a0a}
+    .hero-link.demo{background:#5046e4;color:#fff;border:1px solid #5046e4}
     /* AUTONOMOUS AI CHAT PANEL */
     #ai-chat-btn{position:fixed;bottom:28px;right:28px;z-index:1100;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#5046e4,#818cf8);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(80,70,228,.45);transition:transform .2s,box-shadow .2s;color:#fff;font-size:24px}
     #ai-chat-btn:hover{transform:scale(1.08);box-shadow:0 8px 32px rgba(80,70,228,.55)}
@@ -197,7 +201,6 @@
   </div>
 </div>
 
-<!-- Create Invoice Modal -->
 <div class="modal-overlay" id="invoice-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Create Invoice</div><button class="modal-close" type="button" onclick="closeInvoiceModal()">×</button></div>
@@ -223,7 +226,6 @@
   </div>
 </div>
 
-<!-- Add Proposal Modal -->
 <div class="modal-overlay" id="proposal-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Proposal</div><button class="modal-close" type="button" onclick="closeProposalModal()">×</button></div>
@@ -237,7 +239,6 @@
   </div>
 </div>
 
-<!-- Add Client Modal -->
 <div class="modal-overlay" id="client-modal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Add Client</div><button class="modal-close" type="button" onclick="closeClientModal()">×</button></div>
@@ -256,10 +257,7 @@
           <input class="form-input" id="cli-phone" type="tel" placeholder="+919876543210">
           <div class="phone-hint">Include country code · Invoice payment links sent here automatically via Twilio</div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Notes</label>
-          <input class="form-input" id="cli-notes" placeholder="Any notes…">
-        </div>
+        <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="cli-notes" placeholder="Any notes…"></div>
       </div>
       <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="closeClientModal()">Cancel</button><button class="btn btn-primary" type="submit">Add client</button></div>
     </form>
@@ -285,10 +283,9 @@
       <button class="nav-item" id="nav-settings" onclick="navigate('settings')"><svg><use href="#i-settings"/></svg><span>Settings</span></button>
     </div>
     <div class="sidebar-footer">
-      <div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label" id="backend-status-label">Connecting…</div><div class="status-sub">FastAPI · Render</div></div></div>
+      <div class="agent-status"><div class="status-dot"></div><div class="status-info"><div class="status-label" id="backend-status-label">Connecting…</div><div class="status-sub">HermesWork · Live</div></div></div>
     </div>
   </aside>
-
   <div class="main-content">
     <header class="topbar">
       <div><div class="page-title" id="page-title">Dashboard</div><div class="page-subtitle" id="page-date"></div></div>
@@ -301,24 +298,30 @@
         <div class="user-avatar">S</div>
       </div>
     </header>
-
-    <!-- Dashboard -->
     <main class="page-content active fade-in" id="page-dashboard">
       <section class="hero-strip">
         <div>
-          <p class="overline">Powered by Nous Hermes 3 · NVIDIA NIM · Stripe · Twilio</p>
+          <p class="overline">Nous Hermes 3 · NVIDIA NIM · Stripe · Twilio WhatsApp</p>
           <h1>Real invoices. Real payments. 41 AI agents.</h1>
-          <p>Creates Stripe invoices, sends payment links to clients via WhatsApp, tracks proposals, forecasts revenue — all automated.</p>
+          <p>Creates Stripe Checkout invoices, delivers payment links to clients via WhatsApp, tracks proposals and forecasts revenue — fully automated by 41 AI agents.</p>
           <div class="live-pills">
             <span id="realtime-state">Connecting…</span>
             <span id="stripe-state">Checking Stripe…</span>
             <span id="storage-state">Checking storage…</span>
             <span id="last-sync">Waiting for sync</span>
           </div>
+          <div class="hero-links">
+            <a class="hero-link github" href="https://github.com/salch-cred/hermeswork" target="_blank" rel="noopener">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+              GitHub Repo
+            </a>
+            <a class="hero-link demo" href="https://hermeswork-frontend.onrender.com/frontend/index.html" target="_blank" rel="noopener">
+              ▶ Live Demo
+            </a>
+          </div>
         </div>
         <button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create invoice</button>
       </section>
-
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-head"><span>Monthly Revenue</span><svg><use href="#i-chart"/></svg></div><div class="kpi-value" id="kpi-mrr">$0</div><div class="kpi-trend up">confirmed payments</div><div class="mini-chart" id="sparkline-mrr"></div></div>
         <div class="kpi-card"><div class="kpi-head"><span>Active Invoices</span><svg><use href="#i-file"/></svg></div><div class="kpi-value" id="kpi-invoices">0</div><div class="kpi-trend neutral">unpaid · awaiting payment</div></div>
@@ -327,7 +330,6 @@
         <div class="kpi-card"><div class="kpi-head"><span>Avg. Days to Pay</span><svg><use href="#i-card"/></svg></div><div class="kpi-value" id="kpi-days">0</div><div class="kpi-trend neutral">invoice → payment</div></div>
         <div class="kpi-card"><div class="kpi-head"><span>Open Projects</span><svg><use href="#i-bolt"/></svg></div><div class="kpi-value" id="kpi-hours">0</div><div class="kpi-trend neutral">active work items</div></div>
       </div>
-
       <div style="margin-bottom:24px">
         <div class="forecast-card">
           <div class="forecast-label">📈 Revenue Forecast — Next Month</div>
@@ -335,28 +337,20 @@
           <div class="forecast-sub">Pipeline value × win rate + trailing 3-month average. <a href="javascript:navigate('analytics')" style="color:#c7d2fe;text-decoration:underline">View breakdown →</a></div>
         </div>
       </div>
-
       <div class="two-col">
         <div class="card">
-          <div class="card-header">
-            <div><div class="card-title"><svg><use href="#i-bolt"/></svg> AI Agent Activity</div><div class="card-subtitle">41 agents · Hermes 3 via NVIDIA NIM</div></div>
-            <span class="badge badge-paid">Live</span>
-          </div>
+          <div class="card-header"><div><div class="card-title"><svg><use href="#i-bolt"/></svg> AI Agent Activity</div><div class="card-subtitle">41 agents · Nous Hermes 3 via NVIDIA NIM</div></div><span class="badge badge-paid">Live</span></div>
           <div id="scheduled-tasks-mini"></div>
         </div>
         <div class="card">
-          <div class="card-header">
-            <div><div class="card-title"><svg><use href="#i-activity"/></svg> Activity Log</div><div class="card-subtitle">Invoice creation · Stripe webhook events · Proposal outcomes</div></div>
-          </div>
+          <div class="card-header"><div><div class="card-title"><svg><use href="#i-activity"/></svg> Activity Log</div><div class="card-subtitle">Invoice creation · Stripe webhook events · Proposal outcomes</div></div></div>
           <div class="activity-feed" id="activity-feed"></div>
         </div>
       </div>
     </main>
-
-    <!-- Invoices -->
     <main class="page-content fade-in" id="page-invoices">
       <div class="section-header">
-        <div><p class="overline">Finance</p><div class="section-title">Invoices</div><div class="section-subtitle">Real Stripe Checkout invoices · Payment link auto-sent to client WhatsApp via Twilio</div></div>
+        <div><p class="overline">Finance</p><div class="section-title">Invoices</div><div class="section-subtitle">Stripe Checkout invoices · Payment link auto-sent to client WhatsApp via Twilio</div></div>
         <div style="display:flex;gap:8px"><button class="btn btn-secondary" onclick="exportCSV()">↓ Export CSV</button><button class="btn btn-primary" onclick="openInvoiceModal()"><svg><use href="#i-plus"/></svg> Create Invoice</button></div>
       </div>
       <div class="toolbar">
@@ -373,33 +367,25 @@
         <div class="summary-bar" id="invoice-summary"><span>Outstanding: <strong>$0</strong></span><span><span id="invoice-count">0</span> invoices</span></div>
       </div>
     </main>
-
-    <!-- Clients -->
     <main class="page-content fade-in" id="page-clients">
       <div class="section-header"><div><p class="overline">CRM</p><div class="section-title">Clients</div><div class="section-subtitle">Add a WhatsApp number to auto-deliver Stripe payment links on every invoice</div></div><button class="btn btn-primary" onclick="openClientModal()"><svg><use href="#i-plus"/></svg> Add Client</button></div>
       <div class="grid-auto" id="clients-grid"></div>
     </main>
-
-    <!-- Proposals -->
     <main class="page-content fade-in" id="page-proposals">
       <div class="section-header"><div><p class="overline">Pipeline</p><div class="section-title">Proposals</div><div class="section-subtitle">Track proposals from sent → won/lost · AI win-rate analysis via Hermes 3</div></div><button class="btn btn-primary" onclick="openProposalModal()"><svg><use href="#i-plus"/></svg> Add Proposal</button></div>
       <div class="stats-row" id="proposal-stats"></div>
       <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Title</th><th>Client</th><th>Platform</th><th>Amount</th><th>Status</th><th>Sent</th><th>Score</th><th>Actions</th></tr></thead><tbody id="proposals-tbody"></tbody></table></div></div>
     </main>
-
-    <!-- Reputation -->
     <main class="page-content fade-in" id="page-reputation">
       <div class="section-header">
-        <div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-confirmed work history · Share your public profile link with clients</div></div>
+        <div><p class="overline">Trust</p><div class="section-title">Reputation</div><div class="section-subtitle">Payment-confirmed work history · Share your public profile with clients</div></div>
         <a id="profile-link" href="#" target="_blank" class="btn btn-secondary">🌐 Public Profile ↗</a>
       </div>
       <div class="stats-row"><div class="stat-box"><div class="stat-box-value" id="rep-total">0</div><div class="stat-box-label">Records</div></div><div class="stat-box"><div class="stat-box-value" id="rep-verified">0</div><div class="stat-box-label">Client verified</div></div><div class="stat-box"><div class="stat-box-value" id="rep-earnings">$0</div><div class="stat-box-label">Confirmed value</div></div></div>
       <div class="grid-auto" id="reputation-grid"></div>
     </main>
-
-    <!-- Payments -->
     <main class="page-content fade-in" id="page-payments">
-      <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div><div class="section-subtitle">Stripe Checkout + Webhooks · Payments confirmed via webhook events</div></div></div>
+      <div class="section-header"><div><p class="overline">Rails</p><div class="section-title">Payments</div><div class="section-subtitle">Stripe Checkout + Webhooks · All payments confirmed via Stripe webhook events</div></div></div>
       <div class="payment-rails" style="grid-template-columns:1fr">
         <div class="rail-card">
           <div class="rail-logo"><svg><use href="#i-card"/></svg></div>
@@ -411,10 +397,8 @@
       </div>
       <div class="card table-card"><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Rail</th><th>Reference</th></tr></thead><tbody id="payments-tbody"></tbody></table></div></div>
     </main>
-
-    <!-- Analytics -->
     <main class="page-content fade-in" id="page-analytics">
-      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Revenue, win rate, and collection speed — calculated from real backend data</div></div></div>
+      <div class="section-header"><div><p class="overline">Metrics</p><div class="section-title">Analytics</div><div class="section-subtitle">Revenue, win rate, and collection speed — from real backend data</div></div></div>
       <div class="stats-row" id="analytics-stats"></div>
       <div class="two-col">
         <div class="card"><div class="card-title">Revenue + Forecast</div><div class="chart-container"><canvas id="chart-revenue"></canvas></div></div>
@@ -423,18 +407,15 @@
         <div class="card"><div class="card-title">Invoices created / month</div><div class="chart-container"><canvas id="chart-credentials"></canvas></div></div>
       </div>
     </main>
-
-    <!-- Settings -->
     <main class="page-content fade-in" id="page-settings">
       <div class="section-header"><div><p class="overline">System</p><div class="section-title">Settings</div><div class="section-subtitle">Backend health, scheduled tasks, and system status</div></div></div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-activity"/></svg> Backend Health</div></div><div id="backend-health"><div style="color:var(--text-muted);font-size:13px;padding:8px 0">Connecting to Render…</div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-activity"/></svg> Backend Health</div></div><div id="backend-health"><div style="color:var(--text-muted);font-size:13px;padding:8px 0">Connecting…</div></div></div>
         <div class="card"><div class="card-header"><div class="card-title"><svg><use href="#i-bolt"/></svg> AI Agent Tasks</div></div><div id="cron-list"><div style="color:var(--text-muted);font-size:13px;padding:8px 0">Loading…</div></div></div>
       </div>
     </main>
-
-  </div><!-- /.main-content -->
-</div><!-- /.app-shell -->
+  </div>
+</div>
 
 <!-- AUTONOMOUS AI CHAT -->
 <button id="ai-chat-btn" onclick="toggleChat()" title="HermesWork Autonomous AI">
