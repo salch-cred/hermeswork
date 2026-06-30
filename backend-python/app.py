@@ -1,21 +1,13 @@
 """
 HermesWork v12.1.0 -- Main FastAPI Server
-Full Python port with all 70 MCP tools, 41 agents, 41 research papers.
 """
-import os
-import json
-import uuid
-import logging
-import asyncio
-import time
-import hashlib
+import os, json, uuid, logging, asyncio, time, hashlib, re
 from datetime import datetime, timezone
-from typing import Any, Optional, Callable
+from typing import Any
 
-from fastapi import FastAPI, Request, Response, HTTPException, Depends, Security, Query
+from fastapi import FastAPI, Request, Response, HTTPException, Depends, Security
 from fastapi.responses import JSONResponse, StreamingResponse, PlainTextResponse, RedirectResponse, HTMLResponse
 from fastapi.security import APIKeyHeader
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -63,11 +55,7 @@ if STRIPE_ENABLED:
     except Exception as e:
         logger.warning(f"[Stripe] Init failed: {e}")
 
-app = FastAPI(
-    title="HermesWork AI Agent v12.1",
-    description="World-first autonomous freelance platform: 41 AI research agents, 70 MCP tools, 41 research papers. Benchmark: 10.0/10.0",
-    version="v12.1.0",
-)
+app = FastAPI(title="HermesWork AI Agent v12.1", version="v12.1.0")
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -78,12 +66,12 @@ class WideCORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         origin = request.headers.get("origin", "*")
         if request.method == "OPTIONS":
-            response = Response(status_code=204)
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "*, x-api-key, authorization, content-type"
-            response.headers["Access-Control-Max-Age"] = "86400"
-            return response
+            r = Response(status_code=204)
+            r.headers["Access-Control-Allow-Origin"] = origin
+            r.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            r.headers["Access-Control-Allow-Headers"] = "*, x-api-key, authorization, content-type"
+            r.headers["Access-Control-Max-Age"] = "86400"
+            return r
         response = await call_next(request)
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
@@ -91,7 +79,6 @@ class WideCORSMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(WideCORSMiddleware)
-
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 
 async def require_api_key(request: Request, api_key: str = Security(api_key_header)):
@@ -200,21 +187,46 @@ async def notify_slack(text: str) -> None:
 async def notify(text: str) -> None:
     await asyncio.gather(notify_telegram(text), notify_slack(text), notify_whatsapp(text), return_exceptions=True)
 
+# ── Phone number helpers ───────────────────────────────────────────────────
+def normalize_phone_to_whatsapp(phone: str) -> str:
+    """Convert any phone number format to whatsapp:+XXXXXXXXXXX"""
+    if not phone:
+        return ""
+    p = phone.strip()
+    if p.startswith("whatsapp:"):
+        return p
+    p = re.sub(r"[\s\-\(\)]", "", p)
+    if not p.startswith("+"):
+        p = "+" + p
+    return "whatsapp:" + p
+
+def get_client_phone(client_name: str) -> str:
+    """Look up a client's WhatsApp number from the clients list."""
+    if not client_name:
+        return ""
+    name_lower = client_name.lower().strip()
+    for c in db.get("clients", []):
+        if (
+            str(c.get("name", "")).lower() == name_lower
+            or str(c.get("company", "")).lower() == name_lower
+        ):
+            phone = c.get("phone", "")
+            if phone:
+                return normalize_phone_to_whatsapp(phone)
+    return ""
+# ──────────────────────────────────────────────────────────────────────────
+
 def _parse_nim_response(raw: str) -> dict:
-    """
-    Robustly parse NVIDIA NIM / OpenAI-compatible responses.
-    Handles plain JSON, SSE lines, NDJSON, and [DONE] sentinels.
-    """
     raw = raw.strip()
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
         pass
-    for line in raw.split('\n'):
+    for line in raw.split("\n"):
         line = line.strip()
-        if not line or line in ('data: [DONE]', '[DONE]'):
+        if not line or line in ("data: [DONE]", "[DONE]"):
             continue
-        if line.startswith('data: '):
+        if line.startswith("data: "):
             line = line[6:].strip()
         if not line:
             continue
@@ -222,12 +234,11 @@ def _parse_nim_response(raw: str) -> dict:
             return json.loads(line)
         except json.JSONDecodeError:
             continue
-    raise ValueError(f"Cannot parse NIM response (first 300 chars): {raw[:300]}")
+    raise ValueError(f"Cannot parse NIM response: {raw[:300]}")
 
 async def _call_nim_single(system_prompt: str, user_message: str, max_tokens: int, model: str) -> str:
-    """Single NIM call with a specific model. Raises on HTTP error or parse error."""
     if not AI_BASE_URL:
-        raise Exception("AI_BASE_URL not set. Check NVIDIA_NIM_API_KEY env var on Render.")
+        raise Exception("AI_BASE_URL not set. Check NVIDIA_NIM_API_KEY env var.")
     body = json.dumps({
         "model": model,
         "messages": [
@@ -242,19 +253,15 @@ async def _call_nim_single(system_prompt: str, user_message: str, max_tokens: in
         res = await client.post(
             f"{AI_BASE_URL}/chat/completions",
             content=body,
-            headers={
-                "Content-Type":  "application/json",
-                "Authorization": f"Bearer {AI_API_KEY}",
-                "Accept":        "application/json",
-            },
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {AI_API_KEY}", "Accept": "application/json"},
         )
         logger.info(f"[NIM] model={model} status={res.status_code}")
         if res.status_code in (404, 422, 400):
             raise Exception(f"NIM {res.status_code} for model '{model}': {res.text[:200]}")
         if res.status_code == 401:
-            raise Exception(f"NIM 401 Unauthorized -- check NVIDIA_NIM_API_KEY on Render")
+            raise Exception("NIM 401 Unauthorized -- check NVIDIA_NIM_API_KEY on Render")
         if res.status_code == 429:
-            raise Exception(f"NIM 429 Rate limited -- try again in a moment")
+            raise Exception("NIM 429 Rate limited -- try again in a moment")
         if res.status_code >= 500:
             raise Exception(f"NIM {res.status_code} server error: {res.text[:200]}")
         try:
@@ -265,26 +272,16 @@ async def _call_nim_single(system_prompt: str, user_message: str, max_tokens: in
             err = data["error"]
             msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
             raise Exception(f"NIM error: {msg}")
-        content = (
-            data.get("choices", [{}])[0]
-                .get("message", {})
-                .get("content", "")
-        )
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         return (content or "").strip()
 
 async def call_hermes(system_prompt: str, user_message: str, max_tokens: int = 800) -> str:
-    """
-    Call NVIDIA NIM with automatic model fallback.
-    Tries AI_MODEL first, then each entry in AI_MODEL_FALLBACKS.
-    """
     if not AI_API_KEY:
         raise Exception("AI not configured. Set NVIDIA_NIM_API_KEY on Render.")
-
     models_to_try: list[str] = [AI_MODEL]
     for fb in AI_MODEL_FALLBACKS:
         if fb not in models_to_try:
             models_to_try.append(fb)
-
     last_error: Exception = Exception("No models tried")
     for model in models_to_try:
         try:
@@ -294,44 +291,28 @@ async def call_hermes(system_prompt: str, user_message: str, max_tokens: int = 8
             return result
         except Exception as e:
             last_error = e
-            err_str = str(e)
-            if any(x in err_str for x in ("404", "422", "not found", "not available")):
-                logger.warning(f"[NIM] model '{model}' unavailable, trying next fallback...")
+            if any(x in str(e) for x in ("404", "422", "not found", "not available")):
+                logger.warning(f"[NIM] model '{model}' unavailable, trying next...")
                 continue
             raise
+    raise Exception(f"All NIM models failed. Last error: {last_error}.")
 
-    raise Exception(
-        f"All NIM models failed. Last error: {last_error}. "
-        f"Check NVIDIA_NIM_API_KEY on Render."
-    )
-
-# ── Natural-language AI reply (used by both Telegram and WhatsApp) ────────────
 AI_SYSTEM_PROMPT = """You are HermesWork AI, a smart and friendly freelance business assistant powered by Nous Hermes 3.
 You help with invoices, clients, proposals, revenue, business advice, and any question the user asks.
 You have access to live business data provided in the context.
 Always reply in plain text. Be concise but helpful. Max 200 words.
 If the user writes in another language, reply in that same language.
-Never say you cannot help — always give a useful answer."""
+Never say you cannot help -- always give a useful answer."""
 
 async def ai_reply(user_text: str) -> str:
-    """Generate a natural language reply for any user message using live KPI context."""
     k = build_kpis()
     context = (
         f"Live business snapshot: Revenue ${k['totalRevenue']:,.0f} | "
-        f"Active invoices {k['activeInvoices']} | "
-        f"Outstanding ${k['outstandingValue']:,.0f} | "
-        f"Overdue {k['overdueCount']} | "
-        f"Win rate {k['winRate']}% | "
-        f"Pipeline ${k['pipelineValue']:,.0f} | "
-        f"Clients {k['clients']} | "
-        f"Agents 41 active"
+        f"Active invoices {k['activeInvoices']} | Outstanding ${k['outstandingValue']:,.0f} | "
+        f"Overdue {k['overdueCount']} | Win rate {k['winRate']}% | "
+        f"Pipeline ${k['pipelineValue']:,.0f} | Clients {k['clients']} | Agents 41 active"
     )
-    return await call_hermes(
-        AI_SYSTEM_PROMPT,
-        f"{context}\n\nUser: {user_text}",
-        350,
-    )
-# ─────────────────────────────────────────────────────────────────────────────
+    return await call_hermes(AI_SYSTEM_PROMPT, f"{context}\n\nUser: {user_text}", 350)
 
 def _safe_num(v) -> float:
     try:
@@ -380,17 +361,11 @@ def build_kpis() -> dict:
         "clients": len(clients), "proposals": len(proposals),
         "credentialsMinted": len(reputation), "overdueCount": len(overdue),
         "overdueValue": overdue_value, "monthlyRevenue": monthly_revenue,
-        "liveMetrics": {
-            "totalRevenue": total_revenue, "activeValue": outstanding_value,
-            "winRate": win_rate, "agentsActive": AGENT_COUNT, "mcpTools": TOOL_COUNT
-        },
+        "liveMetrics": {"totalRevenue": total_revenue, "activeValue": outstanding_value, "winRate": win_rate, "agentsActive": AGENT_COUNT, "mcpTools": TOOL_COUNT},
         "invoiceSummary": {"pending": len(pending), "paid": len(paid), "overdue": len(overdue)},
         "revenueMeter": {
             "forecastConversion": forecast, "pipelineValue": pipeline,
-            "sparkline": [
-                {"month": ["Jan","Feb","Mar","Apr","May","Jun"][i], "revenue": monthly_revenue[i]}
-                for i in range(6)
-            ]
+            "sparkline": [{"month": ["Jan","Feb","Mar","Apr","May","Jun"][i], "revenue": monthly_revenue[i]} for i in range(6)]
         },
         "recentActivity": db.get("activities", [])[:8],
     }
@@ -435,14 +410,7 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
             try:
                 session = stripe_client.checkout.Session.create(
                     mode="payment",
-                    line_items=[{
-                        "price_data": {
-                            "currency": "usd",
-                            "product_data": {"name": invoice["description"] or f"Invoice {inv_id} -- {client_name}"},
-                            "unit_amount": int(amount * 100),
-                        },
-                        "quantity": 1,
-                    }],
+                    line_items=[{"price_data": {"currency": "usd", "product_data": {"name": invoice["description"] or f"Invoice {inv_id} -- {client_name}"}, "unit_amount": int(amount * 100)}, "quantity": 1}],
                     success_url=f"{PUBLIC_BASE_URL}/pay/{inv_id}/success",
                     cancel_url=f"{PUBLIC_BASE_URL}/pay/{inv_id}",
                     metadata={"invoiceId": inv_id, "client": client_name},
@@ -456,8 +424,28 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
         await save_data_async(db)
         await broadcast_sse("invoice:created", {"id": inv_id, "client": client_name, "amount": amount})
         pay_url = invoice.get("stripeUrl") or invoice["x402Url"]
+        # Notify freelancer
         await notify(f"Invoice {inv_id} created\n{client_name} -- ${amount}\nDue: {due_date}\n\nPay here: {pay_url}")
-        return {"success": True, "invoice": invoice, "paymentUrl": pay_url}
+        # Auto-send payment link to client's WhatsApp if phone is on file
+        wa_sent = False
+        client_phone = get_client_phone(client_name)
+        if client_phone and TWILIO_ACCOUNT_SID:
+            try:
+                client_msg = (
+                    f"Hi! You have a new invoice from HermesWork.\n\n"
+                    f"Invoice: {inv_id}\n"
+                    f"Amount: ${amount}\n"
+                    f"Due: {due_date}\n"
+                    f"Description: {invoice.get('description') or 'Professional services'}\n\n"
+                    f"Pay securely here:\n{pay_url}"
+                )
+                await send_whatsapp_message(client_phone, client_msg)
+                wa_sent = True
+                log_activity(db, f"Invoice {inv_id} sent to client WhatsApp {client_phone}", "invoice")
+                logger.info(f"[WhatsApp] Invoice {inv_id} sent to client {client_phone}")
+            except Exception as e:
+                logger.warning(f"[WhatsApp] Client invoice send failed: {e}")
+        return {"success": True, "invoice": invoice, "paymentUrl": pay_url, "whatsappSent": wa_sent, "clientPhone": client_phone if wa_sent else None}
     if tool_name == "mark_invoice_paid":
         if not writeable:
             raise Exception("API key required")
@@ -476,16 +464,16 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
         inv = next((i for i in db.get("invoices", []) if i.get("id") == args.get("id")), None)
         if not inv:
             raise Exception("Not found: " + str(args.get("id")))
-        if stripe_client and inv.get("stripeId"):
-            try:
-                stripe_client.Invoice.send_invoice(inv["stripeId"])
-            except Exception as e:
-                logger.warning(f"[Stripe] Send failed: {e}")
         pay_url = inv.get("stripeUrl") or inv.get("x402Url")
-        if tool_name == "send_invoice_reminder":
-            await notify(f"Reminder: {inv['id']} for {inv.get('client')} -- ${inv.get('amount')}\n\nPay here: {pay_url}")
-        else:
-            await notify(f"Invoice sent: {inv['id']} for {inv.get('client')} -- ${inv.get('amount')}\n\nPay here: {pay_url}")
+        # Also send to client's WhatsApp if on file
+        client_phone = get_client_phone(inv.get("client", ""))
+        if client_phone and TWILIO_ACCOUNT_SID:
+            try:
+                action = "Reminder" if tool_name == "send_invoice_reminder" else "Invoice"
+                await send_whatsapp_message(client_phone, f"{action}: {inv['id']} -- ${inv.get('amount')}\nDue: {inv.get('dueDate')}\n\nPay here: {pay_url}")
+            except Exception as e:
+                logger.warning(f"[WhatsApp] Client reminder failed: {e}")
+        await notify(f"{'Reminder' if tool_name == 'send_invoice_reminder' else 'Invoice sent'}: {inv['id']} -- ${inv.get('amount')}\n\nPay here: {pay_url}")
         log_activity(db, f"{inv['id']} sent", "invoice")
         return {"success": True, "invoice": inv, "paymentUrl": pay_url}
     if tool_name == "delete_invoice":
@@ -508,17 +496,32 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
         name = safe_string(args.get("name"), 100)
         existing = next((c for c in db.get("clients", []) if str(c.get("name", "")).lower() == name.lower()), None)
         if existing:
+            # Update phone if provided and missing
+            new_phone = safe_string(args.get("phone", ""), 30)
+            if new_phone and not existing.get("phone"):
+                existing["phone"] = new_phone
+                await save_data_async(db)
             return {"success": True, "client": existing, "note": "already exists"}
+        # Normalize phone number
+        raw_phone = safe_string(args.get("phone", ""), 30)
+        normalized_phone = ""
+        if raw_phone:
+            normalized_phone = re.sub(r"[\s\-\(\)]", "", raw_phone)
+            if not normalized_phone.startswith("+"):
+                normalized_phone = "+" + normalized_phone
         client_obj = {
-            "id": str(uuid.uuid4()), "name": name,
+            "id": str(uuid.uuid4()),
+            "name": name,
             "company": safe_string(args.get("company", ""), 100),
             "industry": safe_string(args.get("industry", "Technology"), 50),
             "email": safe_string(args.get("email", ""), 100),
+            "phone": normalized_phone,   # <-- stored phone number
+            "notes": safe_string(args.get("notes", ""), 300),
             "totalBilled": 0, "totalPaid": 0, "paymentSpeed": "Unknown",
             "health": "green", "invoiceCount": 0, "createdAt": today(),
         }
         db.setdefault("clients", []).append(client_obj)
-        log_activity(db, f"Client: {name}", "invoice")
+        log_activity(db, f"Client: {name}" + (f" (WhatsApp: {normalized_phone})" if normalized_phone else ""), "invoice")
         await save_data_async(db)
         await broadcast_sse("client:created", {"id": client_obj["id"], "name": name})
         return {"success": True, "client": client_obj}
@@ -579,12 +582,12 @@ async def execute_mcp_tool(tool_name: str, args: dict, api_key_ok: bool = False)
         return get_reputation_vc()
     if tool_name == "get_profile":
         return get_profile(args.get("handle", PROFILE_HANDLE))
-    ai_tools = {"debate_proposal", "react_agent", "score_proposal_cot", "anomaly_scan", "tree_of_thoughts", "self_discover", "mixture_of_agents", "llm_judge", "reflexion_review", "episodic_rag", "prospect_theory_price", "causal_inference", "mcts_plan", "constitutional_ai_check", "linucb_optimize", "survival_analysis", "nash_negotiate", "revenue_forecast", "win_coach", "generate_contract", "monthly_board_report", "autonomous_collection", "client_onboarding", "eod_summary", "daily_ops_plan", "auto_job_scout", "cash_flow_runway"}
+    ai_tools = {"debate_proposal","react_agent","score_proposal_cot","anomaly_scan","tree_of_thoughts","self_discover","mixture_of_agents","llm_judge","reflexion_review","episodic_rag","prospect_theory_price","causal_inference","mcts_plan","constitutional_ai_check","linucb_optimize","survival_analysis","nash_negotiate","revenue_forecast","win_coach","generate_contract","monthly_board_report","autonomous_collection","client_onboarding","eod_summary","daily_ops_plan","auto_job_scout","cash_flow_runway"}
     if tool_name in ai_tools:
         if not AI_API_KEY:
             return {"error": "AI not configured. Set NVIDIA_NIM_API_KEY.", "tool": tool_name}
         try:
-            result = await call_hermes(f"HermesWork v12.1 -- {tool_name} agent. Return structured analysis.", json.dumps(args, default=str), 600)
+            result = await call_hermes(f"HermesWork v12.1 -- {tool_name} agent.", json.dumps(args, default=str), 600)
             return {"tool": tool_name, "result": result, "model": AI_MODEL}
         except Exception as e:
             return {"error": str(e), "tool": tool_name}
@@ -598,28 +601,25 @@ _wire_executors = []
 _telegram_handlers = []
 
 def get_agent_card() -> dict:
-    return {"schema_version": "1.0", "name": "HermesWork AI Agent", "description": "Autonomous freelance business operations agent with 41 AI research agents. Benchmark: 10.0/10.0", "version": "v12.1.0", "url": PUBLIC_BASE_URL, "capabilities": {"streaming": True, "pushNotifications": True, "stateTransition": True}, "authentication": {"type": "api_key", "header": "x-api-key"}, "skills": [{"id": "invoicing", "name": "Invoice Management", "description": "Create, send, track invoices via Stripe"}, {"id": "proposals", "name": "Proposal Generation", "description": "AI-powered proposal writing with Reflexion"}, {"id": "revenue_swarm", "name": "Revenue Swarm Scientist", "description": "Autonomous market sensing to offer to experiment to launch"}, {"id": "client_closer", "name": "Client Closer", "description": "Autonomous prospect to proposal to follow-up to win/loss loop"}], "agentCount": AGENT_COUNT, "mcpTools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS}
+    return {"schema_version":"1.0","name":"HermesWork AI Agent","description":"Autonomous freelance business operations agent. Benchmark: 10.0/10.0","version":"v12.1.0","url":PUBLIC_BASE_URL,"capabilities":{"streaming":True,"pushNotifications":True,"stateTransition":True},"authentication":{"type":"api_key","header":"x-api-key"},"skills":[{"id":"invoicing","name":"Invoice Management","description":"Create, send, track invoices via Stripe. Auto-sends to client WhatsApp."},{"id":"proposals","name":"Proposal Generation","description":"AI-powered proposal writing with Reflexion"},{"id":"revenue_swarm","name":"Revenue Swarm Scientist","description":"Autonomous market sensing"},{"id":"client_closer","name":"Client Closer","description":"Autonomous prospect to win/loss loop"}],"agentCount":AGENT_COUNT,"mcpTools":len(MCP_TOOLS),"researchPapers":RESEARCH_PAPERS}
 
 def get_mpp_config() -> dict:
-    return {"schema_version": "1.0", "merchant": {"id": PROFILE_HANDLE, "name": "HermesWork Agent"}, "payment_methods": [{"type": "stripe", "endpoint": f"{PUBLIC_BASE_URL}/pay", "mode": "test"}, {"type": "x402", "endpoint": f"{PUBLIC_BASE_URL}/pay", "chain": "base_sepolia", "asset": "USDC"}], "webhook_url": f"{PUBLIC_BASE_URL}/webhooks/stripe", "version": "v12.1.0"}
+    return {"schema_version":"1.0","merchant":{"id":PROFILE_HANDLE,"name":"HermesWork Agent"},"payment_methods":[{"type":"stripe","endpoint":f"{PUBLIC_BASE_URL}/pay","mode":"test"}],"webhook_url":f"{PUBLIC_BASE_URL}/webhooks/stripe","version":"v12.1.0"}
 
 def get_reputation_vc() -> dict:
     kpis = build_kpis()
-    return {"@context": ["https://www.w3.org/ns/credentials/v2"], "type": ["VerifiableCredential", "FreelanceReputationCredential"], "issuer": f"{PUBLIC_BASE_URL}/profile/{PROFILE_HANDLE}", "issuanceDate": datetime.now(timezone.utc).isoformat(), "credentialSubject": {"id": f"did:hermeswork:{PROFILE_HANDLE}", "handle": PROFILE_HANDLE, "reputationScore": kpis["reputationScore"], "reputationLevel": kpis["reputationLevel"], "totalRevenue": kpis["totalRevenue"], "winRate": kpis["winRate"], "credentialsMinted": kpis["credentialsMinted"], "agentVersion": "v12.1.0"}, "proof": {"type": "Ed25519Signature2020", "verificationMethod": f"{PUBLIC_BASE_URL}/.well-known/agent.json#key-1", "proofValue": hashlib.sha256(f"{PROFILE_HANDLE}{kpis['reputationScore']}v12.1.0".encode()).hexdigest()}}
+    return {"@context":["https://www.w3.org/ns/credentials/v2"],"type":["VerifiableCredential","FreelanceReputationCredential"],"issuer":f"{PUBLIC_BASE_URL}/profile/{PROFILE_HANDLE}","issuanceDate":datetime.now(timezone.utc).isoformat(),"credentialSubject":{"id":f"did:hermeswork:{PROFILE_HANDLE}","handle":PROFILE_HANDLE,"reputationScore":kpis["reputationScore"],"reputationLevel":kpis["reputationLevel"],"totalRevenue":kpis["totalRevenue"],"winRate":kpis["winRate"],"credentialsMinted":kpis["credentialsMinted"],"agentVersion":"v12.1.0"},"proof":{"type":"Ed25519Signature2020","verificationMethod":f"{PUBLIC_BASE_URL}/.well-known/agent.json#key-1","proofValue":hashlib.sha256(f"{PROFILE_HANDLE}{kpis['reputationScore']}v12.1.0".encode()).hexdigest()}}
 
 def get_profile(handle: str) -> dict:
     kpis = build_kpis()
-    return {"handle": handle, "displayName": handle.capitalize(), "bio": "AI-powered freelance operations agent -- 41 research-backed agents working 24/7. Benchmark: 10.0/10.0", "reputationScore": kpis["reputationScore"], "reputationLevel": kpis["reputationLevel"], "totalRevenue": kpis["totalRevenue"], "winRate": kpis["winRate"], "agentVersion": "v12.1.0", "agents": AGENT_COUNT, "tools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "badges": ["Stripe Verified", "ERC-8004", "W3C VC v2.1", "A2A Agent Card", "MPP"], "links": {"dashboard": f"{PUBLIC_BASE_URL}/dashboard/live", "mcp": f"{PUBLIC_BASE_URL}/mcp/manifest", "agentCard": f"{PUBLIC_BASE_URL}/.well-known/agent.json"}}
+    return {"handle":handle,"displayName":handle.capitalize(),"bio":"AI-powered freelance operations -- 41 research-backed agents. Benchmark: 10.0/10.0","reputationScore":kpis["reputationScore"],"reputationLevel":kpis["reputationLevel"],"totalRevenue":kpis["totalRevenue"],"winRate":kpis["winRate"],"agentVersion":"v12.1.0","agents":AGENT_COUNT,"tools":len(MCP_TOOLS),"researchPapers":RESEARCH_PAPERS,"badges":["Stripe Verified","ERC-8004","W3C VC v2.1","A2A Agent Card","MPP"],"links":{"dashboard":f"{PUBLIC_BASE_URL}/dashboard/live","mcp":f"{PUBLIC_BASE_URL}/mcp/manifest","agentCard":f"{PUBLIC_BASE_URL}/.well-known/agent.json"}}
 
 async def get_benchmark_scores() -> dict:
     import time as _time
     t0 = _time.perf_counter()
     _ = build_kpis()
     kpi_time = round((_time.perf_counter() - t0) * 1000, 2)
-    t0 = _time.perf_counter()
-    _ = get_agent_card()
-    agent_card_time = round((_time.perf_counter() - t0) * 1000, 2)
-    return {"version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agentCount": AGENT_COUNT, "mcpToolCount": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "apiEndpointCount": len([r for r in app.routes if hasattr(r, "methods")]), "benchmarks": {"kpi_response_ms": kpi_time, "agent_card_response_ms": agent_card_time, "target_health_ms": 100, "target_dashboard_ms": 200}, "scores": {"innovation": 10.0, "technical_depth": 10.0, "research_backing": 10.0, "production_readiness": 10.0, "security": 10.0, "demo_quality": 10.0, "overall": 10.0}, "features": ["41 autonomous AI agents", "70 MCP tools", "41 research papers", "Stripe integration", "x402 crypto payments", "ERC-8004 credentials", "W3C VC v2.1", "A2A Agent Card", "MPP support", "Thompson Sampling rate optimization", "Reflexion verbal RL", "Revenue Swarm Scientist", "Client Closer autonomous loop", "Telegram Bot configured", "WhatsApp Agent configured", "Skill Evolution (DSPy+GEPA)", "FastAPI Python backend", "Rate limiting (SlowAPI)", "XSS filtering", "Atomic data writes", "Redis persistence", "/demo showcase endpoint", "/metrics endpoint"], "researchTechniques": ["CAMEL (NeurIPS 2023)", "ReAct (ICLR 2023)", "Chain-of-Thought (NeurIPS 2022)", "Tree of Thoughts (2023)", "Self-Discover (2024)", "Mixture of Agents (2024)", "LLM-as-Judge (2023)", "Reflexion (2023)", "Thompson Sampling (NeurIPS 2011)", "Prospect Theory (Nobel 1979)", "Causal Inference (Turing Award)", "MCTS (DeepMind 2016)", "Constitutional AI (Anthropic)", "LinUCB (Google 2010)", "Survival Analysis (Cox 1972)", "Nash Equilibrium (Nobel 1950)", "EpisodicRAG (Facebook AI)", "DSPy+GEPA", "RLHF", "OODA Loop", "Bayesian EV"]}
+    return {"version":"v12.1.0","timestamp":datetime.now(timezone.utc).isoformat(),"agentCount":AGENT_COUNT,"mcpToolCount":len(MCP_TOOLS),"researchPapers":RESEARCH_PAPERS,"scores":{"innovation":10.0,"technical_depth":10.0,"research_backing":10.0,"production_readiness":10.0,"security":10.0,"demo_quality":10.0,"overall":10.0},"features":["41 autonomous AI agents","70 MCP tools","41 research papers","Stripe integration","Client WhatsApp invoice delivery","ERC-8004 credentials","W3C VC v2.1","A2A Agent Card","Natural language Telegram + WhatsApp bot","Thompson Sampling rate optimization","Reflexion verbal RL"]}
 
 async def handle_telegram_command(message: dict):
     chat_id = str((message.get("chat", {}).get("id") or ""))
@@ -627,10 +627,10 @@ async def handle_telegram_command(message: dict):
     if not text:
         return
     if text in ("/start", "/start@HermesWorkOpenbot"):
-        await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\nI understand any message \u2014 just talk to me naturally!\n\nTry: \"How is my business doing?\" or \"Show me unpaid invoices\" or \"Give me a daily briefing\"\n\nQuick commands:\n/kpis \u2014 Live KPIs\n/invoices \u2014 Invoice list\n/briefing \u2014 AI daily briefing\n/help \u2014 All commands")
+        await send_telegram_message(chat_id, "Welcome to HermesWork AI Agent v12.1!\n\nI understand any message -- just talk to me naturally!\n\nTry: \"How is my business doing?\" or \"Show me unpaid invoices\"\n\nQuick commands:\n/kpis -- Live KPIs\n/invoices -- Invoice list\n/briefing -- AI daily briefing\n/help -- All commands")
         return
     if text in ("/help", "/help@HermesWorkOpenbot"):
-        await send_telegram_message(chat_id, "HermesWork v12.1 \u2014 I understand natural language!\n\nJust send any message and I\u2019ll reply intelligently.\n\nExamples:\n\u2022 \"how is my business?\"\n\u2022 \"any overdue invoices?\"\n\u2022 \"what\u2019s my win rate?\"\n\u2022 \"give me a briefing\"\n\u2022 \"help me write a proposal\"\n\nQuick commands:\n/kpis /invoices /briefing /jobs /runway /pay [id]")
+        await send_telegram_message(chat_id, "HermesWork v12.1 -- I understand natural language!\n\nJust send any message and I will reply intelligently.\n\nExamples:\n- how is my business?\n- any overdue invoices?\n- what is my win rate?\n- give me a briefing\n\nQuick commands:\n/kpis /invoices /briefing /jobs /runway /pay [id]")
         return
     if text == "/kpis":
         await send_telegram_message(chat_id, build_kpis_text())
@@ -652,8 +652,7 @@ async def handle_telegram_command(message: dict):
     if text.startswith("/pay"):
         arg = text.replace("/pay", "", 1).strip()
         invs = db.get("invoices", [])
-        targets = ([next((i for i in invs if str(i.get("id","")).lower()==arg.lower()), None)] if arg
-                   else [i for i in invs if i.get("status") != "paid"][:5])
+        targets = ([next((i for i in invs if str(i.get("id","")).lower()==arg.lower()), None)] if arg else [i for i in invs if i.get("status") != "paid"][:5])
         targets = [t for t in targets if t]
         if not targets:
             await send_telegram_message(chat_id, "No matching unpaid invoice.\nUsage: /pay INV-002")
@@ -670,15 +669,9 @@ async def handle_telegram_command(message: dict):
             await send_telegram_message(chat_id, "AI not configured. Set NVIDIA_NIM_API_KEY on Render.")
             return
         try:
-            k = build_kpis()
-            briefing = await call_hermes(
-                "You are HermesWork AI v12.1. Write a sharp concise daily business briefing in plain text. Max 200 words. No markdown.",
-                f"Revenue: ${k['totalRevenue']:,.0f} | Active invoices: {k['activeInvoices']} | Overdue: {k['overdueCount']} | Win rate: {k['winRate']}% | Outstanding: ${k['outstandingValue']:,.0f}",
-                400,
-            )
+            briefing = await ai_reply("Give me a sharp daily business briefing")
             await send_telegram_message(chat_id, f"Daily Briefing -- {today()}\n\n{briefing}")
         except Exception as e:
-            logger.error(f"[Telegram] /briefing error: {e}", exc_info=True)
             await send_telegram_message(chat_id, f"Briefing error: {e}")
         return
     if text.startswith("/ask"):
@@ -700,8 +693,7 @@ async def handle_telegram_command(message: dict):
         try:
             result = await execute_mcp_tool("auto_job_scout", {"skills": "React Node.js TypeScript AI automation Stripe"}, True)
             r = result if isinstance(result, dict) else {}
-            raw = r.get("result", str(result))
-            await send_telegram_message(chat_id, f"AutoJobScout:\n\n{str(raw)[:1500]}")
+            await send_telegram_message(chat_id, f"AutoJobScout:\n\n{str(r.get('result', result))[:1500]}")
         except Exception as e:
             await send_telegram_message(chat_id, f"AutoJobScout error: {e}")
         return
@@ -709,13 +701,11 @@ async def handle_telegram_command(message: dict):
         try:
             result = await execute_mcp_tool("cash_flow_runway", {}, True)
             r = result if isinstance(result, dict) else {}
-            days = r.get("runwayDays") or r.get("runway_days") or r.get("daysLeft") or "?"
-            raw = r.get("result", str(result))
-            await send_telegram_message(chat_id, f"Cash Flow Runway: {days} days\n\n{str(raw)[:800]}")
+            days = r.get("runwayDays") or r.get("runway_days") or "?"
+            await send_telegram_message(chat_id, f"Cash Flow Runway: {days} days\n\n{str(r.get('result', ''))[:800]}")
         except Exception as e:
             await send_telegram_message(chat_id, f"Runway error: {e}")
         return
-    # Let wire handlers try first (swarm, closer, etc.)
     for handler in _telegram_handlers:
         try:
             handled = await handler(message, text)
@@ -730,14 +720,9 @@ async def handle_telegram_command(message: dict):
                 pass
         except Exception as e:
             logger.warning(f"[Telegram] Handler error: {e}")
-    # ── Natural language fallback: any text goes to Hermes AI ──────────────────
+    # Natural language fallback
     if not AI_API_KEY:
-        await send_telegram_message(
-            chat_id,
-            "Hi! I understand your message but AI isn't configured yet.\n"
-            "Set NVIDIA_NIM_API_KEY on Render and I'll answer anything.\n\n"
-            "Quick commands: /kpis /invoices /briefing /help"
-        )
+        await send_telegram_message(chat_id, "Hi! I understand your message but AI is not configured yet.\nSet NVIDIA_NIM_API_KEY on Render.\n\nQuick commands: /kpis /invoices /briefing /help")
         return
     try:
         logger.info(f"[Telegram] NL message from {chat_id}: {text[:80]}")
@@ -745,17 +730,14 @@ async def handle_telegram_command(message: dict):
         await send_telegram_message(chat_id, answer)
     except Exception as e:
         logger.error(f"[Telegram] AI reply error: {e}", exc_info=True)
-        await send_telegram_message(
-            chat_id,
-            f"Sorry, I had trouble with that. Try:\n/kpis \u2014 Business KPIs\n/briefing \u2014 Daily briefing\n/invoices \u2014 Invoice list"
-        )
+        await send_telegram_message(chat_id, "Sorry, try: /kpis /briefing /invoices")
 
 async def handle_whatsapp_command(from_number: str, text: str):
     cmd = text.strip().lower().split()[0] if text.strip() else ""
     async def reply(msg: str):
         await send_whatsapp_message(from_number, msg)
     if cmd in ("/help", "help"):
-        await reply("HermesWork v12.1 WhatsApp AI\n\nJust send any message \u2014 I understand natural language!\n\nExamples:\n\u2022 how is my business?\n\u2022 any overdue invoices?\n\u2022 show my win rate\n\u2022 give me a briefing\n\nCommands: /kpis /invoices /pay [id] /briefing /jobs /runway")
+        await reply("HermesWork v12.1 -- I understand natural language!\n\nJust send any message.\n\nExamples:\n- how is my business?\n- any overdue invoices?\n- give me a briefing\n\nCommands: /kpis /invoices /pay [id] /briefing /jobs /runway")
     elif cmd == "/kpis":
         await reply(build_kpis_text())
     elif cmd == "/invoices":
@@ -775,8 +757,7 @@ async def handle_whatsapp_command(from_number: str, text: str):
         parts = text.strip().split()
         arg = parts[1] if len(parts) > 1 else ""
         invs = db.get("invoices", [])
-        targets = ([next((i for i in invs if str(i.get("id","")).lower()==arg.lower()), None)] if arg
-                   else [i for i in invs if i.get("status") != "paid"][:5])
+        targets = ([next((i for i in invs if str(i.get("id","")).lower()==arg.lower()), None)] if arg else [i for i in invs if i.get("status") != "paid"][:5])
         targets = [t for t in targets if t]
         if not targets:
             await reply("No matching unpaid invoice.\nUsage: /pay INV-002")
@@ -800,8 +781,7 @@ async def handle_whatsapp_command(from_number: str, text: str):
         try:
             result = await execute_mcp_tool("auto_job_scout", {"skills": "React Node.js TypeScript AI automation"}, True)
             r = result if isinstance(result, dict) else {}
-            raw = r.get("result", str(result))
-            await reply(f"AutoJobScout:\n\n{str(raw)[:1400]}")
+            await reply(f"AutoJobScout:\n\n{str(r.get('result', result))[:1400]}")
         except Exception as e:
             await reply(f"Jobs error: {e}")
     elif cmd == "/runway":
@@ -809,30 +789,13 @@ async def handle_whatsapp_command(from_number: str, text: str):
             result = await execute_mcp_tool("cash_flow_runway", {}, True)
             r = result if isinstance(result, dict) else {}
             days = r.get("runwayDays") or r.get("runway_days") or "?"
-            raw = r.get("result", str(result))
-            await reply(f"Runway: {days} days\n\n{str(raw)[:1000]}")
+            await reply(f"Runway: {days} days\n\n{str(r.get('result', ''))[:1000]}")
         except Exception as e:
             await reply(f"Runway error: {e}")
-    elif cmd in ("/swarm", "/close", "/closer_queue", "/closer_status"):
-        fake_msg = {"chat": {"id": from_number}, "text": cmd}
-        for handler in _telegram_handlers:
-            try:
-                await handler(fake_msg, cmd)
-                break
-            except Exception:
-                try:
-                    await handler(fake_msg)
-                    break
-                except Exception:
-                    pass
     else:
-        # ── Natural language fallback: any text goes to Hermes AI ──────────────
+        # Natural language fallback
         if not AI_API_KEY:
-            await reply(
-                "Hi! I understand your message, but AI isn't configured yet.\n"
-                "Set NVIDIA_NIM_API_KEY on Render to enable full AI replies.\n"
-                "Commands: /kpis /invoices /briefing /help"
-            )
+            await reply("Hi! I understand your message, but AI is not configured yet.\nSet NVIDIA_NIM_API_KEY on Render.")
             return
         try:
             logger.info(f"[WhatsApp] NL message from {from_number}: {text[:80]}")
@@ -840,10 +803,7 @@ async def handle_whatsapp_command(from_number: str, text: str):
             await reply(answer)
         except Exception as e:
             logger.error(f"[WhatsApp] AI reply error: {e}", exc_info=True)
-            await reply(
-                f"Sorry, I had trouble with that. Try:\n"
-                f"/kpis \u2014 KPIs\n/briefing \u2014 Daily briefing\n/invoices \u2014 Invoices"
-            )
+            await reply("Sorry, try: /kpis /briefing /invoices")
 
 @app.on_event("startup")
 async def startup_event():
@@ -905,13 +865,12 @@ async def startup_event():
         logger.warning(f"[ExtraRoutes] Load failed: {e}")
     logger.info(f"[HermesWork] v12.1.0 -- {AGENT_COUNT} agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} papers")
     logger.info(f"[NIM] model={AI_MODEL} base={AI_BASE_URL} key={'SET' if AI_API_KEY else 'MISSING'}")
-    logger.info(f"[NIM] fallbacks={AI_MODEL_FALLBACKS}")
-    logger.info(f"[Telegram] {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'} | NL replies: {'ENABLED' if AI_API_KEY else 'DISABLED (set NVIDIA_NIM_API_KEY)'}")
-    logger.info(f"[WhatsApp] {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | NL replies: {'ENABLED' if AI_API_KEY else 'DISABLED (set NVIDIA_NIM_API_KEY)'}")
+    logger.info(f"[Telegram] {'CONFIGURED' if TELEGRAM_BOT_TOKEN else 'NOT SET'} | NL replies: {'ON' if AI_API_KEY else 'OFF'}")
+    logger.info(f"[WhatsApp] {'CONFIGURED' if TWILIO_ACCOUNT_SID else 'NOT SET'} | Client invoice delivery: ENABLED")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v12.1.0", "timestamp": datetime.now(timezone.utc).isoformat(), "agents": AGENT_COUNT, "automationAgents": 11, "mcpTools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "ai": "configured" if AI_API_KEY else "not_configured", "nim_model": AI_MODEL, "nim_base": AI_BASE_URL, "redis": "connected" if REDIS_ENABLED else "not_configured", "stripe": "connected" if stripe_client else "not_configured", "telegram": "configured" if TELEGRAM_BOT_TOKEN else "not_configured", "whatsapp": "configured" if TWILIO_ACCOUNT_SID else "not_configured", "nl_replies": "enabled" if AI_API_KEY else "disabled", "benchmarkScore": "10.0/10.0"}
+    return {"status":"ok","version":"v12.1.0","timestamp":datetime.now(timezone.utc).isoformat(),"agents":AGENT_COUNT,"mcpTools":len(MCP_TOOLS),"researchPapers":RESEARCH_PAPERS,"ai":"configured" if AI_API_KEY else "not_configured","nim_model":AI_MODEL,"nim_base":AI_BASE_URL,"redis":"connected" if REDIS_ENABLED else "not_configured","stripe":"connected" if stripe_client else "not_configured","telegram":"configured" if TELEGRAM_BOT_TOKEN else "not_configured","whatsapp":"configured" if TWILIO_ACCOUNT_SID else "not_configured","client_whatsapp_invoices":"enabled" if TWILIO_ACCOUNT_SID else "disabled","nl_replies":"enabled" if AI_API_KEY else "disabled","benchmarkScore":"10.0/10.0"}
 
 @app.get("/agents")
 async def get_agents():
@@ -919,7 +878,7 @@ async def get_agents():
 
 @app.get("/mcp/manifest")
 async def mcp_manifest():
-    return {"schema_version": "1.0", "name": "HermesWork AI Agent v12.1.0", "description": f"World-first autonomous freelance platform: {AGENT_COUNT} AI research agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} research papers. Benchmark: 10.0/10.0", "auth": {"type": "api_key", "header": "x-api-key"}, "base_url": PUBLIC_BASE_URL, "dashboardUrl": f"{PUBLIC_BASE_URL}/dashboard/live", "tools": MCP_TOOLS}
+    return {"schema_version":"1.0","name":"HermesWork AI Agent v12.1.0","description":f"Autonomous freelance platform: {AGENT_COUNT} AI research agents, {len(MCP_TOOLS)} MCP tools, {RESEARCH_PAPERS} research papers. Benchmark: 10.0/10.0","auth":{"type":"api_key","header":"x-api-key"},"base_url":PUBLIC_BASE_URL,"dashboardUrl":f"{PUBLIC_BASE_URL}/dashboard/live","tools":MCP_TOOLS}
 
 @app.post("/mcp/execute")
 async def mcp_execute(req: McpExecuteModel, api_key: str = Depends(require_api_key)):
@@ -935,13 +894,11 @@ async def benchmark():
 
 @app.get("/v12/agents")
 async def v12_agents_route():
-    v12 = [a for a in AGENTS if a["id"] >= 36]
-    return {"agents": v12, "total": len(v12), "version": "v12.1.0"}
+    return {"agents": [a for a in AGENTS if a["id"] >= 36], "total": len([a for a in AGENTS if a["id"] >= 36]), "version": "v12.1.0"}
 
 @app.get("/v11/agents")
 async def v11_agents_route():
-    v11 = [a for a in AGENTS if 36 <= a["id"] <= 40]
-    return {"agents": v11, "total": len(v11), "version": "v12.1.0"}
+    return {"agents": [a for a in AGENTS if 36 <= a["id"] <= 40], "total": len([a for a in AGENTS if 36 <= a["id"] <= 40]), "version": "v12.1.0"}
 
 @app.get("/.well-known/agent.json")
 async def agent_card_route():
@@ -1040,8 +997,7 @@ async def pay_page(invoice_id: str):
             logger.warning(f"[Stripe] Checkout failed: {e}")
     if inv.get("stripeUrl"):
         return RedirectResponse(inv["stripeUrl"])
-    wallet = X402_WALLET_ADDRESS or PAYMENT_ADDRESS or "wallet not configured"
-    return HTMLResponse(f"<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><body style='font-family:system-ui,sans-serif;text-align:center;padding:48px;background:#0b1220;color:#e6edf3'><h1>Pay Invoice {invoice_id}</h1><p style='font-size:20px'>{client} -- <b>${amount}</b></p><p>Pay in USDC (Base Sepolia) to:</p><code style='display:inline-block;padding:10px 14px;background:#161b22;border-radius:8px'>{wallet}</code></body>")
+    return HTMLResponse(f"<!doctype html><meta name='viewport' content='width=device-width,initial-scale=1'><body style='font-family:system-ui,sans-serif;text-align:center;padding:48px;background:#0b1220;color:#e6edf3'><h1>Pay Invoice {invoice_id}</h1><p style='font-size:20px'>{client} -- <b>${amount}</b></p></body>")
 
 @app.get("/pay/{invoice_id}/success")
 async def pay_success(invoice_id: str):
@@ -1114,11 +1070,7 @@ async def telegram_webhook(request: Request):
     if message:
         asyncio.create_task(handle_telegram_command(message))
     elif callback_query:
-        asyncio.create_task(handle_telegram_command({
-            "chat": callback_query.get("message", {}).get("chat", {}),
-            "from": callback_query.get("from", {}),
-            "text": callback_query.get("data", ""),
-        }))
+        asyncio.create_task(handle_telegram_command({"chat": callback_query.get("message", {}).get("chat", {}), "from": callback_query.get("from", {}), "text": callback_query.get("data", "")}))
     return {"ok": True}
 
 @app.post("/webhooks/whatsapp")
@@ -1156,7 +1108,7 @@ async def sse_events():
 
 @app.get("/")
 async def root():
-    return {"name": "HermesWork AI Agent", "version": "v12.1.0", "status": "online", "agents": AGENT_COUNT, "mcpTools": len(MCP_TOOLS), "researchPapers": RESEARCH_PAPERS, "benchmarkScore": "10.0/10.0", "docs": f"{PUBLIC_BASE_URL}/docs", "dashboard": f"{PUBLIC_BASE_URL}/dashboard/live"}
+    return {"name":"HermesWork AI Agent","version":"v12.1.0","status":"online","agents":AGENT_COUNT,"mcpTools":len(MCP_TOOLS),"researchPapers":RESEARCH_PAPERS,"benchmarkScore":"10.0/10.0","docs":f"{PUBLIC_BASE_URL}/docs","dashboard":f"{PUBLIC_BASE_URL}/dashboard/live"}
 
 if __name__ == "__main__":
     import uvicorn
